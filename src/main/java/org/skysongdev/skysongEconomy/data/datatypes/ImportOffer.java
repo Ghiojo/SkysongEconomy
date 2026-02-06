@@ -1,0 +1,47 @@
+package org.skysongdev.skysongEconomy.data.datatypes;
+
+
+import org.bukkit.Material;
+import org.bukkit.inventory.ItemStack;
+
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+
+import static org.skysongdev.skysongEconomy.SkysongEconomy.Instance;
+
+public abstract class ImportOffer {
+    private String offerName;
+    private float priceModifier;
+    private String staticLore;
+    private Material iconMaterial;
+    protected final ArrayList<String> itemIds;
+    protected final ArrayList<Integer> itemQuantities;
+    private boolean isAffectedByTaxes;
+
+    public ImportOffer(String offerName, float priceModifier, String staticLore, boolean isAffectedByTaxes, Material iconMaterial, ArrayList<String> itemIds, ArrayList<Integer> itemQuantities) {
+        this.offerName = offerName;
+        this.priceModifier = priceModifier;
+        this.staticLore = staticLore;
+        this.isAffectedByTaxes = isAffectedByTaxes;
+        this.iconMaterial = iconMaterial;
+        this.itemIds = itemIds;
+        this.itemQuantities = itemQuantities;
+    }
+
+    public String getOfferName() {
+        return offerName;
+    }
+    public float getPriceModifier() {
+        return priceModifier;
+    }
+    public String getStaticLore() {
+        return staticLore;
+    }
+    public boolean isAffectedByTaxes() {
+        return isAffectedByTaxes;
+    }
+
+    public abstract List<String> getTags() throws SQLException;
+    public abstract ArrayList<ItemStack> generateItems();
+}

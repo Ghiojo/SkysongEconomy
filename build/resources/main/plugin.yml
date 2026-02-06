@@ -1,0 +1,39 @@
+name: SkysongEconomy
+version: '1.0'
+main: org.skysongdev.skysongEconomy.SkysongEconomy
+api-version: '1.21'
+
+depend:
+  - Gringotts
+
+commands:
+  se:
+    description: Main command for SkysongEconomy
+    usage: /<command>
+    aliases: [skysongeconomy, seconomy, seco, skye]
+
+permissions:
+  skysongeconomy.good:
+    description: Allows use of the economy features
+    default: true
+  skysongeconomy.ledger:
+    description: Allows viewing the economy ledger
+    default: op
+  skysongeconomy.good.manage:
+    description: Allows management of economy features
+    default: op
+  skysongeconomy.ledger.add:
+    description: Allows adding entries to the economy ledger
+    default: op
+  skysongeconomy.ledger.remove:
+    description: Allows removing entries from the economy ledger
+    default: op
+  skysongeconomy.*:
+    description: Gives access to all SkysongEconomy features
+    default: op
+    children:
+      skysongeconomy.good: true
+      skysongeconomy.ledger: true
+      skysongeconomy.good.manage: true
+      skysongeconomy.ledger.add: true
+      skysongeconomy.ledger.remove: true

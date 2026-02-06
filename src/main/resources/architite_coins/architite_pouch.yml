@@ -1,0 +1,24 @@
+name: '&#FFD700A&#FFDB1Er&#FFDF3Cc&#FFE35Ah&#FFE679i&#FFEA97t&#FFEEB5i&#FFEEB5t&#FFEA97e
+  &#FFE679P&#FFE35Ao&#FFDF3Cu&#FFDB1Ec&#FFD700h'
+lore:
+- |-
+  <gray>A well-made resin coin with the symbol of
+  <gray>House Hawke's bird in one side, and
+  <gray>inscriptions in the other. This coin's resin
+  <gray>is colored a light yellow, unlike the usual
+  <gray>orange-amber color of pinches in order to
+  <gray>differenciate them. Yet still, one can the in
+  <gray>appreciate small aurean particles inside the
+  <gray>coin, which are a much higher concentration
+  <gray>than in lower denominations. Unlike what some
+  <gray>may think, this is not an actual pouch, but
+  <gray>rather a quaint name given to these kinds of
+  <gray>coins.
+- '&#424242This is worth <gold>1.0 AU<dark_gray>.'
+- <#81a871>[Not Set]
+type: GOLD_NUGGET
+deleted: '001'
+tags:
+- au_value
+values:
+- '1.0'
