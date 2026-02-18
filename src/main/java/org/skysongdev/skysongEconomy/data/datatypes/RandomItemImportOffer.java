@@ -11,6 +11,7 @@ import java.io.File;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class RandomItemImportOffer extends ImportOffer {
     private final ArrayList<Float> itemChances;
@@ -18,8 +19,8 @@ public class RandomItemImportOffer extends ImportOffer {
     private final int upperBoundOfItems;
 
 
-    public RandomItemImportOffer(String offerName, ArrayList<String> configInputs, int lowerBoundOfItems, int upperBoundOfItems, float priceModifier, String staticLore, boolean isAffectedByTaxes, Material iconMaterial) {
-        super(offerName, priceModifier, staticLore, isAffectedByTaxes, iconMaterial, new ArrayList<>(), new ArrayList<>());
+    public RandomItemImportOffer(String offerName, ArrayList<String> configInputs, int lowerBoundOfItems, int upperBoundOfItems, float priceModifier, String staticLore, boolean isAffectedByTaxes, Material iconMaterial, Map<Integer, Double> priceMap) {
+        super(offerName, priceModifier, staticLore, isAffectedByTaxes, iconMaterial, new ArrayList<>(), new ArrayList<>(), priceMap);
         this.itemChances = new ArrayList<>();
         this.lowerBoundOfItems = lowerBoundOfItems;
         this.upperBoundOfItems = upperBoundOfItems;

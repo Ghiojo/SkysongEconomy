@@ -10,6 +10,7 @@ import java.io.File;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import static org.skysongdev.skysongEconomy.SkysongEconomy.Instance;
 
@@ -22,8 +23,8 @@ public class StaticItemImportOffer extends ImportOffer {
     ArrayList<String> itemIds;
     ArrayList<Integer> itemAmounts;
 
-    public StaticItemImportOffer(String offerName, float priceModifier, ArrayList<String> configInputs, String staticLore, boolean isAffectedByTaxes, Material iconMaterial) {
-        super(offerName, priceModifier, staticLore, isAffectedByTaxes, iconMaterial, new ArrayList<>(), new ArrayList<>());
+    public StaticItemImportOffer(String offerName, ArrayList<String> configInputs, float priceModifier, String staticLore, boolean isAffectedByTaxes, Material iconMaterial, Map<Integer, Double> priceMap) {
+        super(offerName, priceModifier, staticLore, isAffectedByTaxes, iconMaterial, new ArrayList<>(), new ArrayList<>(), priceMap);
         for(String input : configInputs) {
             String[] parts = input.split(";");
             if (parts.length != 2) {

@@ -7,6 +7,7 @@ import org.bukkit.inventory.ItemStack;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import static org.skysongdev.skysongEconomy.SkysongEconomy.Instance;
 
@@ -18,8 +19,9 @@ public abstract class ImportOffer {
     protected final ArrayList<String> itemIds;
     protected final ArrayList<Integer> itemQuantities;
     private boolean isAffectedByTaxes;
+    private Map<Integer, Double> priceMap;
 
-    public ImportOffer(String offerName, float priceModifier, String staticLore, boolean isAffectedByTaxes, Material iconMaterial, ArrayList<String> itemIds, ArrayList<Integer> itemQuantities) {
+    public ImportOffer(String offerName, float priceModifier, String staticLore, boolean isAffectedByTaxes, Material iconMaterial, ArrayList<String> itemIds, ArrayList<Integer> itemQuantities, Map<Integer, Double> priceMap) {
         this.offerName = offerName;
         this.priceModifier = priceModifier;
         this.staticLore = staticLore;
@@ -27,6 +29,7 @@ public abstract class ImportOffer {
         this.iconMaterial = iconMaterial;
         this.itemIds = itemIds;
         this.itemQuantities = itemQuantities;
+        this.priceMap = priceMap;
     }
 
     public String getOfferName() {

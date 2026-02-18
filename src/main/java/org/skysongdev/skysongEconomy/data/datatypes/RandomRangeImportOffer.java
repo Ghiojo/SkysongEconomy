@@ -11,6 +11,7 @@ import java.io.File;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * An ImportOffer that generates items with random amounts within specified ranges.
@@ -20,8 +21,8 @@ public class RandomRangeImportOffer extends ImportOffer{
     private ArrayList<Integer> minAmounts;
     private ArrayList<Integer> maxAmounts;
 
-    public RandomRangeImportOffer(String offerName, ArrayList<String> configInputs, float priceModifier, String staticLore, boolean isAffectedByTaxes, Material iconMaterial) {
-        super(offerName, priceModifier, staticLore, isAffectedByTaxes, iconMaterial, new ArrayList<>(), new ArrayList<>());
+    public RandomRangeImportOffer(String offerName, ArrayList<String> configInputs, float priceModifier, String staticLore, boolean isAffectedByTaxes, Material iconMaterial, Map<Integer, Double> priceMap) {
+        super(offerName, priceModifier, staticLore, isAffectedByTaxes, iconMaterial, new ArrayList<>(), new ArrayList<>(), priceMap);
         for(String input : configInputs) {
             String[] parts = input.split(";");
             if (parts.length != 3) {
