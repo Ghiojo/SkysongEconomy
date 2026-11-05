@@ -70,7 +70,11 @@ public final class DatabaseSchema {
                     + "profile VARCHAR(64) NOT NULL, "
                     + "PRIMARY KEY (business_id, group_id, player_uuid, profile), "
                     + "FOREIGN KEY (business_id, group_id) REFERENCES business_access_groups(business_id, group_id) "
-                    + "ON DELETE CASCADE) ENGINE=InnoDB");
+                    + "ON DELETE CASCADE) ENGINE=InnoDB",
+            "CREATE TABLE IF NOT EXISTS business_vaults ("
+                    + "business_id VARCHAR(64) PRIMARY KEY NOT NULL, "
+                    + "balance DECIMAL(19, 4) NOT NULL, "
+                    + "FOREIGN KEY (business_id) REFERENCES businesses(id) ON DELETE CASCADE) ENGINE=InnoDB");
 
     private DatabaseSchema() {
     }

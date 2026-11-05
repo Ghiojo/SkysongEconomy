@@ -12,6 +12,7 @@ import org.skysongdev.skysongEconomy.business.tier.BusinessTiers;
 import org.skysongdev.skysongEconomy.business.tier.BusinessTiersParser;
 import org.skysongdev.skysongEconomy.business.type.BusinessTypeRegistry;
 import org.skysongdev.skysongEconomy.business.type.BusinessTypesParser;
+import org.skysongdev.skysongEconomy.business.vault.BusinessVaults;
 import org.skysongdev.skysongEconomy.commands.SubCommand;
 import org.skysongdev.skysongEconomy.commands.business.BusinessCommand;
 import org.skysongdev.skysongEconomy.config.ConfigException;
@@ -19,18 +20,22 @@ import org.skysongdev.skysongEconomy.config.ConfigSection;
 import org.skysongdev.skysongEconomy.config.YamlFiles;
 import org.skysongdev.skysongEconomy.data.database.AsyncAccessRepository;
 import org.skysongdev.skysongEconomy.data.database.AsyncBusinessRepository;
+import org.skysongdev.skysongEconomy.data.database.AsyncVaultRepository;
 import org.skysongdev.skysongEconomy.data.database.BackgroundWriter;
 import org.skysongdev.skysongEconomy.data.database.ConnectionProvider;
 import org.skysongdev.skysongEconomy.data.database.DatabaseSettings;
 import org.skysongdev.skysongEconomy.data.database.SqlAccessRepository;
 import org.skysongdev.skysongEconomy.data.database.SqlBusinessRepository;
+import org.skysongdev.skysongEconomy.data.database.SqlVaultRepository;
 import org.skysongdev.skysongEconomy.data.database.StorageException;
 import org.skysongdev.skysongEconomy.integration.skysongstats.SkysongStatsAdapter;
+import org.skysongdev.skysongEconomy.money.Wallet;
 import org.skysongdev.skysongEconomy.gui.ChatPrompts;
 import org.skysongdev.skysongEconomy.gui.MenuListener;
 import org.skysongdev.skysongEconomy.gui.MenuTheme;
 import org.skysongdev.skysongEconomy.gui.business.BusinessMenus;
 import org.skysongdev.skysongEconomy.gui.business.SkillPicksEntry;
+import org.skysongdev.skysongEconomy.gui.business.VaultEntry;
 import org.skysongdev.skysongEconomy.gui.layout.MenuIcons;
 import org.skysongdev.skysongEconomy.listeners.BusinessBlockListener;
 import org.skysongdev.skysongEconomy.listeners.BusinessInteractListener;
@@ -53,19 +58,22 @@ public final class BusinessFeature implements AutoCloseable {
     private final @Nullable SubCommand command;
     private final @Nullable ConnectionProvider connections;
     private final @Nullable AccessService access;
+    private final @Nullable BusinessVaults vaults;
     private final @Nullable BackgroundWriter writer;
     private final @Nullable BusinessNameplates nameplates;
     private final @Nullable BusinessMenus menus;
 
     private BusinessFeature(@Nullable BusinessService businesses, @Nullable BusinessTypeRegistry types,
                             @Nullable SubCommand command, @Nullable ConnectionProvider connections,
-                            @Nullable AccessService access, @Nullable BackgroundWriter writer,
+                            @Nullable AccessService access, @Nullable BusinessVaults vaults,
+                            @Nullable BackgroundWriter writer,
                             @Nullable BusinessNameplates nameplates, @Nullable BusinessMenus menus) {
         this.businesses = businesses;
         this.types = types;
         this.command = command;
         this.connections = connections;
         this.access = access;
+        this.vaults = vaults;
         this.writer = writer;
         this.nameplates = nameplates;
         this.menus = menus;
@@ -75,9 +83,11 @@ public final class BusinessFeature implements AutoCloseable {
      * Reads the business config, loads every business and registers the block listener.
      *
      * @param database the database to keep businesses in; the feature opens its own connection
+     * @param wallet   players' money, for collecting vaults
      */
     public static BusinessFeature start(JavaPlugin plugin, YamlFiles configFiles, DatabaseSettings database,
-                                        SkysongStatsAdapter skysongStats, Messenger messenger, MessageCatalog messages) {
+                                        SkysongStatsAdapter skysongStats, Wallet wallet, Messenger messenger,
+                                        MessageCatalog messages) {
         Logger logger = plugin.getLogger();
         BusinessTypeRegistry types;
         BusinessTiers tiers;
@@ -88,7 +98,7 @@ public final class BusinessFeature implements AutoCloseable {
             accessDefaults = AccessDefaults.parse(configFiles.load(AccessDefaults.FILE));
         } catch (ConfigException e) {
             logger.severe("Businesses are disabled until this is fixed: " + e.getMessage());
-            return new BusinessFeature(null, null, null, null, null, null, null, null);
+            return new BusinessFeature(null, null, null, null, null, null, null, null, null);
         }
 
         ConnectionProvider connections = new ConnectionProvider(database, logger);
@@ -98,6 +108,9 @@ public final class BusinessFeature implements AutoCloseable {
         AccessService access = new AccessService(accessDefaults,
                 new AsyncAccessRepository(new SqlAccessRepository(connections), writer));
         businesses.addListener(access);
+        BusinessVaults vaults = new BusinessVaults(new AsyncVaultRepository(new SqlVaultRepository(connections), writer),
+                wallet, logger::warning);
+        businesses.addListener(vaults);
         PluginManager events = plugin.getServer().getPluginManager();
         BusinessNameplates nameplates = new BusinessNameplates(businesses, nameplateSettings(configFiles, logger), messenger);
         businesses.addListener(nameplates);
@@ -105,6 +118,7 @@ public final class BusinessFeature implements AutoCloseable {
         try {
             logger.info("Loaded " + businesses.loadAll() + " business(es) of " + types.all().size() + " type(s)");
             access.loadAll();
+            vaults.loadAll();
         } catch (StorageException e) {
             // Keep the commands so staff get clear errors, but nothing loaded means nothing to protect yet.
             logger.log(Level.SEVERE, "Businesses could not be loaded from the database", e);
@@ -113,9 +127,10 @@ public final class BusinessFeature implements AutoCloseable {
         events.registerEvents(new BusinessBlockListener(businesses, messenger), plugin);
         BusinessMenus menus = createMenus(plugin, configFiles, businesses, types, skysongStats, messenger, messages);
         menus.addEntry(new SkillPicksEntry(menus, businesses, skysongStats, messenger));
+        menus.addEntry(new VaultEntry(menus, vaults, messenger));
         events.registerEvents(new BusinessInteractListener(businesses, menus), plugin);
-        SubCommand command = new BusinessCommand(businesses, types, access, skysongStats, messenger);
-        return new BusinessFeature(businesses, types, command, connections, access, writer, nameplates, menus);
+        SubCommand command = new BusinessCommand(businesses, types, access, vaults, skysongStats, messenger);
+        return new BusinessFeature(businesses, types, command, connections, access, vaults, writer, nameplates, menus);
     }
 
     private static BusinessMenus createMenus(JavaPlugin plugin, YamlFiles configFiles, BusinessService businesses,
@@ -164,6 +179,11 @@ public final class BusinessFeature implements AutoCloseable {
     /** @return who may train, order and sell at each business; empty when businesses are disabled */
     public Optional<AccessService> access() {
         return Optional.ofNullable(access);
+    }
+
+    /** @return the business vaults, empty when businesses are disabled */
+    public Optional<BusinessVaults> vaults() {
+        return Optional.ofNullable(vaults);
     }
 
     /** @return the business types, empty when businesses are disabled */

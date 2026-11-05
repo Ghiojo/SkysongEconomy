@@ -20,6 +20,7 @@ import org.skysongdev.skysongEconomy.data.database.GoodTypeRepository;
 import org.skysongdev.skysongEconomy.data.database.PriceLedgerRepository;
 import org.skysongdev.skysongEconomy.data.datatypes.ImportCatalogue;
 import org.skysongdev.skysongEconomy.data.loading.ImportCatalogueLoader;
+import org.skysongdev.skysongEconomy.integration.gringotts.GringottsWallet;
 import org.skysongdev.skysongEconomy.integration.skysongstats.SkysongStatsAdapter;
 import org.skysongdev.skysongEconomy.items.FileSkysongItemFactory;
 import org.skysongdev.skysongEconomy.items.MaterialIdResolver;
@@ -70,7 +71,8 @@ public final class SkysongEconomy extends JavaPlugin {
         YamlFiles configFiles = new YamlFiles(getDataFolder().toPath(), path -> saveResource(path, false));
         MessageCatalog messages = loadMessages(configFiles);
         Messenger messenger = new Messenger(MiniMessage.miniMessage(), messages);
-        businessFeature = BusinessFeature.start(this, configFiles, databaseSettings(), skysongStats, messenger, messages);
+        businessFeature = BusinessFeature.start(this, configFiles, databaseSettings(), skysongStats,
+                new GringottsWallet(), messenger, messages);
 
         registerCommands(messenger);
     }
