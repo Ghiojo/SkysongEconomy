@@ -1,6 +1,6 @@
 package org.skysongdev.skysongEconomy.commands.good;
 
-import org.skysongdev.skysongEconomy.data.database.GoodTypeRepository;
+import org.skysongdev.skysongEconomy.data.database.CachedGoodTypes;
 import org.skysongdev.skysongEconomy.items.MaterialIdResolver;
 import org.skysongdev.skysongEconomy.messaging.Messenger;
 
@@ -9,7 +9,7 @@ import java.util.logging.Logger;
 
 /** /se good add [materialId] &lt;goodType&gt;: tags an item with a good type. */
 final class AddGoodAssociation extends GoodAssociationCommand {
-    AddGoodAssociation(GoodTypeRepository goodTypes, MaterialIdResolver materialIds, Messenger messenger, Logger logger) {
+    AddGoodAssociation(CachedGoodTypes goodTypes, MaterialIdResolver materialIds, Messenger messenger, Logger logger) {
         super(goodTypes, materialIds, messenger, logger);
     }
 

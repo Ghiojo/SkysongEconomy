@@ -59,4 +59,10 @@ class BorderedLayoutTest {
         assertThrows(IllegalArgumentException.class, () -> BorderedLayout.slot(6, 0));
         assertThrows(IllegalArgumentException.class, () -> BorderedLayout.slot(0, 9));
     }
+
+    @Test
+    void rightColumnIsTheSideAndTheCornerBelowIt() {
+        assertEquals(List.of(17, 26, 35, 44, 53), BorderedLayout.rightColumn());
+        assertTrue(BorderedLayout.isBorder(53), "the corner is border until a menu puts a button there");
+    }
 }

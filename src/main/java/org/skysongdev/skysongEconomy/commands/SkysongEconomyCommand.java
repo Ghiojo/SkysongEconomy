@@ -6,7 +6,7 @@ import org.bukkit.command.TabExecutor;
 import org.jetbrains.annotations.NotNull;
 import org.skysongdev.skysongEconomy.commands.good.GoodCommand;
 import org.skysongdev.skysongEconomy.commands.ledger.LedgerCommand;
-import org.skysongdev.skysongEconomy.data.database.GoodTypeRepository;
+import org.skysongdev.skysongEconomy.data.database.CachedGoodTypes;
 import org.skysongdev.skysongEconomy.items.MaterialIdResolver;
 import org.skysongdev.skysongEconomy.messaging.Messenger;
 import org.skysongdev.skysongEconomy.prices.PriceDatabase;
@@ -19,7 +19,7 @@ import java.util.logging.Logger;
 public final class SkysongEconomyCommand implements TabExecutor {
     private final CommandGroup root;
 
-    public SkysongEconomyCommand(PriceDatabase prices, PriceSettings priceSettings, GoodTypeRepository goodTypes,
+    public SkysongEconomyCommand(PriceDatabase prices, PriceSettings priceSettings, CachedGoodTypes goodTypes,
                                  MaterialIdResolver materialIds, Messenger messenger, Logger logger) {
         this.root = new CommandGroup("se", null, messenger)
                 .register(new LedgerCommand(prices, priceSettings, materialIds, messenger, logger))

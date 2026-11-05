@@ -78,6 +78,20 @@ public final class DatabaseSchema {
                     + "ledger_id VARCHAR(100) NOT NULL, "
                     + "selected_at BIGINT NOT NULL, "
                     + "PRIMARY KEY (business_id, ledger_id)) ENGINE=InnoDB",
+            // items is written like steel_sword:2;steel_spear:3, rolled when the import was ordered.
+            "CREATE TABLE IF NOT EXISTS business_deliveries ("
+                    + "id CHAR(36) PRIMARY KEY NOT NULL, "
+                    + "business_id VARCHAR(64) NOT NULL, "
+                    + "ledger_id VARCHAR(100) NOT NULL, "
+                    + "import_id VARCHAR(100) NOT NULL, "
+                    + "delivery_time_id VARCHAR(64) NOT NULL, "
+                    + "items TEXT NOT NULL, "
+                    + "player_uuid CHAR(36) NOT NULL, "
+                    + "profile VARCHAR(64) NOT NULL, "
+                    + "price DECIMAL(19, 4) NOT NULL, "
+                    + "ordered_at BIGINT NOT NULL, "
+                    + "arrives_at BIGINT NOT NULL, "
+                    + "INDEX (business_id)) ENGINE=InnoDB",
             // target is written like ledger:smugglers; expires_at is NULL for never.
             "CREATE TABLE IF NOT EXISTS price_modifiers ("
                     + "id VARCHAR(16) PRIMARY KEY NOT NULL, "

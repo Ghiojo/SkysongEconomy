@@ -75,6 +75,11 @@ public sealed interface BundlePart {
             }
         }
 
+        /** @return the chance in percent that one roll picks that option, rounded to a whole number */
+        public int chance(Option option) {
+            return Math.round(option.weight() * 100f / totalWeight());
+        }
+
         private int totalWeight() {
             return options.stream().mapToInt(Option::weight).sum();
         }

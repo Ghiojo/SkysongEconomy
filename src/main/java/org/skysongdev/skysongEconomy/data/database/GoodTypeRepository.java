@@ -4,7 +4,9 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.Set;
 
 /** Which good types (tags such as "weapon" or "food") each material ID belongs to ({@code good_types} table). */
@@ -62,6 +64,20 @@ public final class GoodTypeRepository {
             }
         }
         return goodTypes;
+    }
+
+    /** @return every item's good types, by material id */
+    public Map<String, Set<String>> loadAll() throws SQLException {
+        Map<String, Set<String>> byItem = new HashMap<>();
+        try (PreparedStatement statement = connections.getConnection()
+                .prepareStatement("SELECT goodType, materialId FROM good_types");
+             ResultSet results = statement.executeQuery()) {
+            while (results.next()) {
+                byItem.computeIfAbsent(results.getString("materialId"), id -> new LinkedHashSet<>())
+                        .add(results.getString("goodType"));
+            }
+        }
+        return byItem;
     }
 
     /** Every good type that at least one of the given materials belongs to, e.g. all items of an import offer. */

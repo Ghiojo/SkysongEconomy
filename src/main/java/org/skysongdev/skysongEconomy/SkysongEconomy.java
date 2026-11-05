@@ -5,6 +5,7 @@ import org.bukkit.NamespacedKey;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.skysongdev.skysongEconomy.bootstrap.BusinessFeature;
+import org.skysongdev.skysongEconomy.bootstrap.TradeInputs;
 import org.skysongdev.skysongEconomy.commands.SkysongEconomyCommand;
 import org.skysongdev.skysongEconomy.config.ConfigException;
 import org.skysongdev.skysongEconomy.config.ConfigSection;
@@ -12,6 +13,7 @@ import org.skysongdev.skysongEconomy.config.PluginPaths;
 import org.skysongdev.skysongEconomy.config.ResourceExtractor;
 import org.skysongdev.skysongEconomy.config.YamlFiles;
 import org.skysongdev.skysongEconomy.currency.ArchititeCurrency;
+import org.skysongdev.skysongEconomy.data.database.CachedGoodTypes;
 import org.skysongdev.skysongEconomy.data.database.ConnectionProvider;
 import org.skysongdev.skysongEconomy.data.database.DatabaseSchema;
 import org.skysongdev.skysongEconomy.data.database.DatabaseSettings;
@@ -48,7 +50,7 @@ public final class SkysongEconomy extends JavaPlugin {
     private PriceLedgerRepository priceLedger;
     private PriceDatabase prices;
     private PriceSettings priceSettings;
-    private GoodTypeRepository goodTypes;
+    private CachedGoodTypes goodTypes;
     private SkysongItemFactory importItems;
     private SkysongStatsAdapter skysongStats;
     private BusinessFeature businessFeature;
@@ -70,7 +72,7 @@ public final class SkysongEconomy extends JavaPlugin {
         Messenger messenger = new Messenger(MiniMessage.miniMessage(), messages);
         loadPrices(configFiles);
         businessFeature = BusinessFeature.start(this, paths, configFiles, databaseSettings(), skysongStats,
-                new GringottsWallet(), importItems, messenger, messages);
+                new GringottsWallet(), new TradeInputs(importItems, prices, priceSettings, goodTypes), messenger, messages);
 
         registerCommands(messenger);
     }
@@ -88,9 +90,10 @@ public final class SkysongEconomy extends JavaPlugin {
     private void setUpDatabase() {
         connections = new ConnectionProvider(databaseSettings(), getLogger());
         priceLedger = new PriceLedgerRepository(connections);
-        goodTypes = new GoodTypeRepository(connections);
+        goodTypes = new CachedGoodTypes(new GoodTypeRepository(connections));
         try {
             DatabaseSchema.createTables(connections);
+            goodTypes.loadAll();
         } catch (SQLException e) {
             // Keep running: repositories reconnect on their next query once the database is reachable.
             getLogger().log(Level.SEVERE, "Unable to connect to the database and create tables!", e);
@@ -157,7 +160,8 @@ public final class SkysongEconomy extends JavaPlugin {
         return priceSettings;
     }
 
-    public GoodTypeRepository getGoodTypes() {
+    /** Every item's good types, kept in memory. */
+    public CachedGoodTypes getGoodTypes() {
         return goodTypes;
     }
 

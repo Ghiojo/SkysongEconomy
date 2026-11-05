@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.Map;
 
 /** Keeps saved groups in a map, so tests can check what was written. */
-final class InMemoryAccessRepository implements AccessRepository {
+public final class InMemoryAccessRepository implements AccessRepository {
     final Map<String, List<AccessGroup>> saved = new LinkedHashMap<>();
     int writes;
 
