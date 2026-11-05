@@ -2,10 +2,13 @@ package org.skysongdev.skysongEconomy;
 
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.Bukkit;
+import org.bukkit.NamespacedKey;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.gestern.gringotts.Configuration;
 import org.skysongdev.skysongEconomy.commands.SkysongEconomyCommand;
 import org.skysongdev.skysongEconomy.data.database.Database;
+import org.skysongdev.skysongEconomy.items.MaterialIdResolver;
+import org.skysongdev.skysongEconomy.messaging.Messenger;
 import org.skysongdev.skysongitems.SkysongItems;
 import org.skysongdev.skysongitems.utils.Utils;
 
@@ -25,7 +28,7 @@ import static org.skysongdev.skysongEconomy.utils.Constants.COINS_PATH;
 public final class SkysongEconomy extends JavaPlugin {
     public static SkysongEconomy instance;
     Database database;
-    MiniMessage mm;
+    Messenger messenger;
     org.skysongdev.skysongEconomy.utils.Utils utils;
 
     /**
@@ -40,14 +43,13 @@ public final class SkysongEconomy extends JavaPlugin {
     }
 
     public Database getDatabase(){ return database; }
-    public MiniMessage getMm() { return mm; }
     public org.skysongdev.skysongEconomy.utils.Utils getUtils() { return utils; }
 
     @Override
     public void onEnable() {
         // Plugin startup logic
         instance = this;
-        mm = MiniMessage.miniMessage();
+        messenger = new Messenger(MiniMessage.miniMessage());
         utils = org.skysongdev.skysongEconomy.utils.Utils.Instance();
         saveDefaultConfig();
         InitializeDatabase();
@@ -79,7 +81,8 @@ public final class SkysongEconomy extends JavaPlugin {
     }
 
     public void InitializeCommands(){
-        getCommand("se").setExecutor(new SkysongEconomyCommand());
+        MaterialIdResolver materialIds = new MaterialIdResolver(new NamespacedKey(SkysongItems.getPlugin(), "material_id"));
+        getCommand("se").setExecutor(new SkysongEconomyCommand(database, materialIds, messenger, getLogger()));
     }
 
     public void InitializeLocalFiles(String folderName){

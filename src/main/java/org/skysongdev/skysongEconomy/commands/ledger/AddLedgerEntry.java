@@ -1,69 +1,80 @@
 package org.skysongdev.skysongEconomy.commands.ledger;
 
-import org.bukkit.Material;
-import org.bukkit.NamespacedKey;
-import org.bukkit.command.Command;
-import org.bukkit.command.CommandExecutor;
+import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.command.CommandSender;
-import org.bukkit.entity.Player;
-import org.jetbrains.annotations.NotNull;
-import org.skysongdev.skysongEconomy.SkysongEconomy;
-import org.skysongdev.skysongitems.SkysongItems;
+import org.skysongdev.skysongEconomy.commands.SubCommand;
+import org.skysongdev.skysongEconomy.data.database.Database;
+import org.skysongdev.skysongEconomy.items.MaterialIdResolver;
+import org.skysongdev.skysongEconomy.messaging.Messenger;
 
 import java.sql.SQLException;
+import java.util.Optional;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
-import static org.skysongdev.skysongEconomy.utils.Constants.PLUGIN_TAG;
+/** /se ledger add [materialId] &lt;value&gt;: sets the ledger price of an item. */
+final class AddLedgerEntry implements SubCommand {
+    private final Database database;
+    private final MaterialIdResolver materialIds;
+    private final Messenger messenger;
+    private final Logger logger;
 
-public class AddLedgerEntry implements CommandExecutor {
+    AddLedgerEntry(Database database, MaterialIdResolver materialIds, Messenger messenger, Logger logger) {
+        this.database = database;
+        this.materialIds = materialIds;
+        this.messenger = messenger;
+        this.logger = logger;
+    }
+
     @Override
-    public boolean onCommand(@NotNull CommandSender commandSender, @NotNull Command command, @NotNull String s, @NotNull String[] strings) {
-        float value;
-        String materialId = "";
-        if(strings.length < 1){
-            commandSender.sendMessage(SkysongEconomy.Instance().getMm().deserialize(PLUGIN_TAG + "<red>Usage: /seco ledger add [optional: materialId] (You can also hold the item with an id and just put in the value) <value>"));
-            return true;
-        }
-        if(strings.length < 2){
-            if(!(commandSender instanceof Player player)){
-                commandSender.sendMessage(SkysongEconomy.Instance().getMm().deserialize(PLUGIN_TAG + "<red>From the console you must specify a material ID: /seco ledger add <materialId> <value>"));
-                return true;
-            }
-            if(player.getInventory().getItemInMainHand().getType() == Material.AIR || !player.getInventory().getItemInMainHand().getItemMeta().getPersistentDataContainer().has(new NamespacedKey(SkysongItems.getPlugin(), "material_id")))  {
-                commandSender.sendMessage(SkysongEconomy.Instance().getMm().deserialize(PLUGIN_TAG + "<red>No material ID provided and no item with a material ID held in main hand."));
-                return true;
-            }
-            materialId = player.getInventory().getItemInMainHand().getItemMeta().getPersistentDataContainer().get(new NamespacedKey(SkysongItems.getPlugin(), "material_id"), org.bukkit.persistence.PersistentDataType.STRING);
-            try {
-                value = Float.parseFloat(strings[0]);
-            } catch (NumberFormatException e){
-                commandSender.sendMessage(SkysongEconomy.Instance().getMm().deserialize(PLUGIN_TAG + "<red>Invalid value provided. Please enter a numeric value."));
-                return true;
-            }
+    public String name() {
+        return "add";
+    }
 
-        } else {
-            materialId = strings[0];
-            try {
-                value = Float.parseFloat(strings[1]);
-            } catch (NumberFormatException e){
-                commandSender.sendMessage(SkysongEconomy.Instance().getMm().deserialize(PLUGIN_TAG + "<red>Invalid value provided. Please enter a numeric value."));
-                return true;
-            }
+    @Override
+    public String permission() {
+        return "skysongeconomy.ledger.add";
+    }
+
+    @Override
+    public String usage() {
+        return "[materialId] <value>";
+    }
+
+    @Override
+    public void execute(CommandSender sender, String[] args) {
+        if (args.length == 0) {
+            messenger.error(sender, "Usage: /se ledger add <usage> (hold the item to leave out the material ID)",
+                    Placeholder.unparsed("usage", usage()));
+            return;
+        }
+        Optional<String> materialId = materialIds.fromArgsOrMainHand(sender, args, 1);
+        if (materialId.isEmpty()) {
+            messenger.error(sender, "Specify a material ID or hold an item that has one.");
+            return;
+        }
+
+        String valueArgument = args[args.length == 1 ? 0 : 1];
+        float value;
+        try {
+            value = Float.parseFloat(valueArgument);
+        } catch (NumberFormatException e) {
+            messenger.error(sender, "<yellow><value></yellow> is not a number.", Placeholder.unparsed("value", valueArgument));
+            return;
         }
 
         try {
-            if (SkysongEconomy.Instance().getDatabase().findItemCost(materialId) == -1){
-                SkysongEconomy.Instance().getDatabase().createLedgerData(materialId, value);
+            if (database.findItemCost(materialId.get()) == -1) {
+                database.createLedgerData(materialId.get(), value);
             } else {
-                SkysongEconomy.Instance().getDatabase().updateLedgerData(materialId, value);
+                database.updateLedgerData(materialId.get(), value);
             }
         } catch (SQLException e) {
-            commandSender.sendMessage(SkysongEconomy.Instance().getMm().deserialize(PLUGIN_TAG + "<red>Database error occurred while checking for existing item cost."));
-            e.printStackTrace();
-            return true;
+            logger.log(Level.SEVERE, "Failed to save the ledger price of " + materialId.get(), e);
+            messenger.error(sender, "A database error occurred while saving the ledger entry.");
+            return;
         }
-
-        commandSender.sendMessage(SkysongEconomy.Instance().getMm().deserialize(PLUGIN_TAG + "<green>Ledger entry for material ID " + materialId + " updated with value: " + value));
-
-        return true;
+        messenger.success(sender, "Ledger entry for <yellow><material></yellow> set to <gold><value></gold>.",
+                Placeholder.unparsed("material", materialId.get()), Placeholder.unparsed("value", String.valueOf(value)));
     }
 }
