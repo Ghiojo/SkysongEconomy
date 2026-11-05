@@ -1,0 +1,29 @@
+# Economy and Logistics: imports and exports through trade ledgers.
+#
+# A business has Economy and Logistics when it has picked one of these skills. Each pick of
+# them is one level, and the level sets the business's slots below.
+skills:
+  - economical
+
+# Slots by level (1 to 5).
+#   imports: how many deliveries the business can have on the way at once
+#   ledgers: how many ledgers (files in the ledgers folder) it can have selected
+slots:
+  1: {imports: 2, ledgers: 1}
+  2: {imports: 3, ledgers: 1}
+  3: {imports: 4, ledgers: 2}
+  4: {imports: 5, ledgers: 2}
+  5: {imports: 6, ledgers: 3}
+
+# The delivery options. Each import sets its own price for the ones it offers, and can leave
+# any of them out. Time passes in real life, also while the server or the owner is offline.
+# Menus list them in this order.
+delivery-times:
+  express:  {name: "<gold>Express (24h)",       hours: 24}
+  fast:     {name: "<yellow>Fast (48h)",         hours: 48}
+  regular:  {name: "<white>Regular (3 days)",    hours: 72}
+  standard: {name: "<gray>Standard (5 days)",    hours: 120}
+  slow:     {name: "<dark_gray>Slow (7 days)",   hours: 168}
+
+# Money the owner pays to remove a selected ledger. Deliveries already on the way still arrive.
+ledger-removal-fine: 50

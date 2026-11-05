@@ -27,6 +27,7 @@ import org.skysongdev.skysongEconomy.commands.business.BusinessCommand;
 import org.skysongdev.skysongEconomy.commands.tokens.TokensCommand;
 import org.skysongdev.skysongEconomy.config.ConfigException;
 import org.skysongdev.skysongEconomy.config.ConfigSection;
+import org.skysongdev.skysongEconomy.config.PluginPaths;
 import org.skysongdev.skysongEconomy.config.YamlFiles;
 import org.skysongdev.skysongEconomy.data.database.AsyncAccessRepository;
 import org.skysongdev.skysongEconomy.data.database.AsyncBusinessRepository;
@@ -59,6 +60,7 @@ import org.skysongdev.skysongEconomy.integration.cmi.AfkCheck;
 import org.skysongdev.skysongEconomy.integration.cmi.CmiAfkCheck;
 import org.skysongdev.skysongEconomy.integration.placeholderapi.TokenExpansion;
 import org.skysongdev.skysongEconomy.integration.skysongstats.SkysongStatsAdapter;
+import org.skysongdev.skysongEconomy.items.SkysongItemFactory;
 import org.skysongdev.skysongEconomy.listeners.ActivityTimer;
 import org.skysongdev.skysongEconomy.listeners.BusinessBlockListener;
 import org.skysongdev.skysongEconomy.listeners.BusinessInteractListener;
@@ -68,6 +70,11 @@ import org.skysongdev.skysongEconomy.messaging.Messenger;
 import org.skysongdev.skysongEconomy.money.Wallet;
 import org.skysongdev.skysongEconomy.tokens.GatheringTokens;
 import org.skysongdev.skysongEconomy.tokens.TokenPlaceholders;
+import org.skysongdev.skysongEconomy.trade.EconomyLogisticsSettings;
+import org.skysongdev.skysongEconomy.trade.EconomyLogisticsSettingsParser;
+import org.skysongdev.skysongEconomy.trade.LedgerLoader;
+import org.skysongdev.skysongEconomy.trade.LedgerParser;
+import org.skysongdev.skysongEconomy.trade.LedgerRegistry;
 
 import java.time.Clock;
 import java.util.ArrayList;
@@ -98,7 +105,7 @@ public final class BusinessFeature implements AutoCloseable {
 
     /** The config every part of the business system needs. */
     private record Settings(BusinessTypeRegistry types, BusinessTiers tiers, AccessDefaults access, ShiftSettings shifts,
-                            TrainingSettings training) {
+                            TrainingSettings training, EconomyLogisticsSettings economyLogistics) {
     }
 
     /**
@@ -107,10 +114,11 @@ public final class BusinessFeature implements AutoCloseable {
      *
      * @param database the database to keep businesses in; the feature opens its own connection
      * @param wallet   players' money, for pay and vaults
+     * @param items    the Skysong items that ledgers trade
      */
-    public static BusinessFeature start(JavaPlugin plugin, YamlFiles configFiles, DatabaseSettings database,
-                                        SkysongStatsAdapter skysongStats, Wallet wallet, Messenger messenger,
-                                        MessageCatalog messages) {
+    public static BusinessFeature start(JavaPlugin plugin, PluginPaths paths, YamlFiles configFiles,
+                                        DatabaseSettings database, SkysongStatsAdapter skysongStats, Wallet wallet,
+                                        SkysongItemFactory items, Messenger messenger, MessageCatalog messages) {
         Logger logger = plugin.getLogger();
         Settings settings;
         try {
@@ -180,8 +188,9 @@ public final class BusinessFeature implements AutoCloseable {
         List<SubCommand> commands = List.of(
                 new BusinessCommand(businesses, settings.types(), access, vaults, skysongStats, messenger),
                 new TokensCommand(tokens, new CharacterArguments(skysongStats, messenger), messenger));
+        LedgerRegistry ledgers = loadLedgers(plugin, paths, settings.economyLogistics(), items);
         BusinessSystem system = new BusinessSystem(businesses, settings.types(), access, vaults, tokens, activities,
-                shifts, training, menus);
+                shifts, training, settings.economyLogistics(), ledgers, menus);
         return new BusinessFeature(system, commands, resources, logger);
     }
 
@@ -192,7 +201,25 @@ public final class BusinessFeature implements AutoCloseable {
                 new BusinessTiersParser().parse(configFiles.load(BusinessTiersParser.FILE)),
                 AccessDefaults.parse(configFiles.load(AccessDefaults.FILE)),
                 new ShiftSettingsParser(types, logger::warning).parse(configFiles.load(ShiftSettingsParser.FILE)),
-                new TrainingSettingsParser().parse(configFiles.load(TrainingSettingsParser.FILE)));
+                new TrainingSettingsParser().parse(configFiles.load(TrainingSettingsParser.FILE)),
+                new EconomyLogisticsSettingsParser(skysongStats, logger::warning)
+                        .parse(configFiles.load(EconomyLogisticsSettingsParser.FILE)));
+    }
+
+    /**
+     * Reads the {@code ledgers} folder. The example ledger is only created when the folder is
+     * missing, so a server that deletes it doesn't get it back.
+     */
+    private static LedgerRegistry loadLedgers(JavaPlugin plugin, PluginPaths paths, EconomyLogisticsSettings settings,
+                                              SkysongItemFactory items) {
+        Logger logger = plugin.getLogger();
+        if (!paths.ledgers().toFile().exists()) {
+            plugin.saveResource(PluginPaths.LEDGERS_FOLDER + "/smugglers.yml", false);
+        }
+        LedgerParser parser = new LedgerParser(settings.deliveryTimes().keySet(), items::exists, logger::warning);
+        LedgerRegistry ledgers = new LedgerLoader(parser, logger::warning).load(paths.ledgers());
+        logger.info("Loaded " + ledgers.size() + " trade ledger(s)");
+        return ledgers;
     }
 
     /** CMI is optional: without it, AFK time counts like any other online time. */

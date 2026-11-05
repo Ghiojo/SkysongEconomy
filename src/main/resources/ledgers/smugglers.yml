@@ -1,0 +1,51 @@
+# An example ledger. Every file in this folder is one ledger, and its file name is its id.
+# Every Economy and Logistics business can select any ledger.
+#
+# Items are material ids of the files in the items folder. Prices are expressions that may use
+# + - * / ( ), numbers, {base} and {item:<material_id>}. For an import, {base} is the base value
+# of its contents (random parts count at their average); for an export, it is the base value of
+# the items sold. Base values come from the price database (/se ledger).
+
+name: "<dark_gray>Smugglers' Ledger"
+icon: ENDER_CHEST
+description:
+  - "<gray>Goods nobody asks questions about."
+
+imports:
+  steel_weapons:
+    name: "<white>Crate of steel weapons"
+    icon: IRON_SWORD
+    lore:
+      - "<gray>Straight from the forges, no marks."
+    contents:
+      # A fixed amount of an item.
+      - {item: steel_sword, amount: 2}
+      # A random amount: anything from 1 to 3.
+      - {item: steel_spear, amount: "1-3"}
+      # Weighted rolls: roll 1 or 2 times, each roll picks one item by weight.
+      - rolls: "1-2"
+        from:
+          - {item: iron_dagger, weight: 3, amount: 1}
+          - {item: steel_axe, weight: 1, amount: 1}
+    prices:
+      express: "{base} * 1.5"
+      regular: "{base} * 1.1"
+      slow: "{base}"
+
+exports:
+  steel_ingots:
+    name: "<white>Steel ingots"
+    icon: IRON_INGOT
+    lore:
+      - "<gray>Sold in stacks of 16."
+    item: steel_ingot
+    batch: 16
+    price: "{base} * 0.8"
+  any_weapon:
+    name: "<white>Any weapon"
+    icon: STONE_SWORD
+    lore:
+      - "<gray>Any item of the weapon good type."
+    good-type: weapon
+    batch: 1
+    price: "{base} * 0.6"

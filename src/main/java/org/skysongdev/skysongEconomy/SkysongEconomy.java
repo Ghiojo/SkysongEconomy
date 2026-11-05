@@ -15,12 +15,9 @@ import org.skysongdev.skysongEconomy.currency.ArchititeCurrency;
 import org.skysongdev.skysongEconomy.data.database.ConnectionProvider;
 import org.skysongdev.skysongEconomy.data.database.DatabaseSchema;
 import org.skysongdev.skysongEconomy.data.database.DatabaseSettings;
-import org.skysongdev.skysongEconomy.data.database.EconomyBusinessRepository;
 import org.skysongdev.skysongEconomy.data.database.GoodTypeRepository;
 import org.skysongdev.skysongEconomy.data.database.PriceLedgerRepository;
 import org.skysongdev.skysongEconomy.data.database.StorageException;
-import org.skysongdev.skysongEconomy.data.datatypes.ImportCatalogue;
-import org.skysongdev.skysongEconomy.data.loading.ImportCatalogueLoader;
 import org.skysongdev.skysongEconomy.integration.gringotts.GringottsWallet;
 import org.skysongdev.skysongEconomy.integration.skysongstats.SkysongStatsAdapter;
 import org.skysongdev.skysongEconomy.items.FileSkysongItemFactory;
@@ -39,7 +36,6 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
-import java.util.Map;
 import java.util.Objects;
 import java.util.logging.Level;
 
@@ -53,9 +49,7 @@ public final class SkysongEconomy extends JavaPlugin {
     private PriceDatabase prices;
     private PriceSettings priceSettings;
     private GoodTypeRepository goodTypes;
-    private EconomyBusinessRepository economyBusinesses;
     private SkysongItemFactory importItems;
-    private Map<String, ImportCatalogue> importCatalogues = Map.of();
     private SkysongStatsAdapter skysongStats;
     private BusinessFeature businessFeature;
 
@@ -69,16 +63,14 @@ public final class SkysongEconomy extends JavaPlugin {
         new ArchititeCurrency(new FileSkysongItemFactory(paths.coins()), getLogger()).registerDenominations();
 
         importItems = new FileSkysongItemFactory(paths.items());
-        importCatalogues = new ImportCatalogueLoader(paths.imports(), getLogger()).loadAll();
-        getLogger().info("Loaded " + importCatalogues.size() + " import catalogue(s)");
 
         skysongStats = new SkysongStatsAdapter(SkysongStatsApi.get());
         YamlFiles configFiles = new YamlFiles(getDataFolder().toPath(), path -> saveResource(path, false));
         MessageCatalog messages = loadMessages(configFiles);
         Messenger messenger = new Messenger(MiniMessage.miniMessage(), messages);
         loadPrices(configFiles);
-        businessFeature = BusinessFeature.start(this, configFiles, databaseSettings(), skysongStats,
-                new GringottsWallet(), messenger, messages);
+        businessFeature = BusinessFeature.start(this, paths, configFiles, databaseSettings(), skysongStats,
+                new GringottsWallet(), importItems, messenger, messages);
 
         registerCommands(messenger);
     }
@@ -97,7 +89,6 @@ public final class SkysongEconomy extends JavaPlugin {
         connections = new ConnectionProvider(databaseSettings(), getLogger());
         priceLedger = new PriceLedgerRepository(connections);
         goodTypes = new GoodTypeRepository(connections);
-        economyBusinesses = new EconomyBusinessRepository(connections);
         try {
             DatabaseSchema.createTables(connections);
         } catch (SQLException e) {
@@ -170,17 +161,9 @@ public final class SkysongEconomy extends JavaPlugin {
         return goodTypes;
     }
 
-    public EconomyBusinessRepository getEconomyBusinesses() {
-        return economyBusinesses;
-    }
-
-    /** Builds the items that import offers deliver, from the {@code items} folder. */
+    /** Builds the items that imports deliver, from the {@code items} folder. */
     public SkysongItemFactory getImportItems() {
         return importItems;
-    }
-
-    public Map<String, ImportCatalogue> getImportCatalogues() {
-        return importCatalogues;
     }
 
     /** Characters, skills, proficiencies and downtime, from SkysongStats. */
