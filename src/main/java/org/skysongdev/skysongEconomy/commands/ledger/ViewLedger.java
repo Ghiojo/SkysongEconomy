@@ -3,7 +3,7 @@ package org.skysongdev.skysongEconomy.commands.ledger;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.command.CommandSender;
 import org.skysongdev.skysongEconomy.commands.SubCommand;
-import org.skysongdev.skysongEconomy.data.database.Database;
+import org.skysongdev.skysongEconomy.data.database.PriceLedgerRepository;
 import org.skysongdev.skysongEconomy.items.MaterialIdResolver;
 import org.skysongdev.skysongEconomy.messaging.Messenger;
 
@@ -14,13 +14,13 @@ import java.util.logging.Logger;
 
 /** /se ledger view [materialId]: shows the ledger price of an item. */
 final class ViewLedger implements SubCommand {
-    private final Database database;
+    private final PriceLedgerRepository ledger;
     private final MaterialIdResolver materialIds;
     private final Messenger messenger;
     private final Logger logger;
 
-    ViewLedger(Database database, MaterialIdResolver materialIds, Messenger messenger, Logger logger) {
-        this.database = database;
+    ViewLedger(PriceLedgerRepository ledger, MaterialIdResolver materialIds, Messenger messenger, Logger logger) {
+        this.ledger = ledger;
         this.materialIds = materialIds;
         this.messenger = messenger;
         this.logger = logger;
@@ -44,21 +44,21 @@ final class ViewLedger implements SubCommand {
             return;
         }
 
-        float cost;
+        Optional<Float> cost;
         try {
-            cost = database.findItemCost(materialId.get());
+            cost = ledger.findCost(materialId.get());
         } catch (SQLException e) {
             logger.log(Level.SEVERE, "Failed to read the ledger price of " + materialId.get(), e);
             messenger.error(sender, "An error occurred while trying to retrieve the item's cost.");
             return;
         }
 
-        if (cost == -1) {
+        if (cost.isEmpty()) {
             messenger.error(sender, "<yellow><material></yellow> does not have a cost set in the ledger.",
                     Placeholder.unparsed("material", materialId.get()));
             return;
         }
         messenger.success(sender, "The current cost of <yellow><material></yellow> is <gold><cost></gold>.",
-                Placeholder.unparsed("material", materialId.get()), Placeholder.unparsed("cost", String.valueOf(cost)));
+                Placeholder.unparsed("material", materialId.get()), Placeholder.unparsed("cost", String.valueOf(cost.get())));
     }
 }

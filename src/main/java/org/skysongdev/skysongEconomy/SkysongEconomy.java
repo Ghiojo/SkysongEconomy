@@ -6,7 +6,12 @@ import org.bukkit.NamespacedKey;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.gestern.gringotts.Configuration;
 import org.skysongdev.skysongEconomy.commands.SkysongEconomyCommand;
-import org.skysongdev.skysongEconomy.data.database.Database;
+import org.skysongdev.skysongEconomy.data.database.ConnectionProvider;
+import org.skysongdev.skysongEconomy.data.database.DatabaseSchema;
+import org.skysongdev.skysongEconomy.data.database.DatabaseSettings;
+import org.skysongdev.skysongEconomy.data.database.EconomyBusinessRepository;
+import org.skysongdev.skysongEconomy.data.database.GoodTypeRepository;
+import org.skysongdev.skysongEconomy.data.database.PriceLedgerRepository;
 import org.skysongdev.skysongEconomy.items.MaterialIdResolver;
 import org.skysongdev.skysongEconomy.messaging.Messenger;
 import org.skysongdev.skysongitems.SkysongItems;
@@ -22,12 +27,16 @@ import java.sql.SQLException;
 import java.util.Enumeration;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
+import java.util.logging.Level;
 
 import static org.skysongdev.skysongEconomy.utils.Constants.COINS_PATH;
 
 public final class SkysongEconomy extends JavaPlugin {
     public static SkysongEconomy instance;
-    Database database;
+    ConnectionProvider connections;
+    PriceLedgerRepository priceLedger;
+    GoodTypeRepository goodTypes;
+    EconomyBusinessRepository economyBusinesses;
     Messenger messenger;
     org.skysongdev.skysongEconomy.utils.Utils utils;
 
@@ -42,7 +51,9 @@ public final class SkysongEconomy extends JavaPlugin {
         return instance;
     }
 
-    public Database getDatabase(){ return database; }
+    public PriceLedgerRepository getPriceLedger(){ return priceLedger; }
+    public GoodTypeRepository getGoodTypes(){ return goodTypes; }
+    public EconomyBusinessRepository getEconomyBusinesses(){ return economyBusinesses; }
     public org.skysongdev.skysongEconomy.utils.Utils getUtils() { return utils; }
 
     @Override
@@ -60,29 +71,26 @@ public final class SkysongEconomy extends JavaPlugin {
 
     @Override
     public void onDisable() {
-        if(database != null){
-            database.close();
+        if(connections != null){
+            connections.close();
         }
     }
 
     public void InitializeDatabase(){
+        connections = new ConnectionProvider(DatabaseSettings.fromConfig(getConfig().getConfigurationSection("database")), getLogger());
+        priceLedger = new PriceLedgerRepository(connections);
+        goodTypes = new GoodTypeRepository(connections);
+        economyBusinesses = new EconomyBusinessRepository(connections);
         try{
-            this.database = new Database(
-                    getConfig().getString("database.host"),
-                    getConfig().getString("database.port"),
-                    getConfig().getString("database.user"),
-                    getConfig().getString("database.password"),
-                    getConfig().getString("database.database_name"));
-            database.initializeDatabase();
+            DatabaseSchema.createTables(connections);
         }catch(SQLException e){
-            Bukkit.getLogger().warning("[SkysongEconomy] Unable to connect to database and create tables!");
-            e.printStackTrace();
+            getLogger().log(Level.SEVERE, "Unable to connect to the database and create tables!", e);
         }
     }
 
     public void InitializeCommands(){
         MaterialIdResolver materialIds = new MaterialIdResolver(new NamespacedKey(SkysongItems.getPlugin(), "material_id"));
-        getCommand("se").setExecutor(new SkysongEconomyCommand(database, materialIds, messenger, getLogger()));
+        getCommand("se").setExecutor(new SkysongEconomyCommand(priceLedger, goodTypes, materialIds, messenger, getLogger()));
     }
 
     public void InitializeLocalFiles(String folderName){

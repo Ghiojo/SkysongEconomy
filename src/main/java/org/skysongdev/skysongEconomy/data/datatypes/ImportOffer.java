@@ -4,12 +4,9 @@ package org.skysongdev.skysongEconomy.data.datatypes;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
-import static org.skysongdev.skysongEconomy.SkysongEconomy.Instance;
 
 public abstract class ImportOffer {
     private String offerName;
@@ -45,6 +42,10 @@ public abstract class ImportOffer {
         return isAffectedByTaxes;
     }
 
-    public abstract List<String> getTags() throws SQLException;
+    /** Material IDs of every item this offer can deliver; look up their good types with GoodTypeRepository. */
+    public List<String> getItemIds() {
+        return List.copyOf(itemIds);
+    }
+
     public abstract ArrayList<ItemStack> generateItems();
 }

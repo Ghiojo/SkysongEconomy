@@ -3,7 +3,7 @@ package org.skysongdev.skysongEconomy.commands.good;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.command.CommandSender;
 import org.skysongdev.skysongEconomy.commands.SubCommand;
-import org.skysongdev.skysongEconomy.data.database.Database;
+import org.skysongdev.skysongEconomy.data.database.GoodTypeRepository;
 import org.skysongdev.skysongEconomy.items.MaterialIdResolver;
 import org.skysongdev.skysongEconomy.messaging.Messenger;
 
@@ -17,23 +17,26 @@ import java.util.logging.Logger;
  * Subclasses only say what to do with the resolved material ID and good type.
  */
 abstract class GoodAssociationCommand implements SubCommand {
-    protected final Database database;
+    protected final GoodTypeRepository goodTypes;
     private final MaterialIdResolver materialIds;
     private final Messenger messenger;
     private final Logger logger;
 
-    GoodAssociationCommand(Database database, MaterialIdResolver materialIds, Messenger messenger, Logger logger) {
-        this.database = database;
+    GoodAssociationCommand(GoodTypeRepository goodTypes, MaterialIdResolver materialIds, Messenger messenger, Logger logger) {
+        this.goodTypes = goodTypes;
         this.materialIds = materialIds;
         this.messenger = messenger;
         this.logger = logger;
     }
 
-    /** Applies the change to the database. */
-    protected abstract void apply(String materialId, String goodType) throws SQLException;
+    /** Applies the change; returns false when there was nothing to change. */
+    protected abstract boolean apply(String materialId, String goodType) throws SQLException;
 
-    /** MiniMessage shown on success; may use the {@code <material>} and {@code <good_type>} placeholders. */
+    /** MiniMessage shown when the change was made; may use {@code <material>} and {@code <good_type>}. */
     protected abstract String successMessage();
+
+    /** MiniMessage shown when there was nothing to change; may use the same placeholders. */
+    protected abstract String unchangedMessage();
 
     @Override
     public final String permission() {
@@ -59,14 +62,20 @@ abstract class GoodAssociationCommand implements SubCommand {
         }
         String goodType = args[args.length == 1 ? 0 : 1];
 
+        boolean changed;
         try {
-            apply(materialId.get(), goodType);
+            changed = apply(materialId.get(), goodType);
         } catch (SQLException e) {
             logger.log(Level.SEVERE, "Failed to " + name() + " good type " + goodType + " on " + materialId.get(), e);
             messenger.error(sender, "A database error occurred while updating the good type.");
             return;
         }
-        messenger.success(sender, successMessage(),
-                Placeholder.unparsed("material", materialId.get()), Placeholder.unparsed("good_type", goodType));
+        var material = Placeholder.unparsed("material", materialId.get());
+        var goodTypePlaceholder = Placeholder.unparsed("good_type", goodType);
+        if (changed) {
+            messenger.success(sender, successMessage(), material, goodTypePlaceholder);
+        } else {
+            messenger.error(sender, unchangedMessage(), material, goodTypePlaceholder);
+        }
     }
 }
