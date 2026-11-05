@@ -3,7 +3,7 @@ package org.skysongdev.skysongEconomy.commands.good;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.command.CommandSender;
 import org.skysongdev.skysongEconomy.commands.SubCommand;
-import org.skysongdev.skysongEconomy.data.database.GoodTypeRepository;
+import org.skysongdev.skysongEconomy.data.database.CachedGoodTypes;
 import org.skysongdev.skysongEconomy.items.MaterialIdResolver;
 import org.skysongdev.skysongEconomy.messaging.Messenger;
 
@@ -17,12 +17,12 @@ import java.util.logging.Logger;
  * Subclasses only say what to do with the resolved material ID and good type.
  */
 abstract class GoodAssociationCommand implements SubCommand {
-    protected final GoodTypeRepository goodTypes;
+    protected final CachedGoodTypes goodTypes;
     private final MaterialIdResolver materialIds;
     private final Messenger messenger;
     private final Logger logger;
 
-    GoodAssociationCommand(GoodTypeRepository goodTypes, MaterialIdResolver materialIds, Messenger messenger, Logger logger) {
+    GoodAssociationCommand(CachedGoodTypes goodTypes, MaterialIdResolver materialIds, Messenger messenger, Logger logger) {
         this.goodTypes = goodTypes;
         this.materialIds = materialIds;
         this.messenger = messenger;

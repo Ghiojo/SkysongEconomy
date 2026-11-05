@@ -182,6 +182,60 @@ business:
         lore:
           - "<gray>You pay a fine of <white><fine></white>."
           - "<gray>Deliveries on the way still arrive."
+  imports:
+    not-allowed: "<red>Only the owner of <business> and groups allowed to order imports can order here."
+    no-free-slot: "<red>All <max> delivery slot(s) are in use. Collect a delivery first."
+    cannot-afford: "<red>That import costs <white><price></white>, and you don't have that much."
+    time-not-offered: "<red>That import can't be delivered with that delivery time."
+    no-character: "<red>You need an active character to order imports."
+    ordered: "<green>Ordered <import><green> for <white><price></white>. It arrives in <white><duration></white> (<time><green>)."
+    button:
+      name: "<gold>Imports"
+      lore:
+        - "<gray>Order goods from your ledgers."
+        - ""
+        - "<white><free>/<max></white> <gray>delivery slots free"
+        - ""
+        - "<yellow>Click to browse imports."
+      lore-not-allowed:
+        - "<gray>Only the owner and groups allowed"
+        - "<gray>to order imports can use this."
+    menu:
+      title: "Imports · <business>"
+      header:
+        name: "<gold>Imports"
+        lore:
+          - "<white><free>/<max></white> <gray>delivery slots free"
+          - "<gray>From <white><ledgers></white> <gray>selected ledger(s)."
+          - "<gray>Choose a delivery time on the right."
+      from: "<dark_gray>From <ledger>"
+      not-offered: "<gray>Not available with <time><gray>."
+      no-price: "<red>No price yet: an item has no base value."
+      click: "<yellow>Click to order."
+      no-free-slot: "<red>No free delivery slot."
+    time:
+      selected:
+        name: "<green>▶ <time>"
+        lore:
+          - "<gray>Arrives <white><duration></white> after ordering."
+          - "<green>Prices shown are for this time."
+      other:
+        name: "<time>"
+        lore:
+          - "<gray>Arrives <white><duration></white> after ordering."
+          - "<yellow>Click to show prices for this time."
+    contents:
+      item: "<white><amount></white> <gray>×</gray> <white><item></white>"
+      rolls: "<white><rolls></white> <gray>random roll(s) of:"
+      option: "<gray>  • <white><amount></white> × <white><item></white> <dark_gray>(<chance>%)"
+    price:
+      base: "<gray>Price before modifiers: <white><price></white>"
+      modifier: "<gray>  <name><gray>: <yellow><percent>%"
+      final: "<gold>Price: <white><price></white>"
+    confirm:
+      title: "Order this import?"
+      time: "<gray>Delivery: <time> <gray>(<white><duration></white><gray>)"
+      final: "<red>Orders can't be cancelled."
   activity:
     busy-shift: "<red>You're already working a shift (at <business>). One shift or training at a time."
     busy-training: "<red>You're already training (at <business>). One shift or training at a time."

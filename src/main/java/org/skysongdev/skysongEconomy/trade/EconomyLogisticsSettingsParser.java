@@ -33,6 +33,9 @@ public final class EconomyLogisticsSettingsParser {
     /** File name used in error messages and when loading. */
     public static final String FILE = "economy-and-logistics.yml";
 
+    /** How many delivery times the Imports window has room for. */
+    public static final int MAX_SHOWN_DELIVERY_TIMES = 5;
+
     private static final Pattern ID = Pattern.compile("[a-z0-9_-]+");
 
     private final SkillCatalog skills;
@@ -104,7 +107,7 @@ public final class EconomyLogisticsSettingsParser {
         throw slots.error(key, "is not a level: use 1 to " + Business.MAX_TIER);
     }
 
-    private static Map<String, DeliveryTime> deliveryTimes(ConfigSection root) {
+    private Map<String, DeliveryTime> deliveryTimes(ConfigSection root) {
         ConfigSection times = root.section("delivery-times");
         Map<String, DeliveryTime> byId = new LinkedHashMap<>();
         for (String id : times.keys()) {
@@ -120,6 +123,10 @@ public final class EconomyLogisticsSettingsParser {
         }
         if (byId.isEmpty()) {
             throw root.error("delivery-times", "must define at least one delivery time");
+        }
+        if (byId.size() > MAX_SHOWN_DELIVERY_TIMES) {
+            warnings.accept(FILE + ": only the first " + MAX_SHOWN_DELIVERY_TIMES
+                    + " delivery times fit in the Imports window; the others can't be chosen");
         }
         return byId;
     }

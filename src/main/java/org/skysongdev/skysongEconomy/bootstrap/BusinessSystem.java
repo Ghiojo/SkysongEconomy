@@ -13,6 +13,8 @@ import org.skysongdev.skysongEconomy.tokens.GatheringTokens;
 import org.skysongdev.skysongEconomy.trade.EconomyLogisticsSettings;
 import org.skysongdev.skysongEconomy.trade.LedgerRegistry;
 import org.skysongdev.skysongEconomy.trade.LedgerSelections;
+import org.skysongdev.skysongEconomy.trade.TradePricing;
+import org.skysongdev.skysongEconomy.trade.delivery.DeliveryService;
 
 /**
  * The running parts of the business system, for features and other plugins that build on it.
@@ -29,12 +31,14 @@ import org.skysongdev.skysongEconomy.trade.LedgerSelections;
  * @param ledgers    the trade ledgers businesses can select
  * @param ledgerSelections which ledgers each business has selected
  * @param modifiers  the price modifiers on imports and exports
+ * @param pricing    what imports cost
+ * @param deliveries ordered imports, until they are collected
  * @param menus      the business menus, to add main menu buttons to
  */
 public record BusinessSystem(BusinessService businesses, BusinessTypeRegistry types, AccessService access,
                              BusinessVaults vaults, GatheringTokens tokens, ActivityLock activities,
                              ShiftService shifts, TrainingService training,
                              EconomyLogisticsSettings economyLogistics, LedgerRegistry ledgers, LedgerSelections ledgerSelections,
-                             PriceModifiers modifiers,
+                             PriceModifiers modifiers, TradePricing pricing, DeliveryService deliveries,
                              BusinessMenus menus) {
 }

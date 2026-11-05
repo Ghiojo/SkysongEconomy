@@ -27,6 +27,7 @@ public final class BorderedLayout {
 
     private static final List<Integer> CONTENT = slots(1, 4, 1, 7);
     private static final List<Integer> SIDE = slots(1, 4, 8, 8);
+    private static final List<Integer> RIGHT_COLUMN = slots(1, 5, 8, 8);
 
     private BorderedLayout() {
     }
@@ -39,6 +40,14 @@ public final class BorderedLayout {
     /** @return the 4 slots of the right column, top to bottom */
     public static List<Integer> side() {
         return SIDE;
+    }
+
+    /**
+     * @return the 4 side slots and the bottom-right corner below them, top to bottom: room for 5
+     *         choices, such as the delivery times
+     */
+    public static List<Integer> rightColumn() {
+        return RIGHT_COLUMN;
     }
 
     /** @return whether the slot is part of the border (everything that isn't content or side) */
