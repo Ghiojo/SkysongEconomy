@@ -178,3 +178,10 @@ business:
   block:
     protected: "<red>This block belongs to <yellow><business></yellow> and can't be broken."
     unplaced: "<yellow>You broke the block of <business>. It is kept without a block: use /se business move <id> to place it again."
+
+tokens:
+  balance-own: "<gold>You have <white><tokens></white> Gathering Token(s)."
+  balance: "<gold><character> has <white><tokens></white> Gathering Token(s)."
+  changed: "<green><character> now has <white><tokens></white> Gathering Token(s)."
+  invalid-amount: "<red><yellow><amount></yellow> isn't a valid amount of tokens. Use a whole number above 0 (0 is fine for set)."
+  not-enough: "<red><character> only has <balance> token(s), so <amount> can't be removed."

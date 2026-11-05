@@ -13,23 +13,30 @@ import org.skysongdev.skysongEconomy.business.tier.BusinessTiersParser;
 import org.skysongdev.skysongEconomy.business.type.BusinessTypeRegistry;
 import org.skysongdev.skysongEconomy.business.type.BusinessTypesParser;
 import org.skysongdev.skysongEconomy.business.vault.BusinessVaults;
+import org.skysongdev.skysongEconomy.commands.CharacterArguments;
 import org.skysongdev.skysongEconomy.commands.SubCommand;
 import org.skysongdev.skysongEconomy.commands.business.BusinessCommand;
+import org.skysongdev.skysongEconomy.commands.tokens.TokensCommand;
 import org.skysongdev.skysongEconomy.config.ConfigException;
 import org.skysongdev.skysongEconomy.config.ConfigSection;
 import org.skysongdev.skysongEconomy.config.YamlFiles;
 import org.skysongdev.skysongEconomy.data.database.AsyncAccessRepository;
 import org.skysongdev.skysongEconomy.data.database.AsyncBusinessRepository;
+import org.skysongdev.skysongEconomy.data.database.AsyncTokenRepository;
 import org.skysongdev.skysongEconomy.data.database.AsyncVaultRepository;
 import org.skysongdev.skysongEconomy.data.database.BackgroundWriter;
 import org.skysongdev.skysongEconomy.data.database.ConnectionProvider;
 import org.skysongdev.skysongEconomy.data.database.DatabaseSettings;
 import org.skysongdev.skysongEconomy.data.database.SqlAccessRepository;
 import org.skysongdev.skysongEconomy.data.database.SqlBusinessRepository;
+import org.skysongdev.skysongEconomy.data.database.SqlTokenRepository;
 import org.skysongdev.skysongEconomy.data.database.SqlVaultRepository;
 import org.skysongdev.skysongEconomy.data.database.StorageException;
+import org.skysongdev.skysongEconomy.integration.placeholderapi.TokenExpansion;
 import org.skysongdev.skysongEconomy.integration.skysongstats.SkysongStatsAdapter;
 import org.skysongdev.skysongEconomy.money.Wallet;
+import org.skysongdev.skysongEconomy.tokens.GatheringTokens;
+import org.skysongdev.skysongEconomy.tokens.TokenPlaceholders;
 import org.skysongdev.skysongEconomy.gui.ChatPrompts;
 import org.skysongdev.skysongEconomy.gui.MenuListener;
 import org.skysongdev.skysongEconomy.gui.MenuTheme;
@@ -44,6 +51,7 @@ import org.skysongdev.skysongEconomy.messaging.MessageCatalog;
 import org.skysongdev.skysongEconomy.messaging.Messenger;
 
 import java.time.Clock;
+import java.util.List;
 import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -55,25 +63,28 @@ import java.util.logging.Logger;
 public final class BusinessFeature implements AutoCloseable {
     private final @Nullable BusinessService businesses;
     private final @Nullable BusinessTypeRegistry types;
-    private final @Nullable SubCommand command;
+    private final List<SubCommand> commands;
     private final @Nullable ConnectionProvider connections;
     private final @Nullable AccessService access;
     private final @Nullable BusinessVaults vaults;
+    private final @Nullable GatheringTokens tokens;
     private final @Nullable BackgroundWriter writer;
     private final @Nullable BusinessNameplates nameplates;
     private final @Nullable BusinessMenus menus;
 
     private BusinessFeature(@Nullable BusinessService businesses, @Nullable BusinessTypeRegistry types,
-                            @Nullable SubCommand command, @Nullable ConnectionProvider connections,
+                            List<SubCommand> commands, @Nullable ConnectionProvider connections,
                             @Nullable AccessService access, @Nullable BusinessVaults vaults,
+                            @Nullable GatheringTokens tokens,
                             @Nullable BackgroundWriter writer,
                             @Nullable BusinessNameplates nameplates, @Nullable BusinessMenus menus) {
         this.businesses = businesses;
         this.types = types;
-        this.command = command;
+        this.commands = List.copyOf(commands);
         this.connections = connections;
         this.access = access;
         this.vaults = vaults;
+        this.tokens = tokens;
         this.writer = writer;
         this.nameplates = nameplates;
         this.menus = menus;
@@ -98,7 +109,7 @@ public final class BusinessFeature implements AutoCloseable {
             accessDefaults = AccessDefaults.parse(configFiles.load(AccessDefaults.FILE));
         } catch (ConfigException e) {
             logger.severe("Businesses are disabled until this is fixed: " + e.getMessage());
-            return new BusinessFeature(null, null, null, null, null, null, null, null, null);
+            return new BusinessFeature(null, null, List.of(), null, null, null, null, null, null, null);
         }
 
         ConnectionProvider connections = new ConnectionProvider(database, logger);
@@ -111,6 +122,7 @@ public final class BusinessFeature implements AutoCloseable {
         BusinessVaults vaults = new BusinessVaults(new AsyncVaultRepository(new SqlVaultRepository(connections), writer),
                 wallet, logger::warning);
         businesses.addListener(vaults);
+        GatheringTokens tokens = new GatheringTokens(new AsyncTokenRepository(new SqlTokenRepository(connections), writer));
         PluginManager events = plugin.getServer().getPluginManager();
         BusinessNameplates nameplates = new BusinessNameplates(businesses, nameplateSettings(configFiles, logger), messenger);
         businesses.addListener(nameplates);
@@ -119,6 +131,7 @@ public final class BusinessFeature implements AutoCloseable {
             logger.info("Loaded " + businesses.loadAll() + " business(es) of " + types.all().size() + " type(s)");
             access.loadAll();
             vaults.loadAll();
+            tokens.loadAll();
         } catch (StorageException e) {
             // Keep the commands so staff get clear errors, but nothing loaded means nothing to protect yet.
             logger.log(Level.SEVERE, "Businesses could not be loaded from the database", e);
@@ -129,8 +142,23 @@ public final class BusinessFeature implements AutoCloseable {
         menus.addEntry(new SkillPicksEntry(menus, businesses, skysongStats, messenger));
         menus.addEntry(new VaultEntry(menus, vaults, messenger));
         events.registerEvents(new BusinessInteractListener(businesses, menus), plugin);
-        SubCommand command = new BusinessCommand(businesses, types, access, vaults, skysongStats, messenger);
-        return new BusinessFeature(businesses, types, command, connections, access, vaults, writer, nameplates, menus);
+        registerPlaceholders(plugin, tokens, skysongStats);
+        List<SubCommand> commands = List.of(
+                new BusinessCommand(businesses, types, access, vaults, skysongStats, messenger),
+                new TokensCommand(tokens, new CharacterArguments(skysongStats, messenger), messenger));
+        return new BusinessFeature(businesses, types, commands, connections, access, vaults, tokens, writer,
+                nameplates, menus);
+    }
+
+    /** PlaceholderAPI is optional: without it there are simply no placeholders. */
+    private static void registerPlaceholders(JavaPlugin plugin, GatheringTokens tokens, SkysongStatsAdapter skysongStats) {
+        if (plugin.getServer().getPluginManager().getPlugin("PlaceholderAPI") == null) {
+            return;
+        }
+        TokenPlaceholders placeholders = new TokenPlaceholders(tokens, skysongStats,
+                name -> CharacterArguments.findPlayer(name).map(player -> player.getUniqueId()));
+        new TokenExpansion(placeholders, plugin.getPluginMeta().getVersion()).register();
+        plugin.getLogger().info("Registered the %skysongeconomy_tokens% placeholders");
     }
 
     private static BusinessMenus createMenus(JavaPlugin plugin, YamlFiles configFiles, BusinessService businesses,
@@ -161,9 +189,9 @@ public final class BusinessFeature implements AutoCloseable {
         }
     }
 
-    /** @return the {@code /se business} command, empty when businesses are disabled */
-    public Optional<SubCommand> command() {
-        return Optional.ofNullable(command);
+    /** @return the {@code /se business} and {@code /se tokens} commands, none when businesses are disabled */
+    public List<SubCommand> commands() {
+        return commands;
     }
 
     /** @return every business, empty when businesses are disabled */
@@ -184,6 +212,11 @@ public final class BusinessFeature implements AutoCloseable {
     /** @return the business vaults, empty when businesses are disabled */
     public Optional<BusinessVaults> vaults() {
         return Optional.ofNullable(vaults);
+    }
+
+    /** @return every character's Gathering Tokens, empty when businesses are disabled */
+    public Optional<GatheringTokens> tokens() {
+        return Optional.ofNullable(tokens);
     }
 
     /** @return the business types, empty when businesses are disabled */

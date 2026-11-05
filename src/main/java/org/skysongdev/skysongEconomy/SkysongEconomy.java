@@ -128,7 +128,7 @@ public final class SkysongEconomy extends JavaPlugin {
             throw new IllegalStateException("The 'se' command is missing from plugin.yml");
         }
         SkysongEconomyCommand executor = new SkysongEconomyCommand(priceLedger, goodTypes, materialIds, messenger, getLogger());
-        businessFeature.command().ifPresent(executor::register);
+        businessFeature.commands().forEach(executor::register);
         command.setExecutor(executor);
     }
 
