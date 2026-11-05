@@ -94,6 +94,18 @@ public final class DatabaseSchema {
                     + "vault_cut DECIMAL(19, 4) NOT NULL, "
                     + "finished_at BIGINT NULL, "
                     + "INDEX (business_id), "
+                    + "FOREIGN KEY (business_id) REFERENCES businesses(id) ON DELETE CASCADE) ENGINE=InnoDB",
+            // Only running sessions are kept: a finished one gives its rewards and is deleted.
+            "CREATE TABLE IF NOT EXISTS business_training ("
+                    + "id CHAR(36) PRIMARY KEY NOT NULL, "
+                    + "business_id VARCHAR(64) NOT NULL, "
+                    + "player_uuid CHAR(36) NOT NULL, "
+                    + "profile VARCHAR(64) NOT NULL, "
+                    + "started_at BIGINT NOT NULL, "
+                    + "required_seconds BIGINT NOT NULL, "
+                    + "worked_seconds BIGINT NOT NULL, "
+                    + "price DECIMAL(19, 4) NOT NULL, "
+                    + "INDEX (business_id), "
                     + "FOREIGN KEY (business_id) REFERENCES businesses(id) ON DELETE CASCADE) ENGINE=InnoDB");
 
     private DatabaseSchema() {

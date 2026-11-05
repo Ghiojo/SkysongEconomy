@@ -46,7 +46,7 @@ class ShiftServiceTest {
             new BusinessType("gathering", "Gathering", Set.of("mining"), false)));
     /** Every tier allows 5 workers and adds 2 to the vault per worker shift. */
     private static final BusinessTiers TIERS = new BusinessTiers(IntStream.rangeClosed(1, 5)
-            .mapToObj(tier -> new TierSettings(tier, 5, BigDecimal.valueOf(2))).toList());
+            .mapToObj(tier -> new TierSettings(tier, 5, BigDecimal.valueOf(2), "proficient")).toList());
     private static final ShiftSettings SETTINGS = new ShiftSettings(Duration.ofMinutes(30), 1,
             "{character} ({player}) started a shift at {business}",
             Map.of("gathering", Map.of(1, new ShiftPay(BigDecimal.valueOf(5), 1))));

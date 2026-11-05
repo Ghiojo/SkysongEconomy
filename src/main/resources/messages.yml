@@ -151,6 +151,44 @@ business:
       lore-nothing:
         - "<gray>Nothing to collect here."
         - "<gray>Finished shifts are paid here."
+  training:
+    no-skills: "<red><business> hasn't picked any skills yet, so there's nothing to train."
+    not-allowed: "<red>The owner of <business> doesn't let you train there."
+    no-downtime: "<red>Training costs <cost> downtime and your preferred pool doesn't have that much. See /downtime preference."
+    cannot-afford: "<red>Training here costs <price>, which you don't have."
+    started: "<green>You started training at <yellow><business></yellow>. It ends after <minutes> minute(s) online and not AFK."
+    finished: "<green>Your training at <yellow><business></yellow> is done:"
+    free: "free"
+    reward:
+      xp-only: "<gray>- <skill><gray>: <white>+<xp> XP"
+      trained: "<gray>- <skill><gray>: <white>+<xp> XP</white> and proficiency progress"
+      no-focus: "<gray>- <skill><gray>: <white>+<xp> XP</white>. Choose a proficiency focus to train proficiency too."
+      other-skill: "<gray>- <skill><gray>: <white>+<xp> XP</white>. Your proficiency focus is in another skill."
+      at-max-tier: "<gray>- <skill><gray>: <white>+<xp> XP</white>. Your proficiency is already as high as this business teaches."
+      unavailable: "<gray>- <skill><gray>: <white>+<xp> XP"
+    button:
+      name: "<aqua>Train/Learn"
+      name-unavailable: "<gray>Train/Learn"
+      lore:
+        - "<gray>Trains: <white><skills>"
+        - "<gray>Takes <white><minutes> minute(s)</white> online, not AFK."
+        - "<gray>Costs <white><cost> downtime</white> and <white><price></white>."
+        - ""
+        - "<yellow>Click to start."
+      lore-training:
+        - "<gray>You're training here."
+        - "<gray>About <white><minutes> minute(s)</white> left."
+      lore-busy:
+        - "<gray>You're already busy with a"
+        - "<gray>shift or training somewhere."
+      lore-no-skills:
+        - "<gray>This business hasn't picked"
+        - "<gray>any skills to teach yet."
+      lore-not-allowed:
+        - "<gray>The owner doesn't let"
+        - "<gray>you train here."
+      lore-no-character:
+        - "<gray>Play a character to train."
   picks:
     not-offered: "<red>A business of this type can't pick <yellow><skill></yellow>."
     none-free: "<red>Every skill pick is used. A tier <tier> business has <tier> pick(s)."

@@ -50,6 +50,15 @@ class BusinessTiersParserTest {
     }
 
     @Test
+    void readsTheProficiencyCapAndDefaultsItToProficient() {
+        BusinessTiers tiers = parse("tiers: {1: {workers: 1}, 2: {workers: 1}, 3: {workers: 1}, "
+                + "4: {workers: 1}, 5: {workers: 1, max-proficiency: master}}");
+
+        assertEquals("proficient", tiers.get(1).maxProficiency());
+        assertEquals("master", tiers.get(5).maxProficiency());
+    }
+
+    @Test
     void everyTierMustBeDefined() {
         ConfigException error = assertThrows(ConfigException.class,
                 () -> parse("tiers: {1: {workers: 1}, 2: {workers: 1}, 3: {workers: 1}, 4: {workers: 1}}"));
