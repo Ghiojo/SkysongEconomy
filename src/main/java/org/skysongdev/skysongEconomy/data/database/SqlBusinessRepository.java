@@ -4,6 +4,7 @@ import org.skysongdev.skysongEconomy.business.BlockPosition;
 import org.skysongdev.skysongEconomy.business.BusinessRepository;
 import org.skysongdev.skysongEconomy.business.BusinessSnapshot;
 import org.skysongdev.skysongEconomy.business.Hire;
+import org.skysongdev.skysongEconomy.business.SkillPick;
 import org.skysongdev.skysongEconomy.character.CharacterRef;
 
 import java.sql.Connection;
@@ -19,8 +20,9 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * Saves businesses in the {@code businesses} and {@code business_workers} tables. A save
- * replaces the business row and all its worker rows in one transaction.
+ * Saves businesses in the {@code businesses}, {@code business_workers} and
+ * {@code business_skill_picks} tables. A save replaces the business row and all its worker and
+ * pick rows in one transaction.
  * <p>
  * It blocks on the database, so wrap it in {@link AsyncBusinessRepository} on the server. It
  * uses transactions, so give it its own {@link ConnectionProvider} rather than the one other
@@ -38,6 +40,7 @@ public final class SqlBusinessRepository implements BusinessRepository {
         try {
             Connection connection = connections.getConnection();
             Map<String, List<Hire>> workers = loadWorkers(connection);
+            Map<String, List<SkillPick>> picks = loadPicks(connection);
             List<BusinessSnapshot> businesses = new ArrayList<>();
             try (PreparedStatement statement = connection.prepareStatement("SELECT * FROM businesses");
                  ResultSet rows = statement.executeQuery()) {
@@ -47,7 +50,7 @@ public final class SqlBusinessRepository implements BusinessRepository {
                             rows.getInt("tier"),
                             new CharacterRef(UUID.fromString(rows.getString("owner_uuid")), rows.getString("owner_profile")),
                             readPosition(rows), rows.getString("shift_message"),
-                            workers.getOrDefault(id, List.of())));
+                            workers.getOrDefault(id, List.of()), picks.getOrDefault(id, List.of())));
                 }
             }
             return businesses;
@@ -91,15 +94,31 @@ public final class SqlBusinessRepository implements BusinessRepository {
                 }
                 statement.executeBatch();
             }
+            try (PreparedStatement statement = connection.prepareStatement("DELETE FROM business_skill_picks WHERE business_id = ?")) {
+                statement.setString(1, business.id());
+                statement.executeUpdate();
+            }
+            try (PreparedStatement statement = connection.prepareStatement(
+                    "INSERT INTO business_skill_picks (business_id, skill_id, picked_at) VALUES (?, ?, ?)")) {
+                for (SkillPick pick : business.picks()) {
+                    statement.setString(1, business.id());
+                    statement.setString(2, pick.skillId());
+                    statement.setLong(3, pick.pickedAt().toEpochMilli());
+                    statement.addBatch();
+                }
+                statement.executeBatch();
+            }
         });
     }
 
     @Override
     public void delete(String id) {
         inTransaction(connection -> {
-            try (PreparedStatement statement = connection.prepareStatement("DELETE FROM business_workers WHERE business_id = ?")) {
-                statement.setString(1, id);
-                statement.executeUpdate();
+            for (String child : List.of("business_workers", "business_skill_picks")) {
+                try (PreparedStatement statement = connection.prepareStatement("DELETE FROM " + child + " WHERE business_id = ?")) {
+                    statement.setString(1, id);
+                    statement.executeUpdate();
+                }
             }
             try (PreparedStatement statement = connection.prepareStatement("DELETE FROM businesses WHERE id = ?")) {
                 statement.setString(1, id);
@@ -120,6 +139,19 @@ public final class SqlBusinessRepository implements BusinessRepository {
             }
         }
         return workers;
+    }
+
+    private static Map<String, List<SkillPick>> loadPicks(Connection connection) throws SQLException {
+        Map<String, List<SkillPick>> picks = new HashMap<>();
+        try (PreparedStatement statement = connection.prepareStatement(
+                "SELECT * FROM business_skill_picks ORDER BY picked_at, id");
+             ResultSet rows = statement.executeQuery()) {
+            while (rows.next()) {
+                picks.computeIfAbsent(rows.getString("business_id"), id -> new ArrayList<>())
+                        .add(new SkillPick(rows.getString("skill_id"), Instant.ofEpochMilli(rows.getLong("picked_at"))));
+            }
+        }
+        return picks;
     }
 
     private static BlockPosition readPosition(ResultSet rows) throws SQLException {

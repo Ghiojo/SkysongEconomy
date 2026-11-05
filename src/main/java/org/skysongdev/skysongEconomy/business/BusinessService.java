@@ -187,20 +187,59 @@ public final class BusinessService {
     }
 
     /**
-     * Changes the tier. Going down removes the newest hires the new tier has no room for.
+     * Changes the tier. Going down removes the newest hires and skill picks the new tier has no
+     * room for.
      *
-     * @return the workers who were removed, newest first
+     * @return what was removed
      * @throws BusinessException {@code business.invalid-tier} when the tier is outside 1 to 5
      */
-    public List<Hire> setTier(Business business, int tier) {
+    public TierChange setTier(Business business, int tier) {
         if (tier < Business.MIN_TIER || tier > Business.MAX_TIER) {
             throw new BusinessException("business.invalid-tier", Map.of(
                     "min", String.valueOf(Business.MIN_TIER), "max", String.valueOf(Business.MAX_TIER)));
         }
         business.setTier(tier);
-        List<Hire> removed = business.trimWorkersTo(tiers.get(tier).maxWorkers());
+        List<Hire> workers = business.trimWorkersTo(tiers.get(tier).maxWorkers());
+        List<SkillPick> picks = business.trimPicksTo(tier);
         save(business);
-        return removed;
+        return new TierChange(workers, picks);
+    }
+
+    /**
+     * Uses one of the business's free picks on a skill of its type. Picks are permanent: only
+     * staff can clear one.
+     *
+     * @throws BusinessException when the type doesn't offer the skill or no pick is free
+     */
+    public SkillPick pick(Business business, String skillId) {
+        boolean offered = types.find(business.typeId()).filter(type -> type.offers(skillId)).isPresent();
+        if (!offered) {
+            throw new BusinessException("business.picks.not-offered", Map.of("skill", skillId));
+        }
+        if (business.freePicks() == 0) {
+            throw new BusinessException("business.picks.none-free", Map.of("tier", String.valueOf(business.tier())));
+        }
+        SkillPick pick = new SkillPick(skillId, clock.instant());
+        business.addPick(pick);
+        save(business);
+        return pick;
+    }
+
+    /**
+     * Staff only: frees one pick so the owner can choose again.
+     *
+     * @param number the pick's number as players see it, from 1 (the oldest)
+     * @return the cleared pick
+     * @throws BusinessException {@code business.picks.no-such-pick} when there is no such pick
+     */
+    public SkillPick clearPick(Business business, int number) {
+        if (number < 1 || number > business.picks().size()) {
+            throw new BusinessException("business.picks.no-such-pick", Map.of(
+                    "number", String.valueOf(number), "count", String.valueOf(business.picks().size())));
+        }
+        SkillPick cleared = business.removePick(number - 1);
+        save(business);
+        return cleared;
     }
 
     /** Gives the business to another character. If they worked there, they stop being a worker. */

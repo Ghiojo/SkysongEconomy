@@ -45,6 +45,14 @@ public final class DatabaseSchema {
                     + "profile VARCHAR(64) NOT NULL, "
                     + "hired_at BIGINT NOT NULL, "
                     + "PRIMARY KEY (business_id, player_uuid, profile), "
+                    + "FOREIGN KEY (business_id) REFERENCES businesses(id) ON DELETE CASCADE) ENGINE=InnoDB",
+            // The same skill can be picked more than once, so picks get their own id.
+            "CREATE TABLE IF NOT EXISTS business_skill_picks ("
+                    + "id INT AUTO_INCREMENT PRIMARY KEY, "
+                    + "business_id VARCHAR(64) NOT NULL, "
+                    + "skill_id VARCHAR(64) NOT NULL, "
+                    + "picked_at BIGINT NOT NULL, "
+                    + "INDEX (business_id), "
                     + "FOREIGN KEY (business_id) REFERENCES businesses(id) ON DELETE CASCADE) ENGINE=InnoDB");
 
     private DatabaseSchema() {

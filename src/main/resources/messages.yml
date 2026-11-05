@@ -53,6 +53,7 @@ business:
   shift-message-reset: "<green>The shift message is back to the server default."
   tier-set: "<green><yellow><business></yellow> is now tier <tier>."
   tier-removed-workers: "<yellow>The new tier has fewer worker slots, so these newest hires were removed: <workers>"
+  tier-removed-picks: "<yellow>The new tier has fewer skill picks, so these newest picks were removed: <skills>"
   owner-set: "<green><yellow><business></yellow> now belongs to <owner>."
   hired: "<green><character> now works at <yellow><business></yellow>."
   fired: "<green><character> no longer works at <yellow><business></yellow>."
@@ -61,11 +62,61 @@ business:
     <gray>Type: <white><type></white>  Tier: <white><tier></white>
     <gray>Owner: <white><owner></white>
     <gray>Workers (<count>/<max>): <white><workers></white>
+    <gray>Skill picks (<free_picks> free): <white><picks></white>
     <gray>Block: <white><position></white>
   info-no-workers: "none"
   info-no-block: "none, use /se business move"
   list-header: "<gold>Businesses (<count>):"
   list-entry: "<gray>- <white><business></white> <dark_gray>(<id>, <type>, tier <tier>)"
+  picks:
+    not-offered: "<red>A business of this type can't pick <yellow><skill></yellow>."
+    none-free: "<red>Every skill pick is used. A tier <tier> business has <tier> pick(s)."
+    no-such-pick: "<red>There is no pick number <yellow><number></yellow>. This business has <count> pick(s)."
+    not-owner: "<red>Only the owner can choose the business's skills."
+    picked: "<green><business> now dedicates a pick to <skill>."
+    cleared: "<green>Cleared pick <number> (<skill>) of <yellow><business></yellow>. The owner can choose again."
+    button:
+      name: "<aqua>Skill picks"
+      lore:
+        - "<gray>The skills this business works with."
+        - "<gray>Picks used: <white><used>/<tier></white>"
+        - ""
+        - "<yellow>Click to view"
+    menu:
+      title: "<dark_gray>Skill picks: <business>"
+      picked:
+        name: "<white>Pick <number>: <skill>"
+        lore:
+          - "<gray>This pick is permanent."
+      empty-owner:
+        name: "<green>Pick <number>: free"
+        lore:
+          - "<gray>Choose a skill of this business's type."
+          - ""
+          - "<yellow>Click to choose"
+      empty:
+        name: "<gray>Pick <number>: free"
+        lore:
+          - "<gray>The owner hasn't chosen yet."
+      locked:
+        name: "<dark_gray>Pick <number>: locked"
+        lore:
+          - "<gray>Unlocks at tier <number>."
+    choice:
+      title: "<dark_gray>Choose a skill"
+      skill:
+        name: "<skill>"
+        lore:
+          - "<gray>Already picked: <white><count></white> time(s)"
+          - ""
+          - "<yellow>Click to pick"
+    confirm:
+      title: "<dark_gray>Pick this skill?"
+      summary:
+        name: "<skill>"
+        lore:
+          - "<gray>This uses pick <number> of <tier>."
+          - "<red>Picks are permanent: only staff can clear one."
   nameplate: "<gold><business>"
   menu:
     title: "<dark_gray><business>"

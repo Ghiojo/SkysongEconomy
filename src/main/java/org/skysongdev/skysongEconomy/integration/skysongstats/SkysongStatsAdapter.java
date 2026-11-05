@@ -73,6 +73,11 @@ public final class SkysongStatsAdapter implements CharacterDirectory, DowntimeWa
     }
 
     @Override
+    public String displayName(String skillId) {
+        return api.skills().find(skillId).map(skill -> skill.color() + skill.name()).orElse(skillId);
+    }
+
+    @Override
     public boolean addXp(CharacterRef character, String skillId, int amount) {
         return api.skills().addXp(toId(character), skillId, amount).isPresent();
     }
