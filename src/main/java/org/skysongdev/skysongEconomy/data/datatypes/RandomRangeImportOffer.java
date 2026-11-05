@@ -18,8 +18,8 @@ import java.util.Map;
  * Each item is defined by an ID and a min/max amount in the config.
  */
 public class RandomRangeImportOffer extends ImportOffer{
-    private ArrayList<Integer> minAmounts;
-    private ArrayList<Integer> maxAmounts;
+    private final ArrayList<Integer> minAmounts = new ArrayList<>();
+    private final ArrayList<Integer> maxAmounts = new ArrayList<>();
 
     public RandomRangeImportOffer(String offerName, ArrayList<String> configInputs, float priceModifier, String staticLore, boolean isAffectedByTaxes, Material iconMaterial, Map<Integer, Double> priceMap) {
         super(offerName, priceModifier, staticLore, isAffectedByTaxes, iconMaterial, new ArrayList<>(), new ArrayList<>(), priceMap);

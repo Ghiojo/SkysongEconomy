@@ -20,8 +20,6 @@ import static org.skysongdev.skysongEconomy.SkysongEconomy.Instance;
  * the corresponding SkysongItem for each item ID and creates ItemStacks with the specified quantities.
  */
 public class StaticItemImportOffer extends ImportOffer {
-    ArrayList<String> itemIds;
-    ArrayList<Integer> itemAmounts;
 
     public StaticItemImportOffer(String offerName, ArrayList<String> configInputs, float priceModifier, String staticLore, boolean isAffectedByTaxes, Material iconMaterial, Map<Integer, Double> priceMap) {
         super(offerName, priceModifier, staticLore, isAffectedByTaxes, iconMaterial, new ArrayList<>(), new ArrayList<>(), priceMap);
@@ -32,7 +30,7 @@ public class StaticItemImportOffer extends ImportOffer {
             }
             itemIds.add(parts[0].trim());
             try {
-                itemAmounts.add(Integer.parseInt(parts[1].trim()));
+                itemQuantities.add(Integer.parseInt(parts[1].trim()));
             } catch (NumberFormatException e) {
                 itemIds.remove(itemIds.size() - 1); // Remove the last added ID if parsing fails
             }
@@ -56,7 +54,7 @@ public class StaticItemImportOffer extends ImportOffer {
             File itemFile = Constants.ITEM_GENERATION_FILE_PATH.resolve(itemIds.get(i) + ".yml").toFile();
             SkysongItem skysongItem = org.skysongdev.skysongitems.utils.Utils.LoadSkysongItem(itemFile);
             ItemStack item = SkysongItems.getPlugin().getUtils().GenerateSkysongItem(skysongItem);
-            item.setAmount(itemAmounts.get(i));
+            item.setAmount(itemQuantities.get(i));
             finalItems.add(item);
         }
         return finalItems;

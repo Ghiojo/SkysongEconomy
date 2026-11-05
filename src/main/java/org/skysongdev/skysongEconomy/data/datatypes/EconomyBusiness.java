@@ -3,37 +3,37 @@ package org.skysongdev.skysongEconomy.data.datatypes;
 import java.util.ArrayList;
 
 public class EconomyBusiness {
-    private static String id;
-    private static String world;
-    private static String name;
-    private static String ownerUUID;
-    private static ArrayList<String> catalogIds;
-    private static ArrayList<String> memberUUIDs;
-    private static ArrayList<Integer> location;
-    private static ArrayList<DeliveringOffer> importSlots;
+    private String id;
+    private String world;
+    private String name;
+    private String ownerUUID;
+    private ArrayList<String> catalogIds;
+    private ArrayList<String> memberUUIDs;
+    private ArrayList<Integer> location;
+    private ArrayList<DeliveringOffer> importSlots;
 
-    public static String getOwnerUUID() {
+    public String getOwnerUUID() {
         return ownerUUID;
     }
 
-    public static void setOwnerUUID(String ownerUUID) {
-        EconomyBusiness.ownerUUID = ownerUUID;
+    public void setOwnerUUID(String ownerUUID) {
+        this.ownerUUID = ownerUUID;
     }
 
-    public static ArrayList<String> getMemberUUIDs() {
+    public ArrayList<String> getMemberUUIDs() {
         return memberUUIDs;
     }
 
-    public static void setMemberUUIDs(ArrayList<String> memberUUIDs) {
-        EconomyBusiness.memberUUIDs = memberUUIDs;
+    public void setMemberUUIDs(ArrayList<String> memberUUIDs) {
+        this.memberUUIDs = memberUUIDs;
     }
 
-    public static ArrayList<String> getCatalogIds() {
+    public ArrayList<String> getCatalogIds() {
         return catalogIds;
     }
 
-    public static void setCatalogIds(ArrayList<String> catalogIds) {
-        EconomyBusiness.catalogIds = catalogIds;
+    public void setCatalogIds(ArrayList<String> catalogIds) {
+        this.catalogIds = catalogIds;
     }
 
     public EconomyBusiness(String id, String world, String name, String ownerUUID, ArrayList<String> catalogIds, ArrayList<String> memberUUIDs, ArrayList<Integer> location, ArrayList<DeliveringOffer> importSlots) {
@@ -47,43 +47,43 @@ public class EconomyBusiness {
         this.importSlots = importSlots;
     }
 
-    public static String getId() {
+    public String getId() {
         return id;
     }
 
-    public static void setId(String id) {
-        EconomyBusiness.id = id;
+    public void setId(String id) {
+        this.id = id;
     }
 
-    public static String getWorld() {
+    public String getWorld() {
         return world;
     }
 
-    public static void setWorld(String world) {
-        EconomyBusiness.world = world;
+    public void setWorld(String world) {
+        this.world = world;
     }
 
-    public static String getName() {
+    public String getName() {
         return name;
     }
 
-    public static void setName(String name) {
-        EconomyBusiness.name = name;
+    public void setName(String name) {
+        this.name = name;
     }
 
-    public static ArrayList<Integer> getLocation() {
+    public ArrayList<Integer> getLocation() {
         return location;
     }
 
-    public static void setLocation(ArrayList<Integer> location) {
-        EconomyBusiness.location = location;
+    public void setLocation(ArrayList<Integer> location) {
+        this.location = location;
     }
 
-    public static ArrayList<DeliveringOffer> getImportSlots() {
+    public ArrayList<DeliveringOffer> getImportSlots() {
         return importSlots;
     }
 
-    public static void setImportSlots(ArrayList<DeliveringOffer> importSlots) {
-        EconomyBusiness.importSlots = importSlots;
+    public void setImportSlots(ArrayList<DeliveringOffer> importSlots) {
+        this.importSlots = importSlots;
     }
 }
