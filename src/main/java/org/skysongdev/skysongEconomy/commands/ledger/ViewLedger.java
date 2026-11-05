@@ -1,48 +1,64 @@
 package org.skysongdev.skysongEconomy.commands.ledger;
 
-import org.bukkit.Material;
-import org.bukkit.NamespacedKey;
-import org.bukkit.command.Command;
-import org.bukkit.command.CommandExecutor;
+import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.command.CommandSender;
-import org.bukkit.entity.Player;
-import org.jetbrains.annotations.NotNull;
-import org.skysongdev.skysongEconomy.SkysongEconomy;
-import org.skysongdev.skysongitems.SkysongItems;
+import org.skysongdev.skysongEconomy.commands.SubCommand;
+import org.skysongdev.skysongEconomy.data.database.Database;
+import org.skysongdev.skysongEconomy.items.MaterialIdResolver;
+import org.skysongdev.skysongEconomy.messaging.Messenger;
 
 import java.sql.SQLException;
+import java.util.Optional;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
-import static org.skysongdev.skysongEconomy.utils.Constants.PLUGIN_TAG;
+/** /se ledger view [materialId]: shows the ledger price of an item. */
+final class ViewLedger implements SubCommand {
+    private final Database database;
+    private final MaterialIdResolver materialIds;
+    private final Messenger messenger;
+    private final Logger logger;
 
-public class ViewLedger implements CommandExecutor {
+    ViewLedger(Database database, MaterialIdResolver materialIds, Messenger messenger, Logger logger) {
+        this.database = database;
+        this.materialIds = materialIds;
+        this.messenger = messenger;
+        this.logger = logger;
+    }
+
     @Override
-    public boolean onCommand(@NotNull CommandSender commandSender, @NotNull Command command, @NotNull String s, @NotNull String[] strings) {
-        if(!(commandSender instanceof Player player)){
-            commandSender.sendMessage(SkysongEconomy.Instance().getMm().deserialize(PLUGIN_TAG + "<red>Only players can view the ledger, since it reads the item in your main hand."));
-            return true;
-        }
-        if(player.getInventory().getItemInMainHand().getType() == Material.AIR || !player.getInventory().getItemInMainHand().getItemMeta().getPersistentDataContainer().has(new NamespacedKey(SkysongItems.getPlugin(), "material_id"))){
-            player.sendMessage(SkysongEconomy.Instance().getMm().deserialize(PLUGIN_TAG + "<red>You must be holding a valid item to view its ledger."));
-            return true;
+    public String name() {
+        return "view";
+    }
+
+    @Override
+    public String usage() {
+        return "[materialId]";
+    }
+
+    @Override
+    public void execute(CommandSender sender, String[] args) {
+        Optional<String> materialId = materialIds.fromArgsOrMainHand(sender, args, 0);
+        if (materialId.isEmpty()) {
+            messenger.error(sender, "Specify a material ID or hold an item that has one.");
+            return;
         }
 
-        String materialID = player.getInventory().getItemInMainHand().getItemMeta().getPersistentDataContainer().get(new NamespacedKey(SkysongItems.getPlugin(), "material_id"), org.bukkit.persistence.PersistentDataType.STRING);
-        float value = -1;
+        float cost;
         try {
-            value = SkysongEconomy.Instance().getDatabase().findItemCost(materialID);
-        } catch (SQLException e){
-            e.printStackTrace();
-            player.sendMessage(SkysongEconomy.Instance().getMm().deserialize(PLUGIN_TAG + "<red>An error occurred while trying to retrieve the item's cost."));
-            return true;
+            cost = database.findItemCost(materialId.get());
+        } catch (SQLException e) {
+            logger.log(Level.SEVERE, "Failed to read the ledger price of " + materialId.get(), e);
+            messenger.error(sender, "An error occurred while trying to retrieve the item's cost.");
+            return;
         }
 
-        if(value == -1){
-            player.sendMessage(SkysongEconomy.Instance().getMm().deserialize(PLUGIN_TAG + "<red>This item does not have a cost set in the ledger."));
-            return true;
+        if (cost == -1) {
+            messenger.error(sender, "<yellow><material></yellow> does not have a cost set in the ledger.",
+                    Placeholder.unparsed("material", materialId.get()));
+            return;
         }
-
-        player.sendMessage(SkysongEconomy.Instance().getMm().deserialize(PLUGIN_TAG + "<green>The current cost of this item is: <gold>" + value));
-
-        return true;
+        messenger.success(sender, "The current cost of <yellow><material></yellow> is <gold><cost></gold>.",
+                Placeholder.unparsed("material", materialId.get()), Placeholder.unparsed("cost", String.valueOf(cost)));
     }
 }
