@@ -3,6 +3,7 @@ package org.skysongdev.skysongEconomy.data.datatypes;
 
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
+import org.skysongdev.skysongEconomy.items.SkysongItemFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -47,5 +48,6 @@ public abstract class ImportOffer {
         return List.copyOf(itemIds);
     }
 
-    public abstract ArrayList<ItemStack> generateItems();
+    /** Rolls the items for one delivery of this offer. */
+    public abstract ArrayList<ItemStack> generateItems(SkysongItemFactory items);
 }

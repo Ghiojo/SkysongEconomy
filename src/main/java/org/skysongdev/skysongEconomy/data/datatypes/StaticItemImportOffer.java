@@ -2,13 +2,9 @@ package org.skysongdev.skysongEconomy.data.datatypes;
 
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
-import org.skysongdev.skysongEconomy.utils.Constants;
-import org.skysongdev.skysongitems.SkysongItems;
-import org.skysongdev.skysongitems.utils.SkysongItem;
+import org.skysongdev.skysongEconomy.items.SkysongItemFactory;
 
-import java.io.File;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 
 /*
@@ -36,14 +32,10 @@ public class StaticItemImportOffer extends ImportOffer {
 
 
     @Override
-    public ArrayList<ItemStack> generateItems() {
+    public ArrayList<ItemStack> generateItems(SkysongItemFactory items) {
         ArrayList<ItemStack> finalItems = new ArrayList<>();
         for(int i = 0; i < itemIds.size(); i++) {
-            File itemFile = Constants.ITEM_GENERATION_FILE_PATH.resolve(itemIds.get(i) + ".yml").toFile();
-            SkysongItem skysongItem = org.skysongdev.skysongitems.utils.Utils.LoadSkysongItem(itemFile);
-            ItemStack item = SkysongItems.getPlugin().getUtils().GenerateSkysongItem(skysongItem);
-            item.setAmount(itemQuantities.get(i));
-            finalItems.add(item);
+            finalItems.add(items.create(itemIds.get(i), itemQuantities.get(i)));
         }
         return finalItems;
     }

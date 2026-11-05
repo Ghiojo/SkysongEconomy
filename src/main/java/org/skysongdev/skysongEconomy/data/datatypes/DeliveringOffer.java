@@ -1,6 +1,5 @@
 package org.skysongdev.skysongEconomy.data.datatypes;
 
-import java.sql.Date;
 import java.sql.Timestamp;
 
 public class DeliveringOffer {

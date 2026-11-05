@@ -9,4 +9,8 @@ public class ImportCatalogue {
     public ImportCatalogue(List<ImportOffer> offers) {
         this.importOffers = new ArrayList<>(offers);
     }
+
+    public List<ImportOffer> getOffers() {
+        return List.copyOf(importOffers);
+    }
 }

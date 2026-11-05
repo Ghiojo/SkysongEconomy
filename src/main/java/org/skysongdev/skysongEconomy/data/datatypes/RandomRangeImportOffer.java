@@ -2,20 +2,19 @@ package org.skysongdev.skysongEconomy.data.datatypes;
 
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
-import org.skysongdev.skysongEconomy.utils.Constants;
-import org.skysongdev.skysongitems.SkysongItems;
-import org.skysongdev.skysongitems.utils.SkysongItem;
+import org.skysongdev.skysongEconomy.items.SkysongItemFactory;
 
-import java.io.File;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
+import java.util.logging.Logger;
 
 /**
  * An ImportOffer that generates items with random amounts within specified ranges.
  * Each item is defined by an ID and a min/max amount in the config.
  */
 public class RandomRangeImportOffer extends ImportOffer{
+    private static final Logger LOGGER = Logger.getLogger("SkysongEconomy");
+
     private final ArrayList<Integer> minAmounts = new ArrayList<>();
     private final ArrayList<Integer> maxAmounts = new ArrayList<>();
 
@@ -24,7 +23,7 @@ public class RandomRangeImportOffer extends ImportOffer{
         for(String input : configInputs) {
             String[] parts = input.split(";");
             if (parts.length != 3) {
-                SkysongItems.getPlugin().getLogger().warning("Invalid item input format: " + input);
+                LOGGER.warning("Invalid item input format: " + input);
                 continue;
             }
             itemIds.add(parts[0].trim());
@@ -32,22 +31,18 @@ public class RandomRangeImportOffer extends ImportOffer{
                 this.minAmounts.add(Integer.parseInt(parts[1].trim()));
                 this.maxAmounts.add(Integer.parseInt(parts[2].trim()));
             } catch (NumberFormatException e) {
-                SkysongItems.getPlugin().getLogger().warning("Invalid number format in item input: " + input);
+                LOGGER.warning("Invalid number format in item input: " + input);
                 itemIds.remove(itemIds.size() - 1); // Remove the last added ID if parsing fails
             }
         }
     }
 
     @Override
-    public ArrayList<ItemStack> generateItems() {
+    public ArrayList<ItemStack> generateItems(SkysongItemFactory itemFactory) {
         ArrayList<ItemStack> items = new ArrayList<>();
         for(int i = 0; i < itemIds.size(); i++) {
             int amount = (int) Math.floor(Math.random() * (maxAmounts.get(i) - minAmounts.get(i) + 1) + minAmounts.get(i));
-            File itemFile = Constants.ITEM_GENERATION_FILE_PATH.resolve(itemIds.get(i) + ".yml").toFile();
-            SkysongItem skysongItem = org.skysongdev.skysongitems.utils.Utils.LoadSkysongItem(itemFile);
-            ItemStack item = SkysongItems.getPlugin().getUtils().GenerateSkysongItem(skysongItem);
-            item.setAmount(amount);
-            items.add(item);
+            items.add(itemFactory.create(itemIds.get(i), amount));
         }
         return items;
     }
