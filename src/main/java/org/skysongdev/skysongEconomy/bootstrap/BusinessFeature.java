@@ -4,6 +4,8 @@ import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.Nullable;
+import org.skysongdev.skysongEconomy.business.Business;
+import org.skysongdev.skysongEconomy.business.BusinessChangeListener;
 import org.skysongdev.skysongEconomy.business.BusinessService;
 import org.skysongdev.skysongEconomy.business.access.AccessDefaults;
 import org.skysongdev.skysongEconomy.business.access.AccessService;
@@ -24,6 +26,7 @@ import org.skysongdev.skysongEconomy.business.vault.BusinessVaults;
 import org.skysongdev.skysongEconomy.commands.CharacterArguments;
 import org.skysongdev.skysongEconomy.commands.SubCommand;
 import org.skysongdev.skysongEconomy.commands.business.BusinessCommand;
+import org.skysongdev.skysongEconomy.commands.modifier.ModifierCommand;
 import org.skysongdev.skysongEconomy.commands.tokens.TokensCommand;
 import org.skysongdev.skysongEconomy.config.ConfigException;
 import org.skysongdev.skysongEconomy.config.ConfigSection;
@@ -31,6 +34,7 @@ import org.skysongdev.skysongEconomy.config.PluginPaths;
 import org.skysongdev.skysongEconomy.config.YamlFiles;
 import org.skysongdev.skysongEconomy.data.database.AsyncAccessRepository;
 import org.skysongdev.skysongEconomy.data.database.AsyncBusinessRepository;
+import org.skysongdev.skysongEconomy.data.database.AsyncModifierRepository;
 import org.skysongdev.skysongEconomy.data.database.AsyncShiftRepository;
 import org.skysongdev.skysongEconomy.data.database.AsyncTokenRepository;
 import org.skysongdev.skysongEconomy.data.database.AsyncTrainingRepository;
@@ -40,6 +44,7 @@ import org.skysongdev.skysongEconomy.data.database.ConnectionProvider;
 import org.skysongdev.skysongEconomy.data.database.DatabaseSettings;
 import org.skysongdev.skysongEconomy.data.database.SqlAccessRepository;
 import org.skysongdev.skysongEconomy.data.database.SqlBusinessRepository;
+import org.skysongdev.skysongEconomy.data.database.SqlModifierRepository;
 import org.skysongdev.skysongEconomy.data.database.SqlShiftRepository;
 import org.skysongdev.skysongEconomy.data.database.SqlTokenRepository;
 import org.skysongdev.skysongEconomy.data.database.SqlTrainingRepository;
@@ -68,6 +73,8 @@ import org.skysongdev.skysongEconomy.listeners.BusinessNameplates;
 import org.skysongdev.skysongEconomy.messaging.MessageCatalog;
 import org.skysongdev.skysongEconomy.messaging.Messenger;
 import org.skysongdev.skysongEconomy.money.Wallet;
+import org.skysongdev.skysongEconomy.prices.modifier.ModifierTarget;
+import org.skysongdev.skysongEconomy.prices.modifier.PriceModifiers;
 import org.skysongdev.skysongEconomy.tokens.GatheringTokens;
 import org.skysongdev.skysongEconomy.tokens.TokenPlaceholders;
 import org.skysongdev.skysongEconomy.trade.EconomyLogisticsSettings;
@@ -151,6 +158,14 @@ public final class BusinessFeature implements AutoCloseable {
                 settings.types(), settings.tiers(), access, activities, vaults, wallet, skysongStats, skysongStats),
                 new AsyncTrainingRepository(new SqlTrainingRepository(connections), writer), Clock.systemUTC(),
                 logger::warning);
+        PriceModifiers modifiers = new PriceModifiers(
+                new AsyncModifierRepository(new SqlModifierRepository(connections), writer), Clock.systemUTC());
+        businesses.addListener(new BusinessChangeListener() {
+            @Override
+            public void deleted(Business business) {
+                modifiers.removeAll(new ModifierTarget.Business(business.id()));
+            }
+        });
         // Shifts and training finish before the vault is emptied, so a deleted business pays everyone first.
         businesses.addListener(access);
         businesses.addListener(shifts);
@@ -168,6 +183,7 @@ public final class BusinessFeature implements AutoCloseable {
             tokens.loadAll();
             shifts.loadAll();
             training.loadAll();
+            logger.info("Loaded " + modifiers.loadAll() + " price modifier(s)");
         } catch (StorageException e) {
             // Keep the commands so staff get clear errors, but nothing loaded means nothing to protect yet.
             logger.log(Level.SEVERE, "Businesses could not be loaded from the database", e);
@@ -187,10 +203,11 @@ public final class BusinessFeature implements AutoCloseable {
         registerPlaceholders(plugin, tokens, skysongStats);
         List<SubCommand> commands = List.of(
                 new BusinessCommand(businesses, settings.types(), access, vaults, skysongStats, messenger),
-                new TokensCommand(tokens, new CharacterArguments(skysongStats, messenger), messenger));
+                new TokensCommand(tokens, new CharacterArguments(skysongStats, messenger), messenger),
+                new ModifierCommand(modifiers, messenger, Clock.systemUTC()));
         LedgerRegistry ledgers = loadLedgers(plugin, paths, settings.economyLogistics(), items);
         BusinessSystem system = new BusinessSystem(businesses, settings.types(), access, vaults, tokens, activities,
-                shifts, training, settings.economyLogistics(), ledgers, menus);
+                shifts, training, settings.economyLogistics(), ledgers, modifiers, menus);
         return new BusinessFeature(system, commands, resources, logger);
     }
 

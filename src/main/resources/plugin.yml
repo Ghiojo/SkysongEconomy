@@ -49,6 +49,12 @@ permissions:
   skysongeconomy.tokens.admin:
     description: Allows seeing and changing anyone's Gathering Tokens
     default: op
+  skysongeconomy.modifiers:
+    description: Allows /se modifier list, to see the price modifiers
+    default: op
+  skysongeconomy.modifiers.edit:
+    description: Allows /se modifier add, set and remove
+    default: op
   skysongeconomy.*:
     description: Gives access to all SkysongEconomy features
     default: op
@@ -63,3 +69,5 @@ permissions:
       skysongeconomy.business.break: true
       skysongeconomy.tokens: true
       skysongeconomy.tokens.admin: true
+      skysongeconomy.modifiers: true
+      skysongeconomy.modifiers.edit: true
