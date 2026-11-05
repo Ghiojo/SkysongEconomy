@@ -36,6 +36,7 @@ public class SkysongEconomyCommand implements TabExecutor {
                 } else {
                     commandSender.sendMessage(PLUGIN_TAG + "You do not have permission to use this command.");
                 }
+                break;
             default:
                 commandSender.sendMessage(PLUGIN_TAG + "Unknown subcommand.");
                 break;
@@ -46,6 +47,9 @@ public class SkysongEconomyCommand implements TabExecutor {
 
     @Override
     public @Nullable List<String> onTabComplete(@NotNull CommandSender commandSender, @NotNull Command command, @NotNull String s, @NotNull String[] strings) {
-        return List.of("ledger", "good").stream().filter(a -> a.startsWith(strings[0])).toList();
+        if(strings.length != 1){
+            return List.of();
+        }
+        return List.of("ledger", "good").stream().filter(a -> a.startsWith(strings[0].toLowerCase())).toList();
     }
 }

@@ -17,7 +17,10 @@ import static org.skysongdev.skysongEconomy.utils.Constants.PLUGIN_TAG;
 public class ViewLedger implements CommandExecutor {
     @Override
     public boolean onCommand(@NotNull CommandSender commandSender, @NotNull Command command, @NotNull String s, @NotNull String[] strings) {
-        Player player = (Player) commandSender;
+        if(!(commandSender instanceof Player player)){
+            commandSender.sendMessage(SkysongEconomy.Instance().getMm().deserialize(PLUGIN_TAG + "<red>Only players can view the ledger, since it reads the item in your main hand."));
+            return true;
+        }
         if(player.getInventory().getItemInMainHand().getType() == Material.AIR || !player.getInventory().getItemInMainHand().getItemMeta().getPersistentDataContainer().has(new NamespacedKey(SkysongItems.getPlugin(), "material_id"))){
             player.sendMessage(SkysongEconomy.Instance().getMm().deserialize(PLUGIN_TAG + "<red>You must be holding a valid item to view its ledger."));
             return true;
