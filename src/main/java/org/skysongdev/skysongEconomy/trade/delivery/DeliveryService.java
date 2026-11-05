@@ -8,14 +8,17 @@ import org.skysongdev.skysongEconomy.business.access.Permission;
 import org.skysongdev.skysongEconomy.character.CharacterRef;
 import org.skysongdev.skysongEconomy.money.Wallet;
 import org.skysongdev.skysongEconomy.trade.DeliveryTime;
+import org.skysongdev.skysongEconomy.trade.Durations;
 import org.skysongdev.skysongEconomy.trade.EconomyLogisticsSettings;
 import org.skysongdev.skysongEconomy.trade.ImportOffer;
 import org.skysongdev.skysongEconomy.trade.ImportQuote;
+import org.skysongdev.skysongEconomy.trade.ItemAmount;
 import org.skysongdev.skysongEconomy.trade.Ledger;
 import org.skysongdev.skysongEconomy.trade.LedgerSelections;
 import org.skysongdev.skysongEconomy.trade.TradePricing;
 
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -28,6 +31,9 @@ import java.util.random.RandomGenerator;
 
 /**
  * Orders imports into delivery slots, and keeps every delivery until it is collected.
+ * <p>
+ * Whoever ordered a delivery, the owner, and groups allowed to order imports can collect it once
+ * it has arrived; collecting frees its slot.
  * <p>
  * Ordering needs Economy and Logistics, the ledger selected, the owner or a group allowed to
  * order imports, and a free delivery slot. The orderer's own balance pays, and orders can't be
@@ -115,6 +121,38 @@ public final class DeliveryService implements BusinessChangeListener {
         byBusiness.computeIfAbsent(business.id(), id -> new ArrayList<>()).add(delivery);
         repository.save(delivery);
         return delivery;
+    }
+
+    /**
+     * @return whether the character may collect that delivery: whoever ordered it, the owner,
+     *         or a group allowed to order imports
+     */
+    public boolean canCollect(Business business, CharacterRef character, Delivery delivery) {
+        return delivery.orderedBy().equals(character) || canOrder(business, character);
+    }
+
+    /**
+     * Hands over a delivery that has arrived and frees its slot. If {@code handOver} throws, the
+     * delivery stays where it is, so nothing is lost.
+     *
+     * @param handOver gives the items to the player
+     * @throws BusinessException when the delivery isn't there any more, hasn't arrived, or the
+     *                           character may not collect it
+     */
+    public void collect(Business business, CharacterRef character, Delivery delivery, Consumer<List<ItemAmount>> handOver) {
+        if (!deliveries(business).contains(delivery)) {
+            throw new BusinessException("business.slots.gone");
+        }
+        if (!delivery.isReady(clock.instant())) {
+            throw new BusinessException("business.slots.not-ready",
+                    Map.of("duration", Durations.format(Duration.between(clock.instant(), delivery.arrivesAt()))));
+        }
+        if (!canCollect(business, character, delivery)) {
+            throw new BusinessException("business.slots.not-allowed", Map.of("business", business.displayName()));
+        }
+        handOver.accept(delivery.items());
+        byBusiness.get(business.id()).remove(delivery);
+        repository.delete(delivery.id());
     }
 
     /** Refunds every delivery of a deleted business to whoever paid for it. */
