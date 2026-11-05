@@ -11,39 +11,41 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
-import java.util.regex.Pattern;
 
 /**
- * Reads loot groups and outputs from config sections.
+ * Reads loot group files and outputs.
  * <p>
- * Groups, by name. Each entry has a {@code weight} (a whole number, default 1) and exactly one
- * of {@code item}, {@code group}, {@code from} or {@code nothing}:
+ * A group file ({@code nodes/groups/<id>.yml}) lists weighted entries. Each entry has a whole
+ * {@code weight} (default 1) and exactly one of {@code item}, {@code group}, {@code from} or
+ * {@code nothing}:
  * <pre>{@code
- * groups:
- *   common:
- *     - {item: copper_ore, weight: 6, amount: "1-3"}   # an item, amount fixed or "min-max"
- *     - {group: gems, weight: 1}                       # roll inside another named group
- *     - weight: 2                                      # roll inside a group written here
- *       from:
- *         - {item: tin_ore, weight: 1}
- *         - {item: coal, weight: 3, amount: 2}
- *     - {nothing: true, weight: 1}                     # a wasted roll
+ * entries:
+ *   - {item: copper, weight: 10, amount: "1-3"}   # an item, amount fixed or "min-max" (default 1)
+ *   - {group: rare-pebbles, weight: 1}            # roll once inside nodes/groups/rare-pebbles.yml
+ *   - weight: 2                                   # roll once inside a list written here
+ *     from:
+ *       - {item: tin}
+ *       - {item: coal, weight: 3, amount: 2}
+ *   - {nothing: true, weight: 5}                  # a wasted roll
  * }</pre>
- * An output, which every list is optional in, as long as one is set:
+ * An output, used by every tier of a node table. Each list is optional, as long as one is set:
  * <pre>{@code
  * guaranteed:
  *   - {item: wheat, amount: "2-4"}
- * chances:                                             # each one rolled on its own
- *   - {item: golden_seed, chance: 2.5, amount: 1}      # chance in percent
+ * chances:                                        # each rolled on its own, in percent
+ *   - {item: golden_seed, chance: 2.5, amount: "1-2"}
  * rolls:
- *   - {times: "6-8", group: common}                    # or from: [...] like a group entry
+ *   - times: "6-8"                                # default 1
+ *     from:                                       # the same entries as a group file
+ *       - {group: unskilled-ores, weight: 60}
+ *       - {item: wheat, weight: 10, amount: "1-3"}
+ *   - {times: 2, group: novice-ores}              # or name a group file
  * }</pre>
  * A group that points back to itself, directly or through other groups, is refused.
  */
 public final class LootParser {
-    private static final Pattern GROUP_ID = Pattern.compile("[a-z0-9_-]+");
-
     private final Predicate<String> itemExists;
 
     /** @param itemExists whether a material id has an item file */
@@ -52,25 +54,22 @@ public final class LootParser {
     }
 
     /**
-     * Reads every group in {@code section}, keyed by name.
+     * Reads every group file. A broken group is left out with a warning, and so is every group
+     * that points to it, so one typo doesn't hide the rest.
      *
-     * @param shared groups the entries may also point to, such as the shared groups folder;
-     *               a group in {@code section} with the same name is used instead
-     * @return the groups of {@code section} only
-     * @throws ConfigException when a group is empty, broken, unknown or part of a loop
+     * @param files    each group file's root section, keyed by group id
+     * @param warnings told about each group left out
+     * @return the groups that loaded
      */
-    public LootGroupLibrary parseGroups(ConfigSection section, LootGroupLibrary shared) {
-        Map<String, List<ConfigSection>> definitions = new LinkedHashMap<>();
-        for (String id : section.keys()) {
-            if (!GROUP_ID.matcher(id).matches()) {
-                throw section.error(id, "is not a valid group name: use lowercase letters, digits, - and _");
-            }
-            definitions.put(id, section.sections(id));
-        }
-        GroupBuilder builder = new GroupBuilder(section, definitions, shared);
+    public LootGroupLibrary parseGroups(Map<String, ConfigSection> files, Consumer<String> warnings) {
+        GroupBuilder builder = new GroupBuilder(files, LootGroupLibrary.empty());
         Map<String, LootGroup> built = new LinkedHashMap<>();
-        for (String id : definitions.keySet()) {
-            built.put(id, builder.named(id));
+        for (String id : files.keySet()) {
+            try {
+                built.put(id, builder.named(id, files.get(id)));
+            } catch (ConfigException e) {
+                warnings.accept("Skipped the loot group '" + id + "': " + e.getMessage());
+            }
         }
         return new LootGroupLibrary(built);
     }
@@ -90,7 +89,7 @@ public final class LootParser {
         for (ConfigSection chance : section.sections("chances")) {
             chances.add(chance(chance));
         }
-        GroupBuilder builder = new GroupBuilder(section, Map.of(), groups);
+        GroupBuilder builder = new GroupBuilder(Map.of(), groups);
         List<GroupRolls> rolls = new ArrayList<>();
         for (ConfigSection roll : section.sections("rolls")) {
             rolls.add(new GroupRolls(IntRange.parse(roll, "times", IntRange.exactly(1)), builder.target(roll)));
@@ -120,32 +119,40 @@ public final class LootParser {
         return new ChanceItem(item(section), percent);
     }
 
-    /** Builds named groups on demand, so a group can point to one written further down. */
+    /**
+     * Builds groups on demand, so a group file can point to any other file, whatever the load
+     * order, and loops are caught.
+     */
     private final class GroupBuilder {
-        private final ConfigSection section;
-        private final Map<String, List<ConfigSection>> definitions;
-        private final LootGroupLibrary shared;
+        private final Map<String, ConfigSection> files;
+        private final LootGroupLibrary loaded;
         private final Map<String, LootGroup> built = new LinkedHashMap<>();
         private final Set<String> building = new LinkedHashSet<>();
 
-        GroupBuilder(ConfigSection section, Map<String, List<ConfigSection>> definitions, LootGroupLibrary shared) {
-            this.section = section;
-            this.definitions = definitions;
-            this.shared = shared;
+        /**
+         * @param files  group files that may still need building
+         * @param loaded groups that are already built
+         */
+        GroupBuilder(Map<String, ConfigSection> files, LootGroupLibrary loaded) {
+            this.files = files;
+            this.loaded = loaded;
         }
 
-        LootGroup named(String id) {
+        LootGroup named(String id, ConfigSection file) {
             LootGroup done = built.get(id);
             if (done != null) {
                 return done;
             }
             if (!building.add(id)) {
-                throw section.error(id, "loops back to itself: " + String.join(" -> ", building) + " -> " + id);
+                throw file.error("entries", "loops back to itself: " + String.join(" -> ", building) + " -> " + id);
             }
-            LootGroup group = build(id, definitions.get(id), section, id);
-            building.remove(id);
-            built.put(id, group);
-            return group;
+            try {
+                LootGroup group = build(id, file, "entries");
+                built.put(id, group);
+                return group;
+            } finally {
+                building.remove(id);
+            }
         }
 
         /** The group an entry or a roll points to, through {@code group} or {@code from}. */
@@ -155,20 +162,22 @@ public final class LootParser {
                 throw entry.error("group", "or from must be set, but not both");
             }
             if (!named) {
-                return build(entry.path(), entry.sections("from"), entry, "from");
+                return build(entry.path(), entry, "from");
             }
             String id = entry.requireString("group").strip().toLowerCase(Locale.ROOT);
-            if (definitions.containsKey(id)) {
-                return named(id);
+            ConfigSection file = files.get(id);
+            if (file != null) {
+                return named(id, file);
             }
-            return shared.find(id).orElseThrow(() -> entry.error("group", "'" + id + "' is not a group"));
+            return loaded.find(id).orElseThrow(() -> entry.error("group", "'" + id + "' is not a loaded group in nodes/groups"));
         }
 
         /**
-         * @param id    the group's name, or its path in the file when it is written inline
-         * @param owner the section holding {@code key}, named in errors
+         * @param id    the group's id, or its path in the file when it is written inline
+         * @param owner the section holding the list at {@code key}
          */
-        private LootGroup build(String id, List<ConfigSection> lines, ConfigSection owner, String key) {
+        private LootGroup build(String id, ConfigSection owner, String key) {
+            List<ConfigSection> lines = owner.sections(key);
             if (lines.isEmpty()) {
                 throw owner.error(key, "must list at least one entry");
             }

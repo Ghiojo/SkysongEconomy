@@ -6,7 +6,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-/** Named groups that tables can roll on and that other groups can point to. */
+/** The groups loaded from the {@code nodes/groups} folder, by id (file name without {@code .yml}). */
 public final class LootGroupLibrary {
     private static final LootGroupLibrary EMPTY = new LootGroupLibrary(Map.of());
 
@@ -21,23 +21,13 @@ public final class LootGroupLibrary {
         return EMPTY;
     }
 
-    /** @return the group named {@code id} */
+    /** @return the group with this id */
     public Optional<LootGroup> find(String id) {
         return Optional.ofNullable(groups.get(id));
     }
 
-    /** @return the names of every group, in file order */
+    /** @return the id of every group, in load order */
     public Set<String> ids() {
         return groups.keySet();
-    }
-
-    /**
-     * @return a library with this one's groups and {@code other}'s; where both have a name, this
-     *         one's group wins, so a table's own group can shadow a shared one
-     */
-    public LootGroupLibrary with(LootGroupLibrary other) {
-        Map<String, LootGroup> merged = new LinkedHashMap<>(other.groups);
-        merged.putAll(groups);
-        return new LootGroupLibrary(merged);
     }
 }
