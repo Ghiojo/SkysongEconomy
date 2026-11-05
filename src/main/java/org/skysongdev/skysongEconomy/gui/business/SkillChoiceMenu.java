@@ -76,7 +76,7 @@ final class SkillChoiceMenu extends PagedMenu<String> {
     private void pick(Player player, String skillId) {
         Business business = context.business();
         // Ownership is checked again: it may have changed while the menu was open.
-        if (!menus.context(player, business).isOwner()) {
+        if (!menus.context(player, business).actsAsOwner()) {
             messenger.send(player, "business.picks.not-owner");
             return;
         }

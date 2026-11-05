@@ -20,8 +20,9 @@ import java.util.Optional;
 /**
  * Which ledgers each Economy and Logistics business has selected.
  * <p>
- * Only the owner selects and removes ledgers. Selecting is free; removing charges the
- * configured fine to the owner's balance. Deliveries already ordered from a removed ledger still
+ * Only the owner selects and removes ledgers (staff, for a server-owned business); callers check
+ * who may, as they do for skill picks. Selecting is free; removing charges the configured fine to
+ * the owner's balance, and costs nothing on a server-owned business, which has no balance. Deliveries already ordered from a removed ledger still
  * arrive. When a business loses ledger slots (a lower tier, or a cleared pick) its newest
  * selections are dropped without a fine. Ledgers whose file was removed are ignored and take no
  * slot. Kept in memory and saved right away; use it on the main thread.
@@ -73,12 +74,10 @@ public final class LedgerSelections implements BusinessChangeListener {
     /**
      * Puts a ledger in a free slot.
      *
-     * @param by the character doing it, who must own the business
-     * @throws BusinessException when they aren't the owner, the business has no Economy and
-     *                           Logistics, the ledger is unknown or already selected, or no slot is free
+     * @throws BusinessException when the business has no Economy and Logistics, the ledger is
+     *                           unknown or already selected, or no slot is free
      */
-    public Ledger select(Business business, CharacterRef by, String ledgerId) {
-        requireOwner(business, by);
+    public Ledger select(Business business, String ledgerId) {
         requireEnabled(business);
         Ledger ledger = ledgers.find(ledgerId).orElseThrow(() ->
                 new BusinessException("business.ledgers.unknown", Map.of("ledger", ledgerId)));
@@ -96,20 +95,16 @@ public final class LedgerSelections implements BusinessChangeListener {
     }
 
     /**
-     * Takes a ledger out of its slot and charges the fine to the owner.
+     * Takes a ledger out of its slot and charges the fine to the owner. Server-owned businesses
+     * pay no fine.
      *
-     * @return the fine paid
-     * @throws BusinessException when they aren't the owner, the ledger isn't selected, or the
-     *                           owner can't pay the fine
+     * @return the fine paid, 0 for a server-owned business
+     * @throws BusinessException when the ledger isn't selected, or the owner can't pay the fine
      */
-    public BigDecimal remove(Business business, CharacterRef by, String ledgerId) {
-        requireOwner(business, by);
+    public BigDecimal remove(Business business, String ledgerId) {
         SelectedLedger selection = find(business, ledgerId).orElseThrow(() ->
                 new BusinessException("business.ledgers.not-selected", Map.of("ledger", ledgerId)));
-        BigDecimal fine = settings.ledgerRemovalFine();
-        if (fine.signum() > 0 && !wallet.withdraw(business.owner().player(), fine)) {
-            throw new BusinessException("business.ledgers.cannot-afford-fine", Map.of("fine", wallet.format(fine)));
-        }
+        BigDecimal fine = business.owner().map(owner -> chargeFine(owner, settings.ledgerRemovalFine())).orElse(BigDecimal.ZERO);
         drop(selection);
         return fine;
     }
@@ -152,10 +147,12 @@ public final class LedgerSelections implements BusinessChangeListener {
         repository.delete(selection.businessId(), selection.ledgerId());
     }
 
-    private static void requireOwner(Business business, CharacterRef by) {
-        if (!business.isOwner(by)) {
-            throw new BusinessException("business.not-owner", Map.of("business", business.displayName()));
+    /** @return the fine, taken from the owner's balance */
+    private BigDecimal chargeFine(CharacterRef owner, BigDecimal fine) {
+        if (fine.signum() > 0 && !wallet.withdraw(owner.player(), fine)) {
+            throw new BusinessException("business.ledgers.cannot-afford-fine", Map.of("fine", wallet.format(fine)));
         }
+        return fine;
     }
 
     private void requireEnabled(Business business) {

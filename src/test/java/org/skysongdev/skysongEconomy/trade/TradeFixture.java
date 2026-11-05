@@ -93,7 +93,7 @@ final class TradeFixture {
         businesses.setTier(shop, 3);
         businesses.hire(shop, WORKER);
         businesses.pick(shop, "economical");
-        selections.select(shop, OWNER, "smugglers");
+        selections.select(shop, "smugglers");
     }
 
     static CharacterRef character(String name) {

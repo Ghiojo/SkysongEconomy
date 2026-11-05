@@ -1,6 +1,7 @@
 package org.skysongdev.skysongEconomy.commands.business;
 
 import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Player;
 import org.skysongdev.skysongEconomy.business.Business;
 import org.skysongdev.skysongEconomy.business.vault.BusinessVaults;
 
@@ -12,7 +13,8 @@ import static net.kyori.adventure.text.minimessage.tag.resolver.Placeholder.unpa
 
 /**
  * /se business vault &lt;id&gt; [collect]: the owner or staff see what the vault holds; with
- * {@code collect}, it is paid to the owner. Staff collecting still pays the owner.
+ * {@code collect}, it is paid to the owner. Staff collecting still pays the owner, except on a
+ * server-owned business, where it pays the staff member who collects (so the console can't).
  */
 final class VaultCommand extends BusinessSubCommand {
     private final BusinessVaults vaults;
@@ -27,9 +29,12 @@ final class VaultCommand extends BusinessSubCommand {
         Business business = support.businesses.require(args[0]);
         support.requireManager(sender, business);
         if (args.length > 1 && args[1].equalsIgnoreCase("collect")) {
-            BigDecimal paid = vaults.collect(business);
+            BigDecimal paid = sender instanceof Player player
+                    ? vaults.collect(business, player.getUniqueId())
+                    : vaults.collect(business);
             support.messenger.send(sender, "business.vault.collected", unparsed("amount", vaults.format(paid)),
-                    unparsed("owner", support.describe(business.owner())), unparsed("business", business.displayName()));
+                    unparsed("owner", business.isServerOwned() ? sender.getName() : support.describeOwner(business)),
+                    unparsed("business", business.displayName()));
             return;
         }
         support.messenger.send(sender, "business.vault.balance",

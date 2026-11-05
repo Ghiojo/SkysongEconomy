@@ -69,50 +69,53 @@ class LedgerSelectionsTest {
 
     @Test
     void needsEconomyAndLogistics() {
-        assertEquals("business.ledgers.not-enabled", refusal(() -> selections.select(shop, OWNER, "a")));
+        assertEquals("business.ledgers.not-enabled", refusal(() -> selections.select(shop, "a")));
         businesses.pick(shop, "haggling");
-        assertEquals("business.ledgers.not-enabled", refusal(() -> selections.select(shop, OWNER, "a")));
+        assertEquals("business.ledgers.not-enabled", refusal(() -> selections.select(shop, "a")));
     }
 
     @Test
     void ownerSelectsUpToTheSlotLimit() {
         businesses.pick(shop, "economical");
         assertEquals(1, selections.freeSlots(shop));
-        selections.select(shop, OWNER, "a");
-        assertEquals("business.ledgers.full", refusal(() -> selections.select(shop, OWNER, "b")));
-        assertEquals("business.ledgers.already-selected", refusal(() -> selections.select(shop, OWNER, "a")));
+        selections.select(shop, "a");
+        assertEquals("business.ledgers.full", refusal(() -> selections.select(shop, "b")));
+        assertEquals("business.ledgers.already-selected", refusal(() -> selections.select(shop, "a")));
 
         businesses.pick(shop, "economical");
-        selections.select(shop, OWNER, "b");
+        selections.select(shop, "b");
         assertEquals(List.of("a", "b"), selections.selected(shop).stream().map(Ledger::id).toList());
         assertEquals(2, repository.saved.size());
     }
 
     @Test
-    void onlyTheOwnerSelectsAndRemoves() {
-        businesses.pick(shop, "economical");
-        assertEquals("business.not-owner", refusal(() -> selections.select(shop, WORKER, "a")));
-        selections.select(shop, OWNER, "a");
-        assertEquals("business.not-owner", refusal(() -> selections.remove(shop, WORKER, "a")));
+    void serverOwnedBusinessesRemoveLedgersWithoutAFine() {
+        Business market = businesses.createServerOwned("market", "trading", new BlockPosition("world", 5, 64, 5));
+        businesses.pick(market, "economical");
+        selections.select(market, "a");
+
+        assertEquals(0, BigDecimal.ZERO.compareTo(selections.remove(market, "a")));
+        assertFalse(selections.isSelected(market, "a"));
+        assertTrue(wallet.balances.isEmpty());
     }
 
     @Test
     void unknownLedgersAreRefused() {
         businesses.pick(shop, "economical");
-        assertEquals("business.ledgers.unknown", refusal(() -> selections.select(shop, OWNER, "zzz")));
-        assertEquals("business.ledgers.not-selected", refusal(() -> selections.remove(shop, OWNER, "a")));
+        assertEquals("business.ledgers.unknown", refusal(() -> selections.select(shop, "zzz")));
+        assertEquals("business.ledgers.not-selected", refusal(() -> selections.remove(shop, "a")));
     }
 
     @Test
     void removingChargesTheFineToTheOwner() {
         businesses.pick(shop, "economical");
-        selections.select(shop, OWNER, "a");
+        selections.select(shop, "a");
         wallet.balances.put(OWNER.player(), new BigDecimal("30"));
-        assertEquals("business.ledgers.cannot-afford-fine", refusal(() -> selections.remove(shop, OWNER, "a")));
+        assertEquals("business.ledgers.cannot-afford-fine", refusal(() -> selections.remove(shop, "a")));
         assertTrue(selections.isSelected(shop, "a"));
 
         wallet.balances.put(OWNER.player(), new BigDecimal("80"));
-        assertEquals(0, new BigDecimal("50").compareTo(selections.remove(shop, OWNER, "a")));
+        assertEquals(0, new BigDecimal("50").compareTo(selections.remove(shop, "a")));
         assertEquals(0, new BigDecimal("30").compareTo(wallet.balance(OWNER.player())));
         assertFalse(selections.isSelected(shop, "a"));
         assertTrue(repository.saved.isEmpty());
@@ -122,8 +125,8 @@ class LedgerSelectionsTest {
     void losingSlotsDropsTheNewestSelections() {
         businesses.pick(shop, "economical");
         businesses.pick(shop, "economical");
-        selections.select(shop, OWNER, "a");
-        selections.select(shop, OWNER, "b");
+        selections.select(shop, "a");
+        selections.select(shop, "b");
         businesses.clearPick(shop, 2);
         assertEquals(List.of("a"), selections.selected(shop).stream().map(Ledger::id).toList());
         businesses.clearPick(shop, 1);
@@ -134,7 +137,7 @@ class LedgerSelectionsTest {
     @Test
     void selectionsSurviveARestartAndDeletionClearsThem() {
         businesses.pick(shop, "economical");
-        selections.select(shop, OWNER, "a");
+        selections.select(shop, "a");
         selections.loadAll();
         assertTrue(selections.isSelected(shop, "a"));
         businesses.delete(shop);

@@ -51,7 +51,7 @@ public final class SqlBusinessRepository implements BusinessRepository {
                     String id = rows.getString("id");
                     businesses.add(new BusinessSnapshot(id, rows.getString("display_name"), rows.getString("type_id"),
                             rows.getInt("tier"),
-                            new CharacterRef(UUID.fromString(rows.getString("owner_uuid")), rows.getString("owner_profile")),
+                            readOwner(rows),
                             readPosition(rows), rows.getString("shift_message"),
                             workers.getOrDefault(id, List.of()), picks.getOrDefault(id, List.of())));
                 }
@@ -75,8 +75,7 @@ public final class SqlBusinessRepository implements BusinessRepository {
                 statement.setString(2, business.displayName());
                 statement.setString(3, business.typeId());
                 statement.setInt(4, business.tier());
-                statement.setString(5, business.owner().player().toString());
-                statement.setString(6, business.owner().profile());
+                writeOwner(statement, business.owner());
                 writePosition(statement, business.position());
                 statement.setString(11, business.shiftMessage());
                 statement.executeUpdate();
@@ -158,6 +157,25 @@ public final class SqlBusinessRepository implements BusinessRepository {
             }
         }
         return picks;
+    }
+
+    /** @return the owning character, {@code null} for a server-owned business (no owner columns) */
+    private static CharacterRef readOwner(ResultSet rows) throws SQLException {
+        String player = rows.getString("owner_uuid");
+        if (player == null) {
+            return null;
+        }
+        return new CharacterRef(UUID.fromString(player), rows.getString("owner_profile"));
+    }
+
+    private static void writeOwner(PreparedStatement statement, CharacterRef owner) throws SQLException {
+        if (owner == null) {
+            statement.setNull(5, Types.CHAR);
+            statement.setNull(6, Types.VARCHAR);
+            return;
+        }
+        statement.setString(5, owner.player().toString());
+        statement.setString(6, owner.profile());
     }
 
     private static BlockPosition readPosition(ResultSet rows) throws SQLException {

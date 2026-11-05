@@ -33,7 +33,7 @@ final class BusinessInfo extends BusinessSubCommand {
                 unparsed("id", business.id()),
                 parsed("type", types.find(business.typeId()).map(BusinessType::displayName).orElse(business.typeId())),
                 unparsed("tier", String.valueOf(business.tier())),
-                unparsed("owner", support.describe(business.owner())),
+                unparsed("owner", support.describeOwner(business)),
                 unparsed("count", String.valueOf(business.workers().size())),
                 unparsed("max", String.valueOf(support.businesses.maxWorkers(business))),
                 workers == null ? component("workers", support.messenger.render("business.info-no-workers")) : unparsed("workers", workers),

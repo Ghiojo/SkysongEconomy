@@ -27,8 +27,8 @@ public final class DatabaseSchema {
                     + "display_name VARCHAR(255) NOT NULL, "
                     + "type_id VARCHAR(64) NOT NULL, "
                     + "tier TINYINT NOT NULL, "
-                    + "owner_uuid CHAR(36) NOT NULL, "
-                    + "owner_profile VARCHAR(64) NOT NULL, "
+                    + "owner_uuid CHAR(36) NULL, "
+                    + "owner_profile VARCHAR(64) NULL, "
                     + "world VARCHAR(255) NULL, "
                     + "x INT NULL, y INT NULL, z INT NULL, "
                     + "shift_message VARCHAR(255) NULL) ENGINE=InnoDB",
@@ -139,6 +139,14 @@ public final class DatabaseSchema {
     private static final List<String[]> ADDED_COLUMNS = List.<String[]>of(
             new String[] {"price_ledger", "expression", "VARCHAR(255) NULL"});
 
+    /**
+     * Columns that became optional after their table first shipped: table, column, new
+     * definition. The business owner columns are empty for server-owned businesses.
+     */
+    private static final List<String[]> RELAXED_COLUMNS = List.<String[]>of(
+            new String[] {"businesses", "owner_uuid", "CHAR(36) NULL"},
+            new String[] {"businesses", "owner_profile", "VARCHAR(64) NULL"});
+
     public static void createTables(ConnectionProvider connections) throws SQLException {
         Connection connection = connections.getConnection();
         try (Statement statement = connection.createStatement()) {
@@ -148,6 +156,9 @@ public final class DatabaseSchema {
         }
         for (String[] column : ADDED_COLUMNS) {
             addColumnIfMissing(connection, column[0], column[1], column[2]);
+        }
+        for (String[] column : RELAXED_COLUMNS) {
+            makeNullable(connection, column[0], column[1], column[2]);
         }
     }
 
@@ -166,6 +177,24 @@ public final class DatabaseSchema {
         }
         try (Statement statement = connection.createStatement()) {
             statement.execute("ALTER TABLE " + table + " ADD COLUMN " + column + " " + definition);
+        }
+    }
+
+    /** Lets a NOT NULL column hold NULL; does nothing once it already can, so restarts stay cheap. */
+    private static void makeNullable(Connection connection, String table, String column, String definition)
+            throws SQLException {
+        try (PreparedStatement check = connection.prepareStatement("SELECT IS_NULLABLE FROM information_schema.COLUMNS "
+                + "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?")) {
+            check.setString(1, table);
+            check.setString(2, column);
+            try (ResultSet result = check.executeQuery()) {
+                if (!result.next() || result.getString(1).equalsIgnoreCase("YES")) {
+                    return;
+                }
+            }
+        }
+        try (Statement statement = connection.createStatement()) {
+            statement.execute("ALTER TABLE " + table + " MODIFY COLUMN " + column + " " + definition);
         }
     }
 }

@@ -12,6 +12,10 @@ import java.util.Optional;
 /**
  * A business: a protected block, owned by one character, worked by others.
  * <p>
+ * A business may instead be owned by the server (see {@link #isServerOwned()}): staff run it as
+ * a base NPC business, so no player has to spend a character on it. Nobody is its owner then,
+ * and staff do what an owner would.
+ * <p>
  * A business is identified by its {@link #id()}, which never changes, so its block can be moved
  * or broken without losing it. Players see its {@link #displayName()} instead.
  * <p>
@@ -28,7 +32,7 @@ public final class Business {
     private final String typeId;
     private String displayName;
     private int tier;
-    private CharacterRef owner;
+    private @Nullable CharacterRef owner;
     private @Nullable BlockPosition position;
     private @Nullable String shiftMessage;
     private final List<Hire> workers;
@@ -48,8 +52,12 @@ public final class Business {
         this.picks.sort(Comparator.comparing(SkillPick::pickedAt));
     }
 
-    /** Creates a new tier 1 business whose display name is its id, with no workers. */
-    public static Business create(String id, String typeId, CharacterRef owner, @Nullable BlockPosition position) {
+    /**
+     * Creates a new tier 1 business whose display name is its id, with no workers.
+     *
+     * @param owner the owning character, or {@code null} for a server-owned business
+     */
+    public static Business create(String id, String typeId, @Nullable CharacterRef owner, @Nullable BlockPosition position) {
         return new Business(new BusinessSnapshot(id, id, typeId, MIN_TIER, owner, position, null, List.of(), List.of()));
     }
 
@@ -86,18 +94,27 @@ public final class Business {
         this.tier = checkTier(tier);
     }
 
-    public CharacterRef owner() {
-        return owner;
+    /** @return the owning character, empty when the server owns the business */
+    public Optional<CharacterRef> owner() {
+        return Optional.ofNullable(owner);
     }
 
-    /** @return whether the character owns this business */
+    /** @return whether the server owns the business, so no character does */
+    public boolean isServerOwned() {
+        return owner == null;
+    }
+
+    /** @return whether the character owns this business; always false when the server owns it */
     public boolean isOwner(CharacterRef character) {
-        return owner.equals(character);
+        return character.equals(owner);
     }
 
-    void setOwner(CharacterRef owner) {
-        this.owner = Objects.requireNonNull(owner, "owner");
-        workers.removeIf(hire -> hire.character().equals(owner));
+    /** @param owner the new owning character, or {@code null} to give the business to the server */
+    void setOwner(@Nullable CharacterRef owner) {
+        this.owner = owner;
+        if (owner != null) {
+            workers.removeIf(hire -> hire.character().equals(owner));
+        }
     }
 
     /** @return the business block, empty while it has none (for example after staff broke it) */

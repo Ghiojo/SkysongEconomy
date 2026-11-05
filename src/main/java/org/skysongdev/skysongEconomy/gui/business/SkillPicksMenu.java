@@ -63,7 +63,7 @@ final class SkillPicksMenu extends BorderedMenu {
             return MenuButton.display(theme.item(Material.GRAY_STAINED_GLASS_PANE, "business.picks.menu.locked.name",
                     "business.picks.menu.locked.lore", numberPlaceholder));
         }
-        if (!context.isOwner()) {
+        if (!context.actsAsOwner()) {
             return MenuButton.display(theme.item(Material.GRAY_DYE, "business.picks.menu.empty.name",
                     "business.picks.menu.empty.lore", numberPlaceholder));
         }

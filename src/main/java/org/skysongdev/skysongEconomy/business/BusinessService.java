@@ -13,6 +13,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.regex.Pattern;
 
@@ -98,11 +99,25 @@ public final class BusinessService {
     }
 
     /**
-     * Creates a tier 1 business on a block.
+     * Creates a tier 1 business on a block, owned by a character.
      *
      * @throws BusinessException when the id is invalid or taken, the type is unknown, or the block is used
      */
     public Business create(String id, String typeId, CharacterRef owner, BlockPosition position) {
+        return createOwnedBy(id, typeId, Objects.requireNonNull(owner, "owner"), position);
+    }
+
+    /**
+     * Creates a tier 1 business on a block, owned by the server: a base NPC business that staff
+     * run, so no player spends a character on it.
+     *
+     * @throws BusinessException when the id is invalid or taken, the type is unknown, or the block is used
+     */
+    public Business createServerOwned(String id, String typeId, BlockPosition position) {
+        return createOwnedBy(id, typeId, null, position);
+    }
+
+    private Business createOwnedBy(String id, String typeId, @Nullable CharacterRef owner, BlockPosition position) {
         String normalized = id.toLowerCase(Locale.ROOT);
         if (!ID.matcher(normalized).matches()) {
             throw new BusinessException("business.invalid-id", Map.of("id", id));
@@ -244,7 +259,13 @@ public final class BusinessService {
 
     /** Gives the business to another character. If they worked there, they stop being a worker. */
     public void setOwner(Business business, CharacterRef owner) {
-        business.setOwner(owner);
+        business.setOwner(Objects.requireNonNull(owner, "owner"));
+        save(business);
+    }
+
+    /** Gives the business to the server; its previous owner, if any, loses it. Workers stay. */
+    public void giveToServer(Business business) {
+        business.setOwner(null);
         save(business);
     }
 
