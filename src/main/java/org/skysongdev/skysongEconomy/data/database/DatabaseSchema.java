@@ -73,6 +73,18 @@ public final class DatabaseSchema {
                     + "profile VARCHAR(64) NOT NULL, "
                     + "balance BIGINT NOT NULL, "
                     + "PRIMARY KEY (player_uuid, profile)) ENGINE=InnoDB",
+            // target is written like ledger:smugglers; expires_at is NULL for never.
+            "CREATE TABLE IF NOT EXISTS price_modifiers ("
+                    + "id VARCHAR(16) PRIMARY KEY NOT NULL, "
+                    + "type VARCHAR(32) NOT NULL, "
+                    + "target VARCHAR(128) NOT NULL, "
+                    + "applies_to VARCHAR(16) NOT NULL, "
+                    + "percent DECIMAL(10, 4) NOT NULL, "
+                    + "display_name VARCHAR(255) NOT NULL, "
+                    + "expires_at BIGINT NULL, "
+                    + "created_by VARCHAR(64) NOT NULL, "
+                    + "created_at BIGINT NOT NULL, "
+                    + "INDEX (target)) ENGINE=InnoDB",
             // A shift is kept from its start until its pay is retrieved; finished_at is NULL while it runs.
             "CREATE TABLE IF NOT EXISTS business_shifts ("
                     + "id CHAR(36) PRIMARY KEY NOT NULL, "

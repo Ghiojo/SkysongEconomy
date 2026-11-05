@@ -286,3 +286,22 @@ prices:
   unknown-item: "<red><yellow><material></yellow> has no base value in the price database yet."
   loop: "<red>That would make a loop: <path>."
   still-used: "<red>The base value of <yellow><material></yellow> is used by <users>. Change those first."
+  # /se modifier. Every line about one modifier can use <id>, <type>, <target>, <percent> (signed),
+  # <applies-to>, <name>, <by> and <expires>.
+  modifiers:
+    list-header: "<gold>Price modifiers (<count>):"
+    list-entry: "<gray>- <white><id></white> <name><gray>: <yellow><percent>%</yellow> on <white><target></white> (<applies-to>), type <white><type></white>, expires <expires>, set by <by>"
+    list-empty: "<gray>No price modifiers apply."
+    never: "never"
+    added: "<green>Added modifier <white><id></white>: <yellow><percent>%</yellow> on <white><target></white> (<applies-to>), expires <expires>."
+    replaced: "<green>Replaced the <white><type></white> modifier on <white><target></white> (<id>): <yellow><old-percent>%</yellow> is now <yellow><percent>%</yellow>, expires <expires>."
+    removed: "<green>Removed modifier <white><id></white> (<yellow><percent>%</yellow> on <white><target></white>)."
+    not-found: "<red>There is no price modifier <yellow><id></yellow>. See /se modifier list."
+    exists: "<red><yellow><target></yellow> already has a <yellow><type></yellow> modifier (<id>). Use /se modifier set to replace it."
+    invalid-target: '<red><yellow><target></yellow> isn''t a target. Use global, business:\<id>, ledger:\<id>, good-type:\<type> or item:\<material_id>.'
+    invalid-type: "<red><yellow><type></yellow> isn't a valid type. Use up to <max> lowercase letters, digits and _, like port_tax."
+    invalid-percent: "<red><yellow><percent></yellow> isn't a valid percentage. Use a number from <min> to <max> other than 0, like +10 or -5."
+    invalid-name: "<red>The display name can be at most <max> characters."
+    invalid-duration: "<red><yellow><duration></yellow> isn't a valid time. Use something like 30m, 12h, 7d or 1d12h."
+    invalid-applies-to: "<red><yellow><value></yellow> isn't valid after on:. Use imports, exports or both."
+    already-expired: "<red>That modifier would already be expired."
