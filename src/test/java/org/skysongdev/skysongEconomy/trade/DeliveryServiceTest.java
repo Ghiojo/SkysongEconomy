@@ -89,14 +89,14 @@ class DeliveryServiceTest {
 
     @Test
     void theLedgerMustBeSelected() {
-        trade.selections.remove(trade.shop, TradeFixture.OWNER, "smugglers");
+        trade.selections.remove(trade.shop, "smugglers");
         assertEquals("business.ledgers.not-selected", refusal(() -> order(TradeFixture.OWNER)));
     }
 
     @Test
     void removingTheLedgerKeepsDeliveries() {
         order(TradeFixture.OWNER);
-        trade.selections.remove(trade.shop, TradeFixture.OWNER, "smugglers");
+        trade.selections.remove(trade.shop, "smugglers");
         assertEquals(1, deliveries.deliveries(trade.shop).size());
     }
 

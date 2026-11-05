@@ -79,7 +79,8 @@ public final class BusinessMenus {
                 Placeholder.unparsed("id", business.id()),
                 Placeholder.parsed("type", types.find(business.typeId()).map(BusinessType::displayName).orElse(business.typeId())),
                 Placeholder.unparsed("tier", String.valueOf(business.tier())),
-                Placeholder.unparsed("owner", characterName(business.owner())),
+                Placeholder.unparsed("owner", business.owner().map(BusinessMenus::characterName)
+                        .orElseGet(() -> messenger.plainText("business.server-owner"))),
                 Placeholder.unparsed("workers", String.valueOf(business.workers().size())),
                 Placeholder.unparsed("max", String.valueOf(businesses.maxWorkers(business)))};
     }

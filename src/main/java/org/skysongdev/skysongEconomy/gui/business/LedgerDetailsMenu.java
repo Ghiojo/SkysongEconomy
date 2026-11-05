@@ -7,7 +7,6 @@ import org.bukkit.entity.Player;
 import org.jetbrains.annotations.Nullable;
 import org.skysongdev.skysongEconomy.business.Business;
 import org.skysongdev.skysongEconomy.business.BusinessException;
-import org.skysongdev.skysongEconomy.character.CharacterRef;
 import org.skysongdev.skysongEconomy.gui.ConfirmMenu;
 import org.skysongdev.skysongEconomy.gui.MenuButton;
 import org.skysongdev.skysongEconomy.gui.PagedMenu;
@@ -21,7 +20,6 @@ import org.skysongdev.skysongEconomy.trade.TradeOffer;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -101,7 +99,7 @@ final class LedgerDetailsMenu extends PagedMenu<TradeOffer> {
 
     private MenuButton selectOrRemove() {
         Business business = context.business();
-        if (!context.isOwner()) {
+        if (!context.actsAsOwner()) {
             return MenuButton.display(theme.item(Material.GRAY_DYE, "business.ledgers.details.owner-only.name",
                     "business.ledgers.details.owner-only.lore"));
         }
@@ -122,16 +120,19 @@ final class LedgerDetailsMenu extends PagedMenu<TradeOffer> {
         new ConfirmMenu(theme, theme.title("business.ledgers.confirm.select-title", LedgerScreens.name(ledger)),
                 theme.item(LedgerScreens.material(ledger.icon()), "business.ledgers.confirm.select.name",
                         "business.ledgers.confirm.select.lore", LedgerScreens.name(ledger), screens.slots(business)),
-                click -> owner(click.player()).ifPresent(owner -> {
+                click -> {
+                    if (!mayChooseLedgers(click.player())) {
+                        return;
+                    }
                     try {
-                        screens.selections.select(business, owner, ledger.id());
+                        screens.selections.select(business, ledger.id());
                         screens.messenger.send(click.player(), "business.ledgers.selected", LedgerScreens.name(ledger),
                                 Placeholder.unparsed("business", business.displayName()));
                     } catch (BusinessException refusal) {
                         screens.messenger.send(click.player(), refusal);
                     }
                     screens.openDetails(click.player(), business, ledger);
-                }),
+                },
                 click -> open(click.player())).open(player);
     }
 
@@ -140,9 +141,12 @@ final class LedgerDetailsMenu extends PagedMenu<TradeOffer> {
         new ConfirmMenu(theme, theme.title("business.ledgers.confirm.remove-title", LedgerScreens.name(ledger)),
                 theme.item(Material.BARRIER, "business.ledgers.confirm.remove.name",
                         "business.ledgers.confirm.remove.lore", LedgerScreens.name(ledger), screens.slots(business)),
-                click -> owner(click.player()).ifPresent(owner -> {
+                click -> {
+                    if (!mayChooseLedgers(click.player())) {
+                        return;
+                    }
                     try {
-                        BigDecimal fine = screens.selections.remove(business, owner, ledger.id());
+                        BigDecimal fine = screens.selections.remove(business, ledger.id());
                         screens.messenger.send(click.player(), "business.ledgers.removed", LedgerScreens.name(ledger),
                                 Placeholder.unparsed("business", business.displayName()),
                                 Placeholder.unparsed("fine", screens.wallet.format(fine)));
@@ -150,19 +154,22 @@ final class LedgerDetailsMenu extends PagedMenu<TradeOffer> {
                         screens.messenger.send(click.player(), refusal);
                     }
                     screens.openDetails(click.player(), business, ledger);
-                }),
+                },
                 click -> open(click.player())).open(player);
     }
 
-    /** @return the player's character, checked again because the owner may have changed while the menu was open */
-    private Optional<CharacterRef> owner(Player player) {
-        BusinessMenuContext now = screens.menus.context(player, context.business());
-        if (!now.isOwner()) {
-            screens.messenger.send(player, "business.not-owner",
-                    Placeholder.unparsed("business", context.business().displayName()));
-            return Optional.empty();
+    /**
+     * Checked again on confirm, because the owner may have changed while the menu was open.
+     *
+     * @return whether the player may still select and remove ledgers; tells them when not
+     */
+    private boolean mayChooseLedgers(Player player) {
+        if (screens.menus.context(player, context.business()).actsAsOwner()) {
+            return true;
         }
-        return now.character();
+        screens.messenger.send(player, "business.not-owner",
+                Placeholder.unparsed("business", context.business().displayName()));
+        return false;
     }
 
     @Override

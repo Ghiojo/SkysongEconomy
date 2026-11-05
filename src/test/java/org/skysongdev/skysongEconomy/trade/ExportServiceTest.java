@@ -101,7 +101,7 @@ class ExportServiceTest {
         assertThrows(PriceException.class, () -> exports.quote(trade.shop, LEDGER, AXES,
                 List.of(new Stack(0, "axe", 3))));
         trade.wallet.balances.put(TradeFixture.OWNER.player(), BigDecimal.TEN);
-        trade.selections.remove(trade.shop, TradeFixture.OWNER, LEDGER.id());
+        trade.selections.remove(trade.shop, LEDGER.id());
         assertEquals("business.ledgers.not-selected", refusal(() -> exports.sell(trade.shop, TradeFixture.OWNER, LEDGER, SWORDS,
                 List.of(new Stack(0, "sword", 3)), takes -> { })));
     }

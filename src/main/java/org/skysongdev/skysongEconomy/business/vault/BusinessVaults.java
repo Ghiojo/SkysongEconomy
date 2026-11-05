@@ -3,6 +3,7 @@ package org.skysongdev.skysongEconomy.business.vault;
 import org.skysongdev.skysongEconomy.business.Business;
 import org.skysongdev.skysongEconomy.business.BusinessChangeListener;
 import org.skysongdev.skysongEconomy.business.BusinessException;
+import org.skysongdev.skysongEconomy.character.CharacterRef;
 import org.skysongdev.skysongEconomy.money.Wallet;
 
 import java.math.BigDecimal;
@@ -15,8 +16,9 @@ import java.util.function.Consumer;
  * fees paid for training. It stays in the vault until the owner collects it into their own
  * balance.
  * <p>
- * When a business is deleted, its vault is paid to the owner first. Not thread-safe: use it on
- * the main thread.
+ * When a business is deleted, its vault is paid to the owner first. A server-owned business has
+ * nobody to pay: its vault still fills, but can't be collected, and is emptied when the business
+ * is deleted, so that money leaves the economy. Not thread-safe: use it on the main thread.
  */
 public final class BusinessVaults implements BusinessChangeListener {
     private final VaultRepository repository;
@@ -62,16 +64,19 @@ public final class BusinessVaults implements BusinessChangeListener {
      * Pays everything in the vault to the owner's player.
      *
      * @return the amount paid
-     * @throws BusinessException {@code business.vault.empty} when there is nothing to collect, or
-     *                           {@code business.vault.collect-failed} when the money could not
-     *                           be paid (the vault keeps it)
+     * @throws BusinessException {@code business.vault.server-owned} when the server owns the
+     *                           business, {@code business.vault.empty} when there is nothing to
+     *                           collect, or {@code business.vault.collect-failed} when the money
+     *                           could not be paid (the vault keeps it)
      */
     public BigDecimal collect(Business business) {
+        CharacterRef owner = business.owner().orElseThrow(() ->
+                new BusinessException("business.vault.server-owned", Map.of("business", business.displayName())));
         BigDecimal amount = balance(business);
         if (amount.signum() == 0) {
             throw new BusinessException("business.vault.empty");
         }
-        if (!wallet.deposit(business.owner().player(), amount)) {
+        if (!wallet.deposit(owner.player(), amount)) {
             throw new BusinessException("business.vault.collect-failed", Map.of("amount", wallet.format(amount)));
         }
         setBalance(business, BigDecimal.ZERO);
@@ -83,16 +88,20 @@ public final class BusinessVaults implements BusinessChangeListener {
         return wallet.format(amount);
     }
 
-    /** Pays a deleted business's vault to its owner; the database removes the row itself. */
+    /**
+     * Pays a deleted business's vault to its owner, or drops it when the server owned the
+     * business; the database removes the row itself.
+     */
     @Override
     public void deleted(Business business) {
         BigDecimal amount = balances.remove(business.id());
-        if (amount == null || amount.signum() == 0) {
+        if (amount == null || amount.signum() == 0 || business.isServerOwned()) {
             return;
         }
-        if (!wallet.deposit(business.owner().player(), amount)) {
+        CharacterRef owner = business.owner().orElseThrow();
+        if (!wallet.deposit(owner.player(), amount)) {
             warnings.accept("Could not pay the vault of deleted business " + business.id() + " (" + amount.toPlainString()
-                    + ") to its owner " + business.owner() + "; pay them by hand");
+                    + ") to its owner " + owner + "; pay them by hand");
         }
     }
 

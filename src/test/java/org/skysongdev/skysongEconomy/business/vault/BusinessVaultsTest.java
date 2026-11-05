@@ -102,6 +102,28 @@ class BusinessVaultsTest {
     }
 
     @Test
+    void nobodyCollectsTheVaultOfAServerOwnedBusiness() {
+        Business market = Business.create("market", "crafting", null, null);
+        vaults.deposit(market, money("5"));
+
+        assertEquals("business.vault.server-owned",
+                assertThrows(BusinessException.class, () -> vaults.collect(market)).messageKey());
+        assertMoney("5", vaults.balance(market));
+    }
+
+    @Test
+    void deletingAServerOwnedBusinessDropsItsVault() {
+        Business market = Business.create("market", "crafting", null, null);
+        vaults.deposit(market, money("5"));
+
+        vaults.deleted(market);
+
+        assertMoney("0", vaults.balance(market));
+        assertTrue(wallet.balances.isEmpty());
+        assertTrue(warnings.isEmpty());
+    }
+
+    @Test
     void balancesSurviveALoad() {
         vaults.deposit(business, money("3"));
 

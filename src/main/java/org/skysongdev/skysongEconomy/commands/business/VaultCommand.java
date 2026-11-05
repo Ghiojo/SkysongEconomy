@@ -12,7 +12,8 @@ import static net.kyori.adventure.text.minimessage.tag.resolver.Placeholder.unpa
 
 /**
  * /se business vault &lt;id&gt; [collect]: the owner or staff see what the vault holds; with
- * {@code collect}, it is paid to the owner. Staff collecting still pays the owner.
+ * {@code collect}, it is paid to the owner. Staff collecting still pays the owner; a server-owned
+ * business's vault can't be collected.
  */
 final class VaultCommand extends BusinessSubCommand {
     private final BusinessVaults vaults;
@@ -29,7 +30,7 @@ final class VaultCommand extends BusinessSubCommand {
         if (args.length > 1 && args[1].equalsIgnoreCase("collect")) {
             BigDecimal paid = vaults.collect(business);
             support.messenger.send(sender, "business.vault.collected", unparsed("amount", vaults.format(paid)),
-                    unparsed("owner", support.describe(business.owner())), unparsed("business", business.displayName()));
+                    unparsed("owner", support.describeOwner(business)), unparsed("business", business.displayName()));
             return;
         }
         support.messenger.send(sender, "business.vault.balance",

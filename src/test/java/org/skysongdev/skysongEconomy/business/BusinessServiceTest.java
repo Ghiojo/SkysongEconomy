@@ -19,6 +19,7 @@ import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -230,6 +231,55 @@ class BusinessServiceTest {
         assertTrue(business.isOwner(worker));
         assertFalse(business.isWorker(worker));
         assertFalse(business.isMember(owner));
+    }
+
+    @Test
+    void theServerCanOwnABusinessSoNoCharacterDoes() {
+        Business market = service.createServerOwned("Market", "service", BLOCK);
+
+        assertTrue(market.isServerOwned());
+        assertTrue(market.owner().isEmpty());
+        assertFalse(market.isOwner(owner));
+        assertEquals(market, service.at(BLOCK).orElseThrow());
+        assertEquals(market.snapshot(), repository.saved.get("market"));
+    }
+
+    @Test
+    void serverOwnedBusinessesStillHireWorkers() {
+        Business market = service.createServerOwned("market", "service", BLOCK);
+        CharacterRef worker = character("A");
+
+        service.hire(market, worker);
+
+        assertTrue(market.isWorker(worker));
+        assertTrue(market.isMember(worker));
+    }
+
+    @Test
+    void ownershipMovesBetweenTheServerAndCharacters() {
+        Business business = service.create("smithy", "service", owner, BLOCK);
+        CharacterRef worker = character("A");
+        service.hire(business, worker);
+
+        service.giveToServer(business);
+        assertTrue(business.isServerOwned());
+        assertFalse(business.isMember(owner), "the old owner loses the business");
+        assertTrue(business.isWorker(worker), "workers stay");
+        assertNull(repository.saved.get("smithy").owner());
+
+        service.setOwner(business, worker);
+        assertTrue(business.isOwner(worker));
+        assertFalse(business.isWorker(worker));
+    }
+
+    @Test
+    void serverOwnedBusinessesSurviveARestart() {
+        service.createServerOwned("market", "service", BLOCK);
+
+        BusinessService restarted = new BusinessService(TYPES, TIERS, repository, clock);
+        restarted.loadAll();
+
+        assertTrue(restarted.require("market").isServerOwned());
     }
 
     @Test

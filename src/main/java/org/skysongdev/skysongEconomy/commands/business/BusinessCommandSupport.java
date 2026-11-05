@@ -13,6 +13,7 @@ import org.skysongdev.skysongEconomy.character.CharacterRef;
 import org.skysongdev.skysongEconomy.commands.CharacterArguments;
 import org.skysongdev.skysongEconomy.messaging.Messenger;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -26,6 +27,12 @@ import java.util.Optional;
 final class BusinessCommandSupport {
     /** Staff permission: every business command, on every business. */
     static final String ADMIN_PERMISSION = "skysongeconomy.business.admin";
+
+    /**
+     * Typed instead of a player name to make the server the owner. {@code #} can't appear in a
+     * Minecraft name, so no player is ever mistaken for it.
+     */
+    static final String SERVER_OWNER = "#server";
 
     private static final int TARGET_RANGE = 5;
 
@@ -88,6 +95,25 @@ final class BusinessCommandSupport {
     /** @return a character's name for messages: the profile, and the player when they differ */
     String describe(CharacterRef character) {
         return characterArgs.describe(character);
+    }
+
+    /** @return the owner's name for messages, or the configured name of the server */
+    String describeOwner(Business business) {
+        return business.owner().map(this::describe).orElseGet(() -> messenger.plainText("business.server-owner"));
+    }
+
+    /** @return whether the typed owner is {@link #SERVER_OWNER} */
+    static boolean isServerOwner(String typed) {
+        return typed.equalsIgnoreCase(SERVER_OWNER);
+    }
+
+    /** @return the online players matching what was typed, plus {@link #SERVER_OWNER} when it matches */
+    List<String> owners(String typed) {
+        List<String> owners = new ArrayList<>(onlinePlayers(typed));
+        if (SERVER_OWNER.startsWith(typed.toLowerCase(Locale.ROOT))) {
+            owners.add(SERVER_OWNER);
+        }
+        return owners;
     }
 
     List<String> businessIds(String typed) {
