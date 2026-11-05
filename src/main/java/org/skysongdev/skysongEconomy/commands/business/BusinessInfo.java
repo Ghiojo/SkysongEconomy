@@ -2,6 +2,7 @@ package org.skysongdev.skysongEconomy.commands.business;
 
 import org.bukkit.command.CommandSender;
 import org.skysongdev.skysongEconomy.business.Business;
+import org.skysongdev.skysongEconomy.business.SkillPick;
 import org.skysongdev.skysongEconomy.business.type.BusinessType;
 import org.skysongdev.skysongEconomy.business.type.BusinessTypeRegistry;
 
@@ -36,6 +37,10 @@ final class BusinessInfo extends BusinessSubCommand {
                 unparsed("count", String.valueOf(business.workers().size())),
                 unparsed("max", String.valueOf(support.businesses.maxWorkers(business))),
                 workers == null ? component("workers", support.messenger.render("business.info-no-workers")) : unparsed("workers", workers),
+                business.picks().isEmpty()
+                        ? component("picks", support.messenger.render("business.info-no-workers"))
+                        : unparsed("picks", business.picks().stream().map(SkillPick::skillId).collect(Collectors.joining(", "))),
+                unparsed("free_picks", String.valueOf(business.freePicks())),
                 business.position().isPresent()
                         ? unparsed("position", business.position().get().toString())
                         : component("position", support.messenger.render("business.info-no-block")));

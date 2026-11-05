@@ -25,6 +25,7 @@ import org.skysongdev.skysongEconomy.gui.ChatPrompts;
 import org.skysongdev.skysongEconomy.gui.MenuListener;
 import org.skysongdev.skysongEconomy.gui.MenuTheme;
 import org.skysongdev.skysongEconomy.gui.business.BusinessMenus;
+import org.skysongdev.skysongEconomy.gui.business.SkillPicksEntry;
 import org.skysongdev.skysongEconomy.gui.layout.MenuIcons;
 import org.skysongdev.skysongEconomy.listeners.BusinessBlockListener;
 import org.skysongdev.skysongEconomy.listeners.BusinessInteractListener;
@@ -97,6 +98,7 @@ public final class BusinessFeature implements AutoCloseable {
 
         events.registerEvents(new BusinessBlockListener(businesses, messenger), plugin);
         BusinessMenus menus = createMenus(plugin, configFiles, businesses, types, skysongStats, messenger, messages);
+        menus.addEntry(new SkillPicksEntry(menus, businesses, skysongStats, messenger));
         events.registerEvents(new BusinessInteractListener(businesses, menus), plugin);
         SubCommand command = new BusinessCommand(businesses, types, skysongStats, messenger);
         return new BusinessFeature(businesses, types, command, connections, repository, nameplates, menus);

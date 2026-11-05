@@ -23,6 +23,7 @@ public final class BusinessCommand extends CommandGroup {
         register(new SetShiftMessage(support));
         register(new HireWorker(support));
         register(new FireWorker(support));
+        register(new ClearSkillPick(support));
         register(new BusinessInfo(support, types));
         register(new ListBusinesses(support));
     }

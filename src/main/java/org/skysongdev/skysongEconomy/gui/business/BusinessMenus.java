@@ -64,6 +64,10 @@ public final class BusinessMenus {
         return theme;
     }
 
+    BusinessTypeRegistry types() {
+        return types;
+    }
+
     List<MainMenuEntry> entries() {
         return List.copyOf(entries);
     }

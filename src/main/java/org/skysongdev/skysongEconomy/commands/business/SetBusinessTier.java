@@ -3,7 +3,8 @@ package org.skysongdev.skysongEconomy.commands.business;
 import org.bukkit.command.CommandSender;
 import org.skysongdev.skysongEconomy.business.Business;
 import org.skysongdev.skysongEconomy.business.BusinessException;
-import org.skysongdev.skysongEconomy.business.Hire;
+import org.skysongdev.skysongEconomy.business.SkillPick;
+import org.skysongdev.skysongEconomy.business.TierChange;
 
 import java.util.List;
 import java.util.Map;
@@ -21,12 +22,17 @@ final class SetBusinessTier extends BusinessSubCommand {
     @Override
     protected void run(CommandSender sender, String[] args) {
         Business business = support.businesses.require(args[0]);
-        List<Hire> removed = support.businesses.setTier(business, parseTier(args[1]));
+        TierChange change = support.businesses.setTier(business, parseTier(args[1]));
         support.messenger.send(sender, "business.tier-set",
                 unparsed("business", business.displayName()), unparsed("tier", String.valueOf(business.tier())));
-        if (!removed.isEmpty()) {
-            String names = removed.stream().map(hire -> support.describe(hire.character())).collect(Collectors.joining(", "));
+        if (!change.removedWorkers().isEmpty()) {
+            String names = change.removedWorkers().stream().map(hire -> support.describe(hire.character()))
+                    .collect(Collectors.joining(", "));
             support.messenger.send(sender, "business.tier-removed-workers", unparsed("workers", names));
+        }
+        if (!change.removedPicks().isEmpty()) {
+            String skills = change.removedPicks().stream().map(SkillPick::skillId).collect(Collectors.joining(", "));
+            support.messenger.send(sender, "business.tier-removed-picks", unparsed("skills", skills));
         }
     }
 

@@ -32,6 +32,7 @@ public final class Business {
     private @Nullable BlockPosition position;
     private @Nullable String shiftMessage;
     private final List<Hire> workers;
+    private final List<SkillPick> picks;
 
     private Business(BusinessSnapshot snapshot) {
         this.id = snapshot.id();
@@ -43,11 +44,13 @@ public final class Business {
         this.shiftMessage = snapshot.shiftMessage();
         this.workers = new ArrayList<>(snapshot.workers());
         this.workers.sort(Comparator.comparing(Hire::hiredAt));
+        this.picks = new ArrayList<>(snapshot.picks());
+        this.picks.sort(Comparator.comparing(SkillPick::pickedAt));
     }
 
     /** Creates a new tier 1 business whose display name is its id, with no workers. */
     public static Business create(String id, String typeId, CharacterRef owner, @Nullable BlockPosition position) {
-        return new Business(new BusinessSnapshot(id, id, typeId, MIN_TIER, owner, position, null, List.of()));
+        return new Business(new BusinessSnapshot(id, id, typeId, MIN_TIER, owner, position, null, List.of(), List.of()));
     }
 
     /** Rebuilds a business from storage. */
@@ -56,7 +59,7 @@ public final class Business {
     }
 
     public BusinessSnapshot snapshot() {
-        return new BusinessSnapshot(id, displayName, typeId, tier, owner, position, shiftMessage, workers);
+        return new BusinessSnapshot(id, displayName, typeId, tier, owner, position, shiftMessage, workers, picks);
     }
 
     public String id() {
@@ -151,6 +154,47 @@ public final class Business {
         List<Hire> removed = new ArrayList<>();
         while (workers.size() > Math.max(0, limit)) {
             removed.add(workers.remove(workers.size() - 1));
+        }
+        return removed;
+    }
+
+    /** @return the skill picks, oldest first; there are at most {@link #tier()} */
+    public List<SkillPick> picks() {
+        return List.copyOf(picks);
+    }
+
+    /** @return how many times the skill was picked */
+    public int pickCount(String skillId) {
+        return (int) picks.stream().filter(pick -> pick.skillId().equals(skillId)).count();
+    }
+
+    /** @return how many picks the business has left to make */
+    public int freePicks() {
+        return Math.max(0, tier - picks.size());
+    }
+
+    void addPick(SkillPick pick) {
+        if (freePicks() == 0) {
+            throw new IllegalStateException(id + " has no free skill pick");
+        }
+        picks.add(pick);
+        picks.sort(Comparator.comparing(SkillPick::pickedAt));
+    }
+
+    /** Removes the pick at {@code index} (0 = oldest). */
+    SkillPick removePick(int index) {
+        return picks.remove(index);
+    }
+
+    /**
+     * Removes the newest picks until at most {@code limit} remain.
+     *
+     * @return the removed picks, newest first
+     */
+    List<SkillPick> trimPicksTo(int limit) {
+        List<SkillPick> removed = new ArrayList<>();
+        while (picks.size() > Math.max(0, limit)) {
+            removed.add(picks.remove(picks.size() - 1));
         }
         return removed;
     }

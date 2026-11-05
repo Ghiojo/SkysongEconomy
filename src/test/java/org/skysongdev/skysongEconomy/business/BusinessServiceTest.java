@@ -24,7 +24,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class BusinessServiceTest {
     private static final BusinessTypeRegistry TYPES = new BusinessTypeRegistry(List.of(
-            new BusinessType("service", "Service", Set.of("martial"), true)));
+            new BusinessType("service", "Service", Set.of("martial", "medical"), true),
+            new BusinessType("crafting", "Crafting", Set.of("cooking"), false)));
     /** Tier N allows N workers. */
     private static final BusinessTiers TIERS = new BusinessTiers(
             IntStream.rangeClosed(1, 5).mapToObj(tier -> new TierSettings(tier, tier)).toList());
@@ -69,7 +70,7 @@ class BusinessServiceTest {
 
         assertEquals("business.invalid-id", refusal(() -> service.create("bad id", "service", owner, OTHER_BLOCK)));
         assertEquals("business.id-taken", refusal(() -> service.create("smithy", "service", owner, OTHER_BLOCK)));
-        assertEquals("business.unknown-type", refusal(() -> service.create("bakery", "crafting", owner, OTHER_BLOCK)));
+        assertEquals("business.unknown-type", refusal(() -> service.create("bakery", "gathering", owner, OTHER_BLOCK)));
         assertEquals("business.block-taken", refusal(() -> service.create("bakery", "service", owner, BLOCK)));
     }
 
@@ -191,9 +192,9 @@ class BusinessServiceTest {
         clock.advance(Duration.ofMinutes(1));
         service.hire(business, third);
 
-        List<Hire> removed = service.setTier(business, 1);
+        TierChange change = service.setTier(business, 1);
 
-        assertEquals(List.of(third, second), removed.stream().map(Hire::character).toList());
+        assertEquals(List.of(third, second), change.removedWorkers().stream().map(Hire::character).toList());
         assertEquals(List.of(first), business.workers().stream().map(Hire::character).toList());
         assertEquals(1, repository.saved.get("smithy").workers().size());
     }
@@ -246,8 +247,8 @@ class BusinessServiceTest {
     @Test
     void loadingRestoresBusinessesAndUnplacesDuplicateBlocks() {
         repository.saved.put("a", new BusinessSnapshot("a", "A", "service", 2, owner, BLOCK, "hi",
-                List.of(new Hire(character("W"), Instant.EPOCH))));
-        repository.saved.put("b", new BusinessSnapshot("b", "B", "service", 1, owner, BLOCK, null, List.of()));
+                List.of(new Hire(character("W"), Instant.EPOCH)), List.of(new SkillPick("martial", Instant.EPOCH))));
+        repository.saved.put("b", new BusinessSnapshot("b", "B", "service", 1, owner, BLOCK, null, List.of(), List.of()));
 
         assertEquals(2, service.loadAll());
 
@@ -256,9 +257,70 @@ class BusinessServiceTest {
         assertEquals(2, a.tier());
         assertEquals("hi", a.shiftMessage().orElseThrow());
         assertEquals(1, a.workers().size());
+        assertEquals(1, a.pickCount("martial"));
         assertEquals(a, service.at(BLOCK).orElseThrow());
         assertTrue(service.find("b").orElseThrow().position().isEmpty(), "the second business on a block loses it");
         assertTrue(repository.saved.get("b").position() == null, "and that is saved");
+    }
+
+    @Test
+    void oneSkillPickPerTierFromTheBusinessType() {
+        Business business = service.create("smithy", "service", owner, BLOCK);
+
+        service.pick(business, "martial");
+
+        assertEquals(0, business.freePicks());
+        assertEquals("business.picks.none-free", refusal(() -> service.pick(business, "medical")));
+        service.setTier(business, 3);
+        assertEquals(2, business.freePicks());
+        assertEquals("business.picks.not-offered", refusal(() -> service.pick(business, "cooking")));
+        assertEquals(1, repository.saved.get("smithy").picks().size());
+    }
+
+    @Test
+    void theSameSkillCanBePickedSeveralTimes() {
+        Business business = service.create("smithy", "service", owner, BLOCK);
+        service.setTier(business, 3);
+
+        service.pick(business, "martial");
+        service.pick(business, "martial");
+        service.pick(business, "medical");
+
+        assertEquals(2, business.pickCount("martial"));
+        assertEquals(1, business.pickCount("medical"));
+    }
+
+    @Test
+    void staffClearAPickByItsNumber() {
+        Business business = service.create("smithy", "service", owner, BLOCK);
+        service.setTier(business, 2);
+        service.pick(business, "martial");
+        clock.advance(Duration.ofMinutes(1));
+        service.pick(business, "medical");
+
+        SkillPick cleared = service.clearPick(business, 1);
+
+        assertEquals("martial", cleared.skillId());
+        assertEquals(List.of("medical"), business.picks().stream().map(SkillPick::skillId).toList());
+        assertEquals(1, business.freePicks());
+        assertEquals("business.picks.no-such-pick", refusal(() -> service.clearPick(business, 2)));
+        assertEquals("business.picks.no-such-pick", refusal(() -> service.clearPick(business, 0)));
+    }
+
+    @Test
+    void downgradeRemovesTheNewestPicksFirst() {
+        Business business = service.create("smithy", "service", owner, BLOCK);
+        service.setTier(business, 3);
+        service.pick(business, "martial");
+        clock.advance(Duration.ofMinutes(1));
+        service.pick(business, "medical");
+        clock.advance(Duration.ofMinutes(1));
+        service.pick(business, "martial");
+
+        TierChange change = service.setTier(business, 1);
+
+        assertEquals(List.of("martial", "medical"), change.removedPicks().stream().map(SkillPick::skillId).toList());
+        assertEquals(List.of("martial"), business.picks().stream().map(SkillPick::skillId).toList());
     }
 
     @Test
