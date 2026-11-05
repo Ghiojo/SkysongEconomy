@@ -65,14 +65,15 @@ class MessageCatalogTest {
                 getClass().getResourceAsStream("/messages.yml")), StandardCharsets.UTF_8)) {
             catalog = MessageCatalog.of(YamlFiles.parse("messages.yml", reader), yaml(""), w -> { });
         }
-        Pattern key = Pattern.compile("\"((?:command|business|menu|prompt|tokens)\\.[a-z0-9.-]+)\"");
+        Pattern key = Pattern.compile("\"((?:command|business|menu|prompt|tokens|ledger|prices)\\.[a-z0-9.-]+)\"");
         List<String> missing = new ArrayList<>();
         try (Stream<Path> sources = Files.walk(Path.of("src/main/java"))) {
             for (Path source : sources.filter(path -> path.toString().endsWith(".java")).toList()) {
                 Matcher matcher = key.matcher(Files.readString(source));
                 while (matcher.find()) {
                     String found = matcher.group(1);
-                    if (!found.endsWith(".") && !catalog.has(found)) {
+                    // File names such as "prices.yml" look like keys but aren't.
+                    if (!found.endsWith(".") && !found.endsWith(".yml") && !catalog.has(found)) {
                         missing.add(found + " in " + source.getFileName());
                     }
                 }

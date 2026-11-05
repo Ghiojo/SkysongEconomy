@@ -1,45 +1,68 @@
 package org.skysongdev.skysongEconomy.data.database;
 
+import org.skysongdev.skysongEconomy.prices.BaseValueRepository;
+
+import java.math.BigDecimal;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Optional;
+import java.util.HashMap;
+import java.util.Map;
 
-/** The price of every Skysong item, keyed by its material ID ({@code price_ledger} table). */
-public final class PriceLedgerRepository {
+/**
+ * The price database ({@code price_ledger} table): each Skysong item's base value expression,
+ * keyed by its material id. {@code cost} keeps the value at the time of the last change, for
+ * tools that read the table directly; rows from before expressions existed have only a
+ * {@code cost}, which is read as a plain number.
+ */
+public final class PriceLedgerRepository implements BaseValueRepository {
     private final ConnectionProvider connections;
 
     public PriceLedgerRepository(ConnectionProvider connections) {
         this.connections = connections;
     }
 
-    public Optional<Float> findCost(String materialId) throws SQLException {
+    @Override
+    public Map<String, String> loadAll() {
+        Map<String, String> entries = new HashMap<>();
         try (PreparedStatement statement = connections.getConnection()
-                .prepareStatement("SELECT cost FROM price_ledger WHERE materialId = ?")) {
-            statement.setString(1, materialId);
-            try (ResultSet results = statement.executeQuery()) {
-                return results.next() ? Optional.of(results.getFloat("cost")) : Optional.empty();
+                .prepareStatement("SELECT materialId, cost, expression FROM price_ledger");
+             ResultSet rows = statement.executeQuery()) {
+            while (rows.next()) {
+                String expression = rows.getString("expression");
+                if (expression == null || expression.isBlank()) {
+                    expression = BigDecimal.valueOf(rows.getFloat("cost")).stripTrailingZeros().toPlainString();
+                }
+                entries.put(rows.getString("materialId"), expression);
             }
+        } catch (SQLException e) {
+            throw new StorageException("Failed to load the price database", e);
         }
+        return entries;
     }
 
-    /** Creates the entry or replaces its cost. */
-    public void setCost(String materialId, float cost) throws SQLException {
+    @Override
+    public void save(String materialId, String expression, BigDecimal valueNow) {
         try (PreparedStatement statement = connections.getConnection().prepareStatement(
-                "INSERT INTO price_ledger (materialId, cost) VALUES (?, ?) ON DUPLICATE KEY UPDATE cost = ?")) {
+                "INSERT INTO price_ledger (materialId, cost, expression) VALUES (?, ?, ?) "
+                        + "ON DUPLICATE KEY UPDATE cost = VALUES(cost), expression = VALUES(expression)")) {
             statement.setString(1, materialId);
-            statement.setFloat(2, cost);
-            statement.setFloat(3, cost);
+            statement.setFloat(2, valueNow.floatValue());
+            statement.setString(3, expression);
             statement.executeUpdate();
+        } catch (SQLException e) {
+            throw new StorageException("Failed to save the base value of " + materialId, e);
         }
     }
 
-    /** @return whether an entry existed and was removed */
-    public boolean delete(String materialId) throws SQLException {
+    @Override
+    public void delete(String materialId) {
         try (PreparedStatement statement = connections.getConnection()
                 .prepareStatement("DELETE FROM price_ledger WHERE materialId = ?")) {
             statement.setString(1, materialId);
-            return statement.executeUpdate() > 0;
+            statement.executeUpdate();
+        } catch (SQLException e) {
+            throw new StorageException("Failed to remove the base value of " + materialId, e);
         }
     }
 }

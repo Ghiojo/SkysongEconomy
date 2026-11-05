@@ -1,5 +1,8 @@
 package org.skysongdev.skysongEconomy.data.database;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
@@ -9,7 +12,8 @@ public final class DatabaseSchema {
     private static final List<String> TABLES = List.of(
             "CREATE TABLE IF NOT EXISTS price_ledger ("
                     + "materialId VARCHAR(100) PRIMARY KEY NOT NULL, "
-                    + "cost FLOAT DEFAULT 0)",
+                    + "cost FLOAT DEFAULT 0, "
+                    + "expression VARCHAR(255) NULL)",
             "CREATE TABLE IF NOT EXISTS good_types ("
                     + "id INT AUTO_INCREMENT PRIMARY KEY, "
                     + "goodType VARCHAR(100), "
@@ -111,11 +115,37 @@ public final class DatabaseSchema {
     private DatabaseSchema() {
     }
 
+    /** Columns added after their table first shipped: table, column, definition. */
+    private static final List<String[]> ADDED_COLUMNS = List.<String[]>of(
+            new String[] {"price_ledger", "expression", "VARCHAR(255) NULL"});
+
     public static void createTables(ConnectionProvider connections) throws SQLException {
-        try (Statement statement = connections.getConnection().createStatement()) {
+        Connection connection = connections.getConnection();
+        try (Statement statement = connection.createStatement()) {
             for (String table : TABLES) {
                 statement.execute(table);
             }
+        }
+        for (String[] column : ADDED_COLUMNS) {
+            addColumnIfMissing(connection, column[0], column[1], column[2]);
+        }
+    }
+
+    /** MySQL has no ADD COLUMN IF NOT EXISTS, so ask information_schema first. */
+    private static void addColumnIfMissing(Connection connection, String table, String column, String definition)
+            throws SQLException {
+        try (PreparedStatement check = connection.prepareStatement("SELECT COUNT(*) FROM information_schema.COLUMNS "
+                + "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?")) {
+            check.setString(1, table);
+            check.setString(2, column);
+            try (ResultSet result = check.executeQuery()) {
+                if (result.next() && result.getInt(1) > 0) {
+                    return;
+                }
+            }
+        }
+        try (Statement statement = connection.createStatement()) {
+            statement.execute("ALTER TABLE " + table + " ADD COLUMN " + column + " " + definition);
         }
     }
 }

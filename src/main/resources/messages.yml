@@ -266,3 +266,23 @@ tokens:
   changed: "<green><character> now has <white><tokens></white> Gathering Token(s)."
   invalid-amount: "<red><yellow><amount></yellow> isn't a valid amount of tokens. Use a whole number above 0 (0 is fine for set)."
   not-enough: "<red><character> only has <balance> token(s), so <amount> can't be removed."
+
+ledger:
+  no-material: "<red>Name a material id, or hold an item that has one."
+  not-found: "<red><yellow><material></yellow> has no base value in the price database."
+  view: "<gold><material></gold><gray>: worth <white><value></white> <dark_gray>(<expression>)"
+  set: "<green>The base value of <yellow><material></yellow> is now <white><value></white> <dark_gray>(<expression>)"
+  removed: "<green>Removed the base value of <yellow><material></yellow>."
+  list-header: "<gold>Price database (<count> items):"
+  list-entry: "<gray>- <white><material></white>: <white><value></white> <dark_gray>(<expression>)"
+  list-entry-broken: "<gray>- <white><material></white>: <red>can't be worked out</red> <dark_gray>(<expression>)"
+  storage-error: "<red>The price database couldn't be saved. Check the server log."
+
+prices:
+  invalid-expression: "<red><yellow><expression></yellow> isn't a valid price: it <problem>."
+  division-by-zero: "<red>That price divides by zero."
+  no-base: "<red>{base} has no meaning here."
+  base-in-database: '<red>A base value can''t use {base}. Use numbers and {item:\<material_id>} instead.'
+  unknown-item: "<red><yellow><material></yellow> has no base value in the price database yet."
+  loop: "<red>That would make a loop: <path>."
+  still-used: "<red>The base value of <yellow><material></yellow> is used by <users>. Change those first."

@@ -6,7 +6,6 @@ import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.command.CommandSender;
-import org.skysongdev.skysongEconomy.business.BusinessException;
 
 import java.util.Map;
 
@@ -41,8 +40,8 @@ public final class Messenger {
         recipient.sendMessage(miniMessage.deserialize(catalog.text(MessageCatalog.PREFIX) + catalog.text(key), placeholders));
     }
 
-    /** Sends the message of a refused business action, with its placeholders as unparsed text. */
-    public void send(CommandSender recipient, BusinessException refusal) {
+    /** Sends the message of a refused action, with its placeholders as unparsed text. */
+    public void send(CommandSender recipient, RefusedException refusal) {
         send(recipient, refusal.messageKey(), unparsed(refusal.placeholders()));
     }
 

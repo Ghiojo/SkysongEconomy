@@ -18,6 +18,7 @@ import org.skysongdev.skysongEconomy.data.database.DatabaseSettings;
 import org.skysongdev.skysongEconomy.data.database.EconomyBusinessRepository;
 import org.skysongdev.skysongEconomy.data.database.GoodTypeRepository;
 import org.skysongdev.skysongEconomy.data.database.PriceLedgerRepository;
+import org.skysongdev.skysongEconomy.data.database.StorageException;
 import org.skysongdev.skysongEconomy.data.datatypes.ImportCatalogue;
 import org.skysongdev.skysongEconomy.data.loading.ImportCatalogueLoader;
 import org.skysongdev.skysongEconomy.integration.gringotts.GringottsWallet;
@@ -27,6 +28,8 @@ import org.skysongdev.skysongEconomy.items.MaterialIdResolver;
 import org.skysongdev.skysongEconomy.items.SkysongItemFactory;
 import org.skysongdev.skysongEconomy.messaging.MessageCatalog;
 import org.skysongdev.skysongEconomy.messaging.Messenger;
+import org.skysongdev.skysongEconomy.prices.PriceDatabase;
+import org.skysongdev.skysongEconomy.prices.PriceSettings;
 import org.skysongdev.skysongitems.SkysongItems;
 import org.skysongdev.skysongstats.api.SkysongStatsApi;
 
@@ -47,6 +50,8 @@ import java.util.logging.Level;
 public final class SkysongEconomy extends JavaPlugin {
     private ConnectionProvider connections;
     private PriceLedgerRepository priceLedger;
+    private PriceDatabase prices;
+    private PriceSettings priceSettings;
     private GoodTypeRepository goodTypes;
     private EconomyBusinessRepository economyBusinesses;
     private SkysongItemFactory importItems;
@@ -71,6 +76,7 @@ public final class SkysongEconomy extends JavaPlugin {
         YamlFiles configFiles = new YamlFiles(getDataFolder().toPath(), path -> saveResource(path, false));
         MessageCatalog messages = loadMessages(configFiles);
         Messenger messenger = new Messenger(MiniMessage.miniMessage(), messages);
+        loadPrices(configFiles);
         businessFeature = BusinessFeature.start(this, configFiles, databaseSettings(), skysongStats,
                 new GringottsWallet(), messenger, messages);
 
@@ -97,6 +103,23 @@ public final class SkysongEconomy extends JavaPlugin {
         } catch (SQLException e) {
             // Keep running: repositories reconnect on their next query once the database is reachable.
             getLogger().log(Level.SEVERE, "Unable to connect to the database and create tables!", e);
+        }
+    }
+
+    /** Loads prices.yml and the price database; a broken prices.yml falls back to 1 decimal. */
+    private void loadPrices(YamlFiles configFiles) {
+        try {
+            priceSettings = PriceSettings.parse(configFiles.load(PriceSettings.FILE));
+        } catch (ConfigException e) {
+            getLogger().severe("Prices keep 1 decimal until this is fixed: " + e.getMessage());
+            priceSettings = new PriceSettings(1);
+        }
+        prices = new PriceDatabase(priceLedger);
+        try {
+            prices.loadAll(getLogger()::warning);
+            getLogger().info("Loaded " + prices.all().size() + " base value(s) into the price database");
+        } catch (StorageException e) {
+            getLogger().log(Level.SEVERE, "The price database could not be loaded", e);
         }
     }
 
@@ -127,13 +150,20 @@ public final class SkysongEconomy extends JavaPlugin {
         if (command == null) {
             throw new IllegalStateException("The 'se' command is missing from plugin.yml");
         }
-        SkysongEconomyCommand executor = new SkysongEconomyCommand(priceLedger, goodTypes, materialIds, messenger, getLogger());
+        SkysongEconomyCommand executor = new SkysongEconomyCommand(prices, priceSettings, goodTypes, materialIds, messenger,
+                getLogger());
         businessFeature.commands().forEach(executor::register);
         command.setExecutor(executor);
     }
 
-    public PriceLedgerRepository getPriceLedger() {
-        return priceLedger;
+    /** The price database: every item's base value. */
+    public PriceDatabase getPrices() {
+        return prices;
+    }
+
+    /** How many decimals prices keep. */
+    public PriceSettings getPriceSettings() {
+        return priceSettings;
     }
 
     public GoodTypeRepository getGoodTypes() {
