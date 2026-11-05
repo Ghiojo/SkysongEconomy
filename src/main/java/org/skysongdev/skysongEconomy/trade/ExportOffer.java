@@ -17,7 +17,7 @@ import java.util.Objects;
  * @param price       what one batch pays; {@code {base}} is the base value of the items sold
  */
 public record ExportOffer(String id, String displayName, String icon, List<String> lore, Target target, int batch,
-                          PriceExpression price) {
+                          PriceExpression price) implements TradeOffer {
     public ExportOffer {
         Objects.requireNonNull(id, "id");
         Objects.requireNonNull(displayName, "displayName");

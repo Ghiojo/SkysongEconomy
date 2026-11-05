@@ -21,7 +21,7 @@ import java.util.Optional;
  *                    the bundle's base value
  */
 public record ImportOffer(String id, String displayName, String icon, List<String> lore, Bundle contents,
-                          Map<String, PriceExpression> prices) {
+                          Map<String, PriceExpression> prices) implements TradeOffer {
     public ImportOffer {
         Objects.requireNonNull(id, "id");
         Objects.requireNonNull(displayName, "displayName");
