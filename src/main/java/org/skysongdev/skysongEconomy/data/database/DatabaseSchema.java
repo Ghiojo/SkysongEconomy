@@ -28,7 +28,24 @@ public final class DatabaseSchema {
                     + "member_uuids VARCHAR(5000), "
                     + "catalog_ids VARCHAR(5000), "
                     + "x INT, y INT, z INT, "
-                    + "world VARCHAR(255))");
+                    + "world VARCHAR(255))",
+            "CREATE TABLE IF NOT EXISTS businesses ("
+                    + "id VARCHAR(64) PRIMARY KEY NOT NULL, "
+                    + "display_name VARCHAR(255) NOT NULL, "
+                    + "type_id VARCHAR(64) NOT NULL, "
+                    + "tier TINYINT NOT NULL, "
+                    + "owner_uuid CHAR(36) NOT NULL, "
+                    + "owner_profile VARCHAR(64) NOT NULL, "
+                    + "world VARCHAR(255) NULL, "
+                    + "x INT NULL, y INT NULL, z INT NULL, "
+                    + "shift_message VARCHAR(255) NULL) ENGINE=InnoDB",
+            "CREATE TABLE IF NOT EXISTS business_workers ("
+                    + "business_id VARCHAR(64) NOT NULL, "
+                    + "player_uuid CHAR(36) NOT NULL, "
+                    + "profile VARCHAR(64) NOT NULL, "
+                    + "hired_at BIGINT NOT NULL, "
+                    + "PRIMARY KEY (business_id, player_uuid, profile), "
+                    + "FOREIGN KEY (business_id) REFERENCES businesses(id) ON DELETE CASCADE) ENGINE=InnoDB");
 
     private DatabaseSchema() {
     }

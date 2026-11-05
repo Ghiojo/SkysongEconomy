@@ -135,6 +135,27 @@ public final class ConfigSection {
         return List.copyOf(result);
     }
 
+    /**
+     * Lists every value below this section that is not itself a section, by its dotted path
+     * from here, e.g. {@code business.created}. Lists stay lists.
+     */
+    public Map<String, Object> leaves() {
+        Map<String, Object> leaves = new LinkedHashMap<>();
+        collectLeaves("", values, leaves);
+        return leaves;
+    }
+
+    private static void collectLeaves(String prefix, Map<?, ?> map, Map<String, Object> into) {
+        map.forEach((key, value) -> {
+            String path = prefix + key;
+            if (value instanceof Map<?, ?> child) {
+                collectLeaves(path + ".", child, into);
+            } else if (value != null) {
+                into.put(path, value);
+            }
+        });
+    }
+
     /** @return an error about {@code key} of this section, ready to throw */
     public ConfigException error(String key, String problem) {
         return new ConfigException(childPath(key) + " " + problem);

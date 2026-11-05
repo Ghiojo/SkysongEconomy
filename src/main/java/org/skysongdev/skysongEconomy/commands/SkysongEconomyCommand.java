@@ -24,6 +24,11 @@ public final class SkysongEconomyCommand implements TabExecutor {
                 .register(new GoodCommand(goodTypes, materialIds, messenger, logger));
     }
 
+    /** Adds a feature's command, such as {@code /se business}, under {@code /se}. */
+    public void register(SubCommand feature) {
+        root.register(feature);
+    }
+
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
         root.execute(sender, args);

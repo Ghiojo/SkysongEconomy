@@ -1,0 +1,12 @@
+# Business tiers, 1 to 5. Staff set a business's tier with /se business settier.
+# Every tier must be listed. Fields:
+#   workers   how many workers a business of this tier can hire (the owner doesn't count)
+#
+# When a business goes down a tier and has more workers than the new tier allows, the newest
+# hires are removed first.
+tiers:
+  1: {workers: 2}
+  2: {workers: 3}
+  3: {workers: 4}
+  4: {workers: 5}
+  5: {workers: 6}

@@ -1,0 +1,57 @@
+# Every player-facing text of SkysongEconomy, in MiniMessage (https://docs.advntr.dev/minimessage/format.html).
+# Words in <angle_brackets> that aren't colours are placeholders filled in by the plugin.
+# Keys you delete fall back to the defaults, so it's safe to keep only the ones you change.
+
+prefix: "<dark_gray>[<gold>SkysongEconomy<dark_gray>] <reset>"
+
+command:
+  players-only: "<red>Only players can use this command."
+  no-permission: "<red>You don't have permission to do that."
+  usage: "<red>Usage: <usage>"
+  look-at-block: "<red>Look at a block within 5 blocks first."
+  unknown-player: "<red>No player named <yellow><player></yellow> has played here."
+  no-active-character: "<red><player> isn't playing a character right now. Name one of their profiles."
+  unknown-character: "<red><player> has no character called <yellow><profile></yellow>."
+  you-have-no-character: "<red>You need to be playing a character to do that."
+
+business:
+  not-found: "<red>There is no business with the id <yellow><id></yellow>."
+  invalid-id: "<red><yellow><id></yellow> isn't a valid id. Use lower case letters, digits, '_' and '-'."
+  id-taken: "<red>A business with the id <yellow><id></yellow> already exists."
+  unknown-type: "<red>There is no business type called <yellow><type></yellow>."
+  block-taken: "<red>That block already belongs to <yellow><business></yellow>."
+  invalid-name: "<red>A business name must be 1 to <max> characters."
+  invalid-shift-message: "<red>A shift message must be 1 to <max> characters."
+  invalid-tier: "<red>The tier must be a number from <min> to <max>."
+  not-owner: "<red>Only the owner of <yellow><business></yellow> can do that."
+  hire:
+    is-owner: "<red>The owner doesn't need to be hired."
+    already-worker: "<red><character> already works here."
+    full: "<red>This business is full: its tier allows <max> worker(s)."
+  fire:
+    not-worker: "<red><character> doesn't work here."
+  created: "<green>Created the <type> business <yellow><business></yellow> for <owner>."
+  deleted: "<green>Deleted the business <yellow><business></yellow>."
+  delete-confirm: "<yellow>This deletes <business> for good. Run <white>/se business delete <id> confirm</white> to go ahead."
+  moved: "<green><yellow><business></yellow> now opens from this block."
+  renamed: "<green>The business is now called <yellow><business></yellow>."
+  shift-message-set: "<green>Shift message set to: <gray><message>"
+  shift-message-reset: "<green>The shift message is back to the server default."
+  tier-set: "<green><yellow><business></yellow> is now tier <tier>."
+  tier-removed-workers: "<yellow>The new tier has fewer worker slots, so these newest hires were removed: <workers>"
+  owner-set: "<green><yellow><business></yellow> now belongs to <owner>."
+  hired: "<green><character> now works at <yellow><business></yellow>."
+  fired: "<green><character> no longer works at <yellow><business></yellow>."
+  info: |-
+    <gold><business> <gray>(<id>)
+    <gray>Type: <white><type></white>  Tier: <white><tier></white>
+    <gray>Owner: <white><owner></white>
+    <gray>Workers (<count>/<max>): <white><workers></white>
+    <gray>Block: <white><position></white>
+  info-no-workers: "none"
+  info-no-block: "none, use /se business move"
+  list-header: "<gold>Businesses (<count>):"
+  list-entry: "<gray>- <white><business></white> <dark_gray>(<id>, <type>, tier <tier>)"
+  block:
+    protected: "<red>This block belongs to <yellow><business></yellow> and can't be broken."
+    unplaced: "<yellow>You broke the block of <business>. It is kept without a block: use /se business move <id> to place it again."
