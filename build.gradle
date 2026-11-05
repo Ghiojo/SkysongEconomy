@@ -16,8 +16,9 @@ repositories {
 
 dependencies {
     compileOnly("io.papermc.paper:paper-api:1.21-R0.1-SNAPSHOT")
-    implementation files("libs/gringotts-3.0.1.jar")
-    implementation files("libs/SkysongSpecialItems-1.6.0.jar")
+    // Provided at runtime by the Gringotts and Skysong_Items plugins, so they must not be bundled.
+    compileOnly files("libs/gringotts-3.0.1.jar")
+    compileOnly files("libs/SkysongSpecialItems-1.6.0.jar")
 }
 
 tasks {
