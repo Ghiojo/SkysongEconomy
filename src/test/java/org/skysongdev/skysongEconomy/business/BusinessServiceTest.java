@@ -261,6 +261,42 @@ class BusinessServiceTest {
         assertTrue(repository.saved.get("b").position() == null, "and that is saved");
     }
 
+    @Test
+    void listenersHearAboutEveryChangeWithThePreviousBlock() {
+        List<String> heard = new java.util.ArrayList<>();
+        service.addListener(new BusinessChangeListener() {
+            @Override
+            public void changed(Business business, BlockPosition previousPosition) {
+                heard.add("changed " + business.id() + " from " + previousPosition);
+            }
+
+            @Override
+            public void deleted(Business business) {
+                heard.add("deleted " + business.id());
+            }
+
+            @Override
+            public void loaded(Iterable<Business> businesses) {
+                heard.add("loaded");
+            }
+        });
+
+        Business business = service.create("smithy", "service", owner, BLOCK);
+        service.rename(business, "Anvil");
+        service.move(business, OTHER_BLOCK);
+        service.unplace(business);
+        service.delete(business);
+        service.loadAll();
+
+        assertEquals(List.of(
+                "changed smithy from null",
+                "changed smithy from " + BLOCK,
+                "changed smithy from " + BLOCK,
+                "changed smithy from " + OTHER_BLOCK,
+                "deleted smithy",
+                "loaded"), heard);
+    }
+
     /** A clock tests can move forward. */
     private static final class MutableClock extends Clock {
         private Instant now;
