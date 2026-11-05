@@ -135,6 +135,54 @@ public final class ConfigSection {
         return List.copyOf(result);
     }
 
+    /**
+     * @return the list of sections at {@code key}, such as {@code [{item: a}, {item: b}]}, each
+     *         named {@code key[index]} in errors; empty when it is missing
+     */
+    public List<ConfigSection> sections(String key) {
+        Object value = values.get(key);
+        if (value == null) {
+            return List.of();
+        }
+        if (!(value instanceof List<?> list)) {
+            throw error(key, "must be a list");
+        }
+        List<ConfigSection> result = new ArrayList<>(list.size());
+        for (int i = 0; i < list.size(); i++) {
+            if (!(list.get(i) instanceof Map<?, ?> map)) {
+                throw error(key + "[" + i + "]", "must be a section, like {item: steel_ingot, amount: 2}");
+            }
+            result.add(new ConfigSection(childPath(key + "[" + i + "]"), copyKeys(map)));
+        }
+        return List.copyOf(result);
+    }
+
+    /** @return the raw value at {@code key} (text, number, list or map), or {@code null} */
+    public Object raw(String key) {
+        return values.get(key);
+    }
+
+    /**
+     * Lists every value below this section that is not itself a section, by its dotted path
+     * from here, e.g. {@code business.created}. Lists stay lists.
+     */
+    public Map<String, Object> leaves() {
+        Map<String, Object> leaves = new LinkedHashMap<>();
+        collectLeaves("", values, leaves);
+        return leaves;
+    }
+
+    private static void collectLeaves(String prefix, Map<?, ?> map, Map<String, Object> into) {
+        map.forEach((key, value) -> {
+            String path = prefix + key;
+            if (value instanceof Map<?, ?> child) {
+                collectLeaves(path + ".", child, into);
+            } else if (value != null) {
+                into.put(path, value);
+            }
+        });
+    }
+
     /** @return an error about {@code key} of this section, ready to throw */
     public ConfigException error(String key, String problem) {
         return new ConfigException(childPath(key) + " " + problem);

@@ -1,0 +1,494 @@
+# Every player-facing text of SkysongEconomy, in MiniMessage (https://docs.advntr.dev/minimessage/format.html).
+# Words in <angle_brackets> that aren't colours are placeholders filled in by the plugin.
+# Keys you delete fall back to the defaults, so it's safe to keep only the ones you change.
+
+prefix: "<dark_gray>[<gold>SkysongEconomy<dark_gray>] <reset>"
+
+command:
+  players-only: "<red>Only players can use this command."
+  no-permission: "<red>You don't have permission to do that."
+  usage: "<red>Usage: <usage>"
+  look-at-block: "<red>Look at a block within 5 blocks first."
+  unknown-player: "<red>No player named <yellow><player></yellow> has played here."
+  no-active-character: "<red><player> isn't playing a character right now. Name one of their profiles."
+  unknown-character: "<red><player> has no character called <yellow><profile></yellow>."
+  you-have-no-character: "<red>You need to be playing a character to do that."
+
+menu:
+  previous-page: "<yellow>Previous page"
+  next-page: "<yellow>Next page"
+  back: "<yellow>Back"
+  close: "<red>Close"
+  confirm: "<green><bold>Confirm"
+  cancel: "<red><bold>Cancel"
+
+prompt:
+  cancel-word: "cancel"
+  cancelled: "<gray>Cancelled."
+  timed-out: "<gray>You took too long to answer, so nothing changed."
+  rename: "<yellow>Type the business's new name in chat, or <white>cancel</white> to keep the current one."
+
+business:
+  not-found: "<red>There is no business with the id <yellow><id></yellow>."
+  invalid-id: "<red><yellow><id></yellow> isn't a valid id. Use lower case letters, digits, '_' and '-'."
+  id-taken: "<red>A business with the id <yellow><id></yellow> already exists."
+  unknown-type: "<red>There is no business type called <yellow><type></yellow>."
+  block-taken: "<red>That block already belongs to <yellow><business></yellow>."
+  invalid-name: "<red>A business name must be 1 to <max> characters."
+  invalid-shift-message: "<red>A shift message must be 1 to <max> characters."
+  invalid-tier: "<red>The tier must be a number from <min> to <max>."
+  not-owner: "<red>Only the owner of <yellow><business></yellow> can do that."
+  hire:
+    is-owner: "<red>The owner doesn't need to be hired."
+    already-worker: "<red><character> already works here."
+    full: "<red>This business is full: its tier allows <max> worker(s)."
+  fire:
+    not-worker: "<red><character> doesn't work here."
+  created: "<green>Created the <type> business <yellow><business></yellow> for <owner>."
+  deleted: "<green>Deleted the business <yellow><business></yellow>."
+  delete-confirm: "<yellow>This deletes <business> for good. Run <white>/se business delete <id> confirm</white> to go ahead."
+  moved: "<green><yellow><business></yellow> now opens from this block."
+  renamed: "<green>The business is now called <yellow><business></yellow>."
+  shift-message-set: "<green>Shift message set to: <gray><message>"
+  shift-message-reset: "<green>The shift message is back to the server default."
+  tier-set: "<green><yellow><business></yellow> is now tier <tier>."
+  tier-removed-workers: "<yellow>The new tier has fewer worker slots, so these newest hires were removed: <workers>"
+  tier-removed-picks: "<yellow>The new tier has fewer skill picks, so these newest picks were removed: <skills>"
+  owner-set: "<green><yellow><business></yellow> now belongs to <owner>."
+  hired: "<green><character> now works at <yellow><business></yellow>."
+  fired: "<green><character> no longer works at <yellow><business></yellow>."
+  info: |-
+    <gold><business> <gray>(<id>)
+    <gray>Type: <white><type></white>  Tier: <white><tier></white>
+    <gray>Owner: <white><owner></white>
+    <gray>Workers (<count>/<max>): <white><workers></white>
+    <gray>Skill picks (<free_picks> free): <white><picks></white>
+    <gray>Block: <white><position></white>
+  info-no-workers: "none"
+  info-no-block: "none, use /se business move"
+  list-header: "<gold>Businesses (<count>):"
+  list-entry: "<gray>- <white><business></white> <dark_gray>(<id>, <type>, tier <tier>)"
+  access:
+    no-such-group: "<red>This business has no group called <yellow><group></yellow>."
+    invalid-group-id: "<red>A group name may use lower case letters, digits, '_' and '-', up to <max> characters."
+    group-taken: "<red>This business already has a group called <yellow><group></yellow>."
+    too-many-groups: "<red>A business can have at most <max> groups of its own."
+    built-in-delete: "<red>The <yellow><group></yellow> group is built in and can't be deleted."
+    built-in-members: "<red>Who is in <yellow><group></yellow> is decided for you: workers are its workers, everyone is everyone."
+    already-member: "<red><character> is already in <yellow><group></yellow>."
+    not-member: "<red><character> isn't in <yellow><group></yellow>."
+    unknown-permission: "<red><yellow><permission></yellow> isn't a permission. Use one of: <permissions>."
+    invalid-price: "<red><yellow><price></yellow> isn't a valid price. Use a number of 0 or more."
+    group-created: "<green>Created the group <yellow><group></yellow> at <business>. It allows nothing yet: use <white>allow</white> to change that."
+    group-deleted: "<green>Deleted the group <yellow><group></yellow> from <business>."
+    allowed: "<green>Members of <yellow><group></yellow> may now <permission> at <business>."
+    denied: "<green>Members of <yellow><group></yellow> may no longer <permission> at <business>."
+    price-set: "<green>Training at <business> now costs members of <yellow><group></yellow> <white><price></white>."
+    member-added: "<green><character> is now in <yellow><group></yellow> at <business>."
+    member-removed: "<green><character> is no longer in <yellow><group></yellow> at <business>."
+    list-header: "<gold>Access groups of <business>:"
+    list-entry: "<gray>- <white><group></white>: <permissions>. Training costs <white><price></white>. <dark_gray>Members: <members>"
+    members-workers: "its workers"
+    members-everyone: "everyone"
+    members-none: "nobody yet"
+    permissions-none: "may do nothing"
+  vault:
+    empty: "<red>The vault is empty."
+    collect-failed: "<red>Couldn't pay out <amount>. Make room for the coins and try again; the vault keeps them."
+    balance: "<gold>The vault of <business> holds <white><amount></white>."
+    collected: "<green>Paid <white><amount></white> from the vault of <business> to <owner>."
+    collected-own: "<green>You collected <white><amount></white> from the vault."
+    button:
+      name: "<gold>Vault"
+      lore:
+        - "<gray>Holds <white><amount></white>: your cut of"
+        - "<gray>shift pay and paid training."
+        - ""
+        - "<yellow>Click to collect it."
+      lore-empty:
+        - "<gray>Empty. It fills with your cut"
+        - "<gray>of shift pay and paid training."
+  ledgers:
+    not-enabled: "<red><business> has no Economy and Logistics. Pick an Economy and Logistics skill first."
+    unknown: "<red>There is no ledger <yellow><ledger></yellow>."
+    already-selected: "<red>This business has already selected <yellow><ledger></yellow>."
+    full: "<red>All <max> ledger slot(s) are in use. Remove a ledger first."
+    not-selected: "<red>This business hasn't selected <yellow><ledger></yellow>."
+    cannot-afford-fine: "<red>Removing a ledger costs <white><fine></white>, and you don't have that much."
+    selected: "<green>Selected <ledger><green> for <business>."
+    removed: "<green>Removed <ledger><green> from <business> and paid the fine of <white><fine></white>."
+    button:
+      name: "<gold>Ledgers"
+      lore:
+        - "<gray>The trade ledgers this business"
+        - "<gray>imports and exports through."
+        - ""
+        - "<white><used>/<max></white> <gray>ledger slots used"
+        - ""
+        - "<yellow>Click to browse them."
+    menu:
+      title: "Ledgers · <business>"
+      header:
+        name: "<gold>Ledger slots"
+        lore:
+          - "<white><used>/<max></white> <gray>used"
+          - "<gray>Removing a ledger costs <white><fine></white>."
+      selected: "<green>Selected by this business"
+      not-selected: "<gray>Not selected"
+      click: "<yellow>Click to see its imports and exports."
+    details:
+      title: "<ledger>"
+      counts: "<white><imports></white> <gray>import(s), <white><exports></white> <gray>export(s)"
+      import-tag: "<aqua>Import"
+      export-tag: "<light_purple>Export"
+      import-times: "<gray>Delivery: <times>"
+      export-item: "<gray>Sells <white><batch></white> × <white><item></white> per click"
+      export-good-type: "<gray>Sells <white><batch></white> item(s) of type <white><type></white> per click"
+      select:
+        name: "<green>Select this ledger"
+        lore:
+          - "<gray>Puts it in a free ledger slot"
+          - "<gray>(<white><used>/<max></white> <gray>used)."
+          - "<gray>Removing it later costs <white><fine></white>."
+          - ""
+          - "<yellow>Click to select it."
+      remove:
+        name: "<red>Remove this ledger"
+        lore:
+          - "<gray>Frees its slot for a fine of <white><fine></white>."
+          - "<gray>Deliveries on the way still arrive."
+          - ""
+          - "<yellow>Click to remove it."
+      owner-only:
+        name: "<gray>Select this ledger"
+        lore:
+          - "<gray>Only the owner can select"
+          - "<gray>and remove ledgers."
+      full:
+        name: "<gray>No free ledger slot"
+        lore:
+          - "<gray>All <white><max></white> <gray>ledger slots are used."
+          - "<gray>Remove a ledger first."
+    confirm:
+      select-title: "Select this ledger?"
+      select:
+        name: "<ledger>"
+        lore:
+          - "<gray>Uses one of your ledger slots."
+          - "<gray>Removing it later costs <white><fine></white>."
+      remove-title: "Remove this ledger?"
+      remove:
+        name: "<red>Remove <ledger>"
+        lore:
+          - "<gray>You pay a fine of <white><fine></white>."
+          - "<gray>Deliveries on the way still arrive."
+  imports:
+    not-allowed: "<red>Only the owner of <business> and groups allowed to order imports can order here."
+    no-free-slot: "<red>All <max> delivery slot(s) are in use. Collect a delivery first."
+    cannot-afford: "<red>That import costs <white><price></white>, and you don't have that much."
+    time-not-offered: "<red>That import can't be delivered with that delivery time."
+    no-character: "<red>You need an active character to order imports."
+    ordered: "<green>Ordered <import><green> for <white><price></white>. It arrives in <white><duration></white> (<time><green>)."
+    button:
+      name: "<gold>Imports"
+      lore:
+        - "<gray>Order goods from your ledgers."
+        - ""
+        - "<white><free>/<max></white> <gray>delivery slots free"
+        - ""
+        - "<yellow>Click to browse imports."
+      lore-not-allowed:
+        - "<gray>Only the owner and groups allowed"
+        - "<gray>to order imports can use this."
+    menu:
+      title: "Imports · <business>"
+      header:
+        name: "<gold>Imports"
+        lore:
+          - "<white><free>/<max></white> <gray>delivery slots free"
+          - "<gray>From <white><ledgers></white> <gray>selected ledger(s)."
+          - "<gray>Choose a delivery time on the right."
+      from: "<dark_gray>From <ledger>"
+      not-offered: "<gray>Not available with <time><gray>."
+      no-price: "<red>No price yet: an item has no base value."
+      click: "<yellow>Click to order."
+      no-free-slot: "<red>No free delivery slot."
+    time:
+      selected:
+        name: "<green>▶ <time>"
+        lore:
+          - "<gray>Arrives <white><duration></white> after ordering."
+          - "<green>Prices shown are for this time."
+      other:
+        name: "<time>"
+        lore:
+          - "<gray>Arrives <white><duration></white> after ordering."
+          - "<yellow>Click to show prices for this time."
+    contents:
+      item: "<white><amount></white> <gray>×</gray> <white><item></white>"
+      rolls: "<white><rolls></white> <gray>random roll(s) of:"
+      option: "<gray>  • <white><amount></white> × <white><item></white> <dark_gray>(<chance>%)"
+    price:
+      base: "<gray>Price before modifiers: <white><price></white>"
+      modifier: "<gray>  <name><gray>: <yellow><percent>%"
+      final: "<gold>Price: <white><price></white>"
+    confirm:
+      title: "Order this import?"
+      time: "<gray>Delivery: <time> <gray>(<white><duration></white><gray>)"
+      final: "<red>Orders can't be cancelled."
+  slots:
+    gone: "<red>That delivery was already collected."
+    not-ready: "<red>That delivery arrives in <white><duration></white>."
+    not-allowed: "<red>Only whoever ordered it, the owner of <business> and groups allowed to order imports can collect deliveries."
+    item-missing: "<red>An item of that delivery has no item file any more, so it stays in its slot. Ask staff to restore it."
+    collected: "<green>Collected <import><green>."
+    collected-dropped: "<green>Collected <import><green>. Your inventory was full, so some items dropped at your feet."
+    button:
+      name: "<gold>Delivery slots"
+      lore:
+        - "<white><used>/<max></white> <gray>slots in use"
+        - "<white><ready></white> <gray>delivery(ies) ready to collect"
+        - ""
+        - "<yellow>Click to see your deliveries."
+      lore-not-allowed:
+        - "<gray>Only the owner and groups allowed"
+        - "<gray>to order imports can use this."
+    menu:
+      title: "Deliveries · <business>"
+      header:
+        name: "<gold>Delivery slots"
+        lore:
+          - "<white><used>/<max></white> <gray>slots in use"
+          - "<gray>Deliveries keep arriving while you're offline."
+      free:
+        name: "<gray>Free delivery slot"
+        lore:
+          - "<gray>Order an import to fill it."
+      item: "<white><amount></white> <gray>×</gray> <white><item></white>"
+      ordered-by: "<gray>Ordered by <white><character></white>"
+      arrives: "<yellow>Arrives in <white><duration></white>"
+      ready: "<green>Ready! Click to collect."
+  exports:
+    not-allowed: "<red>Only the owner of <business> and groups allowed to sell exports can sell here."
+    not-enough: "<red>Each sale is exactly <white><batch></white> item(s), and you have <white><have></white>."
+    pay-failed: "<red>Couldn't pay you <white><price></white>. Make room for the coins and try again; nothing was taken."
+    sold: "<green>Sold <white><batch></white> item(s) to <export><green> for <white><price></white>."
+    button:
+      name: "<gold>Exports"
+      lore:
+        - "<gray>Sell goods through your ledgers."
+        - "<gray>The money goes to you."
+        - ""
+        - "<yellow>Click to browse exports."
+      lore-not-allowed:
+        - "<gray>Only the owner and groups allowed"
+        - "<gray>to sell exports can use this."
+    menu:
+      title: "Exports · <business>"
+      header:
+        name: "<gold>Exports"
+        lore:
+          - "<gray>Each click sells exactly one batch"
+          - "<gray>from your inventory, or nothing."
+      have: "<gray>You have <white><have></white> that count."
+      not-enough: "<red>You don't have a whole batch."
+      no-price: "<red>No price yet: an item has no base value."
+      pays: "<gold>Pays: <white><price></white>"
+      click: "<yellow>Click to sell one batch."
+  activity:
+    busy-shift: "<red>You're already working a shift (at <business>). One shift or training at a time."
+    busy-training: "<red>You're already training (at <business>). One shift or training at a time."
+  shift:
+    not-worker: "<red>Only the owner and workers of <business> can work shifts there."
+    no-downtime: "<red>A shift costs <cost> downtime and your preferred pool doesn't have that much. See /downtime preference."
+    cancelled: "<red>Your shift couldn't start right now."
+    nothing-owed: "<red><business> owes you nothing yet."
+    pay-failed: "<red>Couldn't pay you <amount>. Make room for the coins and try again; nothing was lost."
+    started: "<green>You started a shift at <yellow><business></yellow>. It ends after <minutes> minute(s) online and not AFK."
+    finished: "<green>Your shift at <yellow><business></yellow> is done. Open the business and use Retrieve Pay."
+    retrieved: "<green>You were paid <pay>."
+    pay-money: "<white><money></white>"
+    pay-with-tokens: "<white><money></white> and <white><tokens></white> Gathering Token(s)"
+    button:
+      name: "<green>Work a Shift"
+      name-unavailable: "<gray>Work a Shift"
+      lore:
+        - "<gray>Takes <white><minutes> minute(s)</white> online, not AFK."
+        - "<gray>Costs <white><cost> downtime</white>."
+        - "<gray>Pays <pay><gray>."
+        - ""
+        - "<yellow>Click to start."
+      lore-working:
+        - "<gray>You're working a shift here."
+        - "<gray>About <white><minutes> minute(s)</white> left."
+      lore-busy:
+        - "<gray>You're already busy with a"
+        - "<gray>shift or training somewhere."
+      lore-not-worker:
+        - "<gray>Only the owner and workers"
+        - "<gray>can work shifts here."
+      lore-no-character:
+        - "<gray>Play a character to work shifts."
+    retrieve:
+      name: "<gold>Retrieve Pay"
+      lore:
+        - "<gray>You're owed <pay><gray>."
+        - ""
+        - "<yellow>Click to collect it."
+      lore-nothing:
+        - "<gray>Nothing to collect here."
+        - "<gray>Finished shifts are paid here."
+  training:
+    no-skills: "<red><business> hasn't picked any skills yet, so there's nothing to train."
+    not-allowed: "<red>The owner of <business> doesn't let you train there."
+    no-downtime: "<red>Training costs <cost> downtime and your preferred pool doesn't have that much. See /downtime preference."
+    cannot-afford: "<red>Training here costs <price>, which you don't have."
+    started: "<green>You started training at <yellow><business></yellow>. It ends after <minutes> minute(s) online and not AFK."
+    finished: "<green>Your training at <yellow><business></yellow> is done:"
+    free: "free"
+    reward:
+      xp-only: "<gray>- <skill><gray>: <white>+<xp> XP"
+      trained: "<gray>- <skill><gray>: <white>+<xp> XP</white> and proficiency progress"
+      no-focus: "<gray>- <skill><gray>: <white>+<xp> XP</white>. Choose a proficiency focus to train proficiency too."
+      other-skill: "<gray>- <skill><gray>: <white>+<xp> XP</white>. Your proficiency focus is in another skill."
+      at-max-tier: "<gray>- <skill><gray>: <white>+<xp> XP</white>. Your proficiency is already as high as this business teaches."
+      unavailable: "<gray>- <skill><gray>: <white>+<xp> XP"
+    button:
+      name: "<aqua>Train/Learn"
+      name-unavailable: "<gray>Train/Learn"
+      lore:
+        - "<gray>Trains: <white><skills>"
+        - "<gray>Takes <white><minutes> minute(s)</white> online, not AFK."
+        - "<gray>Costs <white><cost> downtime</white> and <white><price></white>."
+        - ""
+        - "<yellow>Click to start."
+      lore-training:
+        - "<gray>You're training here."
+        - "<gray>About <white><minutes> minute(s)</white> left."
+      lore-busy:
+        - "<gray>You're already busy with a"
+        - "<gray>shift or training somewhere."
+      lore-no-skills:
+        - "<gray>This business hasn't picked"
+        - "<gray>any skills to teach yet."
+      lore-not-allowed:
+        - "<gray>The owner doesn't let"
+        - "<gray>you train here."
+      lore-no-character:
+        - "<gray>Play a character to train."
+  picks:
+    not-offered: "<red>A business of this type can't pick <yellow><skill></yellow>."
+    none-free: "<red>Every skill pick is used. A tier <tier> business has <tier> pick(s)."
+    no-such-pick: "<red>There is no pick number <yellow><number></yellow>. This business has <count> pick(s)."
+    not-owner: "<red>Only the owner can choose the business's skills."
+    picked: "<green><business> now dedicates a pick to <skill>."
+    cleared: "<green>Cleared pick <number> (<skill>) of <yellow><business></yellow>. The owner can choose again."
+    button:
+      name: "<aqua>Skill picks"
+      lore:
+        - "<gray>The skills this business works with."
+        - "<gray>Picks used: <white><used>/<tier></white>"
+        - ""
+        - "<yellow>Click to view"
+    menu:
+      title: "<dark_gray>Skill picks: <business>"
+      picked:
+        name: "<white>Pick <number>: <skill>"
+        lore:
+          - "<gray>This pick is permanent."
+      empty-owner:
+        name: "<green>Pick <number>: free"
+        lore:
+          - "<gray>Choose a skill of this business's type."
+          - ""
+          - "<yellow>Click to choose"
+      empty:
+        name: "<gray>Pick <number>: free"
+        lore:
+          - "<gray>The owner hasn't chosen yet."
+      locked:
+        name: "<dark_gray>Pick <number>: locked"
+        lore:
+          - "<gray>Unlocks at tier <number>."
+    choice:
+      title: "<dark_gray>Choose a skill"
+      skill:
+        name: "<skill>"
+        lore:
+          - "<gray>Already picked: <white><count></white> time(s)"
+          - ""
+          - "<yellow>Click to pick"
+    confirm:
+      title: "<dark_gray>Pick this skill?"
+      summary:
+        name: "<skill>"
+        lore:
+          - "<gray>This uses pick <number> of <tier>."
+          - "<red>Picks are permanent: only staff can clear one."
+  nameplate: "<gold><business>"
+  menu:
+    title: "<dark_gray><business>"
+    header:
+      name: "<gold><business>"
+      lore:
+        - "<gray>Type: <type>"
+        - "<gray>Tier: <white><tier></white>"
+        - "<gray>Owner: <white><owner></white>"
+        - "<gray>Workers: <white><workers>/<max></white>"
+      lore-manager:
+        - "<gray>Type: <type>"
+        - "<gray>Tier: <white><tier></white>"
+        - "<gray>Owner: <white><owner></white>"
+        - "<gray>Workers: <white><workers>/<max></white>"
+        - ""
+        - "<yellow>Click to rename"
+
+  block:
+    protected: "<red>This block belongs to <yellow><business></yellow> and can't be broken."
+    unplaced: "<yellow>You broke the block of <business>. It is kept without a block: use /se business move <id> to place it again."
+
+tokens:
+  balance-own: "<gold>You have <white><tokens></white> Gathering Token(s)."
+  balance: "<gold><character> has <white><tokens></white> Gathering Token(s)."
+  changed: "<green><character> now has <white><tokens></white> Gathering Token(s)."
+  invalid-amount: "<red><yellow><amount></yellow> isn't a valid amount of tokens. Use a whole number above 0 (0 is fine for set)."
+  not-enough: "<red><character> only has <balance> token(s), so <amount> can't be removed."
+
+ledger:
+  no-material: "<red>Name a material id, or hold an item that has one."
+  not-found: "<red><yellow><material></yellow> has no base value in the price database."
+  view: "<gold><material></gold><gray>: worth <white><value></white> <dark_gray>(<expression>)"
+  set: "<green>The base value of <yellow><material></yellow> is now <white><value></white> <dark_gray>(<expression>)"
+  removed: "<green>Removed the base value of <yellow><material></yellow>."
+  list-header: "<gold>Price database (<count> items):"
+  list-entry: "<gray>- <white><material></white>: <white><value></white> <dark_gray>(<expression>)"
+  list-entry-broken: "<gray>- <white><material></white>: <red>can't be worked out</red> <dark_gray>(<expression>)"
+  storage-error: "<red>The price database couldn't be saved. Check the server log."
+
+prices:
+  invalid-expression: "<red><yellow><expression></yellow> isn't a valid price: it <problem>."
+  division-by-zero: "<red>That price divides by zero."
+  no-base: "<red>{base} has no meaning here."
+  base-in-database: '<red>A base value can''t use {base}. Use numbers and {item:\<material_id>} instead.'
+  unknown-item: "<red><yellow><material></yellow> has no base value in the price database yet."
+  loop: "<red>That would make a loop: <path>."
+  still-used: "<red>The base value of <yellow><material></yellow> is used by <users>. Change those first."
+  # /se modifier. Every line about one modifier can use <id>, <type>, <target>, <percent> (signed),
+  # <applies-to>, <name>, <by> and <expires>.
+  modifiers:
+    list-header: "<gold>Price modifiers (<count>):"
+    list-entry: "<gray>- <white><id></white> <name><gray>: <yellow><percent>%</yellow> on <white><target></white> (<applies-to>), type <white><type></white>, expires <expires>, set by <by>"
+    list-empty: "<gray>No price modifiers apply."
+    never: "never"
+    added: "<green>Added modifier <white><id></white>: <yellow><percent>%</yellow> on <white><target></white> (<applies-to>), expires <expires>."
+    replaced: "<green>Replaced the <white><type></white> modifier on <white><target></white> (<id>): <yellow><old-percent>%</yellow> is now <yellow><percent>%</yellow>, expires <expires>."
+    removed: "<green>Removed modifier <white><id></white> (<yellow><percent>%</yellow> on <white><target></white>)."
+    not-found: "<red>There is no price modifier <yellow><id></yellow>. See /se modifier list."
+    exists: "<red><yellow><target></yellow> already has a <yellow><type></yellow> modifier (<id>). Use /se modifier set to replace it."
+    invalid-target: '<red><yellow><target></yellow> isn''t a target. Use global, business:\<id>, ledger:\<id>, good-type:\<type> or item:\<material_id>.'
+    invalid-type: "<red><yellow><type></yellow> isn't a valid type. Use up to <max> lowercase letters, digits and _, like port_tax."
+    invalid-percent: "<red><yellow><percent></yellow> isn't a valid percentage. Use a number from <min> to <max> other than 0, like +10 or -5."
+    invalid-name: "<red>The display name can be at most <max> characters."
+    invalid-duration: "<red><yellow><duration></yellow> isn't a valid time. Use something like 30m, 12h, 7d or 1d12h."
+    invalid-applies-to: "<red><yellow><value></yellow> isn't valid after on:. Use imports, exports or both."
+    already-expired: "<red>That modifier would already be expired."

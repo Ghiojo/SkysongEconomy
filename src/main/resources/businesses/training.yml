@@ -1,0 +1,24 @@
+# Train/Learn. Who may train, and what it costs, is set per business with access groups
+# (/se business group). The owner always trains for free. Paid fees go to the owner's vault.
+#
+# A player account trains (or works a shift) once at a time.
+
+# How long a session takes. Only time online counts and, when CMI is installed, time spent AFK
+# doesn't.
+duration-minutes: 30
+
+# Downtime spent to start a session, taken from the pool chosen with /downtime preference.
+downtime-cost: 1
+
+# What a finished session gives for each skill the business picked, by how many times it was
+# picked. A business that picked mining twice and smithing once gives the row 2 for mining and
+# the row 1 for smithing.
+#   xp           skill XP
+#   proficiency  proficiency points, only at Service businesses, and only up to the tier's
+#                max-proficiency in tiers.yml (SkysongStats decides which focus they go to)
+rewards:
+  1: {xp: 100, proficiency: 1}
+  2: {xp: 180, proficiency: 2}
+  3: {xp: 250, proficiency: 3}
+  4: {xp: 310, proficiency: 4}
+  5: {xp: 360, proficiency: 5}

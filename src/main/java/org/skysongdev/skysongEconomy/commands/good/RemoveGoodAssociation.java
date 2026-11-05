@@ -1,6 +1,6 @@
 package org.skysongdev.skysongEconomy.commands.good;
 
-import org.skysongdev.skysongEconomy.data.database.GoodTypeRepository;
+import org.skysongdev.skysongEconomy.data.database.CachedGoodTypes;
 import org.skysongdev.skysongEconomy.items.MaterialIdResolver;
 import org.skysongdev.skysongEconomy.messaging.Messenger;
 
@@ -9,7 +9,7 @@ import java.util.logging.Logger;
 
 /** /se good remove [materialId] &lt;goodType&gt;: removes a good type tag from an item. */
 final class RemoveGoodAssociation extends GoodAssociationCommand {
-    RemoveGoodAssociation(GoodTypeRepository goodTypes, MaterialIdResolver materialIds, Messenger messenger, Logger logger) {
+    RemoveGoodAssociation(CachedGoodTypes goodTypes, MaterialIdResolver materialIds, Messenger messenger, Logger logger) {
         super(goodTypes, materialIds, messenger, logger);
     }
 

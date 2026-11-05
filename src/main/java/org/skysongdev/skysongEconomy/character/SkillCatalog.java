@@ -8,4 +8,11 @@ public interface SkillCatalog {
      * @return whether a skill with that id exists
      */
     boolean exists(String skillId);
+
+    /**
+     * @return the skill's name as players see it, in MiniMessage; the id when the skill is unknown
+     */
+    default String displayName(String skillId) {
+        return skillId;
+    }
 }

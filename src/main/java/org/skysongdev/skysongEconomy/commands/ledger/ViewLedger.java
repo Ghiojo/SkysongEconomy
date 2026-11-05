@@ -1,29 +1,19 @@
 package org.skysongdev.skysongEconomy.commands.ledger;
 
-import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.command.CommandSender;
 import org.skysongdev.skysongEconomy.commands.SubCommand;
-import org.skysongdev.skysongEconomy.data.database.PriceLedgerRepository;
-import org.skysongdev.skysongEconomy.items.MaterialIdResolver;
-import org.skysongdev.skysongEconomy.messaging.Messenger;
+import org.skysongdev.skysongEconomy.prices.PriceExpression;
 
-import java.sql.SQLException;
 import java.util.Optional;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
-/** /se ledger view [materialId]: shows the ledger price of an item. */
+import static net.kyori.adventure.text.minimessage.tag.resolver.Placeholder.unparsed;
+
+/** /se ledger view [materialId]: shows an item's base value and how it is worked out. */
 final class ViewLedger implements SubCommand {
-    private final PriceLedgerRepository ledger;
-    private final MaterialIdResolver materialIds;
-    private final Messenger messenger;
-    private final Logger logger;
+    private final LedgerSupport support;
 
-    ViewLedger(PriceLedgerRepository ledger, MaterialIdResolver materialIds, Messenger messenger, Logger logger) {
-        this.ledger = ledger;
-        this.materialIds = materialIds;
-        this.messenger = messenger;
-        this.logger = logger;
+    ViewLedger(LedgerSupport support) {
+        this.support = support;
     }
 
     @Override
@@ -38,27 +28,14 @@ final class ViewLedger implements SubCommand {
 
     @Override
     public void execute(CommandSender sender, String[] args) {
-        Optional<String> materialId = materialIds.fromArgsOrMainHand(sender, args, 0);
-        if (materialId.isEmpty()) {
-            messenger.error(sender, "Specify a material ID or hold an item that has one.");
-            return;
-        }
-
-        Optional<Float> cost;
-        try {
-            cost = ledger.findCost(materialId.get());
-        } catch (SQLException e) {
-            logger.log(Level.SEVERE, "Failed to read the ledger price of " + materialId.get(), e);
-            messenger.error(sender, "An error occurred while trying to retrieve the item's cost.");
-            return;
-        }
-
-        if (cost.isEmpty()) {
-            messenger.error(sender, "<yellow><material></yellow> does not have a cost set in the ledger.",
-                    Placeholder.unparsed("material", materialId.get()));
-            return;
-        }
-        messenger.success(sender, "The current cost of <yellow><material></yellow> is <gold><cost></gold>.",
-                Placeholder.unparsed("material", materialId.get()), Placeholder.unparsed("cost", String.valueOf(cost.get())));
+        support.materialId(sender, args, 0).ifPresent(id -> support.run(sender, "show the base value of " + id, () -> {
+            Optional<PriceExpression> expression = support.prices.expression(id);
+            if (expression.isEmpty()) {
+                support.messenger.send(sender, "ledger.not-found", unparsed("material", id));
+                return;
+            }
+            support.messenger.send(sender, "ledger.view", unparsed("material", id),
+                    support.value(support.prices.value(id).orElseThrow()), unparsed("expression", expression.get().text()));
+        }));
     }
 }

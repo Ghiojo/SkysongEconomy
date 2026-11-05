@@ -8,6 +8,10 @@ depend:
   - Skysong_Items
   - SkysongStats
 
+softdepend:
+  - PlaceholderAPI
+  - CMI
+
 commands:
   se:
     description: Main command for SkysongEconomy
@@ -30,6 +34,27 @@ permissions:
   skysongeconomy.ledger.remove:
     description: Allows removing entries from the economy ledger
     default: op
+  skysongeconomy.business:
+    description: Allows the /se business commands; owners can manage only their own businesses
+    default: true
+  skysongeconomy.business.admin:
+    description: Allows every /se business command on every business (create, delete, tiers, owners)
+    default: op
+  skysongeconomy.business.break:
+    description: Allows breaking business blocks; the business is kept until it is moved
+    default: op
+  skysongeconomy.tokens:
+    description: Allows /se tokens balance, to see your own Gathering Tokens
+    default: true
+  skysongeconomy.tokens.admin:
+    description: Allows seeing and changing anyone's Gathering Tokens
+    default: op
+  skysongeconomy.modifiers:
+    description: Allows /se modifier list, to see the price modifiers
+    default: op
+  skysongeconomy.modifiers.edit:
+    description: Allows /se modifier add, set and remove
+    default: op
   skysongeconomy.*:
     description: Gives access to all SkysongEconomy features
     default: op
@@ -39,3 +64,10 @@ permissions:
       skysongeconomy.good.manage: true
       skysongeconomy.ledger.add: true
       skysongeconomy.ledger.remove: true
+      skysongeconomy.business: true
+      skysongeconomy.business.admin: true
+      skysongeconomy.business.break: true
+      skysongeconomy.tokens: true
+      skysongeconomy.tokens.admin: true
+      skysongeconomy.modifiers: true
+      skysongeconomy.modifiers.edit: true

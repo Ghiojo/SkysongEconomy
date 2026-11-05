@@ -1,29 +1,30 @@
 package org.skysongdev.skysongEconomy.commands.ledger;
 
-import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.command.CommandSender;
 import org.skysongdev.skysongEconomy.commands.SubCommand;
-import org.skysongdev.skysongEconomy.data.database.PriceLedgerRepository;
-import org.skysongdev.skysongEconomy.items.MaterialIdResolver;
-import org.skysongdev.skysongEconomy.messaging.Messenger;
 
-import java.sql.SQLException;
+import java.math.BigDecimal;
+import java.util.Arrays;
+import java.util.Locale;
 import java.util.Optional;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import java.util.regex.Pattern;
 
-/** /se ledger add [materialId] &lt;value&gt;: sets the ledger price of an item. */
+import static net.kyori.adventure.text.minimessage.tag.resolver.Placeholder.unparsed;
+
+/**
+ * /se ledger add [materialId] &lt;expression&gt;: sets an item's base value, e.g.
+ * {@code /se ledger add steel_sword {item:steel_ingot} * 2 + 1}. Without a material id, the held
+ * item's is used. The first word is taken as the id when it looks like one: letters first, and
+ * no expression characters.
+ */
 final class AddLedgerEntry implements SubCommand {
-    private final PriceLedgerRepository ledger;
-    private final MaterialIdResolver materialIds;
-    private final Messenger messenger;
-    private final Logger logger;
+    /** A material id: starts with a letter, then letters, digits, '_', '-', ':' or '.'. */
+    private static final Pattern MATERIAL_ID = Pattern.compile("[A-Za-z][A-Za-z0-9_:.-]*");
 
-    AddLedgerEntry(PriceLedgerRepository ledger, MaterialIdResolver materialIds, Messenger messenger, Logger logger) {
-        this.ledger = ledger;
-        this.materialIds = materialIds;
-        this.messenger = messenger;
-        this.logger = logger;
+    private final LedgerSupport support;
+
+    AddLedgerEntry(LedgerSupport support) {
+        this.support = support;
     }
 
     @Override
@@ -38,39 +39,25 @@ final class AddLedgerEntry implements SubCommand {
 
     @Override
     public String usage() {
-        return "[materialId] <value>";
+        return "[materialId] <expression>";
     }
 
     @Override
     public void execute(CommandSender sender, String[] args) {
         if (args.length == 0) {
-            messenger.error(sender, "Usage: /se ledger add <usage> (hold the item to leave out the material ID)",
-                    Placeholder.unparsed("usage", usage()));
+            support.messenger.send(sender, "command.usage", unparsed("usage", "/se ledger add " + usage()));
             return;
         }
-        Optional<String> materialId = materialIds.fromArgsOrMainHand(sender, args, 1);
-        if (materialId.isEmpty()) {
-            messenger.error(sender, "Specify a material ID or hold an item that has one.");
+        boolean idTyped = args.length > 1 && MATERIAL_ID.matcher(args[0]).matches();
+        Optional<String> id = idTyped ? Optional.of(args[0]) : support.materialId(sender, new String[0], 0);
+        if (id.isEmpty()) {
             return;
         }
-
-        String valueArgument = args[args.length == 1 ? 0 : 1];
-        float value;
-        try {
-            value = Float.parseFloat(valueArgument);
-        } catch (NumberFormatException e) {
-            messenger.error(sender, "<yellow><value></yellow> is not a number.", Placeholder.unparsed("value", valueArgument));
-            return;
-        }
-
-        try {
-            ledger.setCost(materialId.get(), value);
-        } catch (SQLException e) {
-            logger.log(Level.SEVERE, "Failed to save the ledger price of " + materialId.get(), e);
-            messenger.error(sender, "A database error occurred while saving the ledger entry.");
-            return;
-        }
-        messenger.success(sender, "Ledger entry for <yellow><material></yellow> set to <gold><value></gold>.",
-                Placeholder.unparsed("material", materialId.get()), Placeholder.unparsed("value", String.valueOf(value)));
+        String expression = String.join(" ", Arrays.copyOfRange(args, idTyped ? 1 : 0, args.length));
+        support.run(sender, "save the base value of " + id.get(), () -> {
+            BigDecimal value = support.prices.set(id.get(), expression);
+            support.messenger.send(sender, "ledger.set", unparsed("material", id.get().toLowerCase(Locale.ROOT)),
+                    support.value(value), unparsed("expression", expression.strip()));
+        });
     }
 }

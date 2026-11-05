@@ -1,0 +1,21 @@
+# Who may do what at a business, and what they pay to train.
+#
+# Every business has two built-in groups: workers (its workers) and everyone. Owners change
+# their permissions and prices, and can add their own groups (for example customers or a
+# special deal) with /se business group. A character in several groups may do what any of them
+# allows, and pays the lowest training price among the groups that let them train. The owner
+# may do everything and trains for free.
+#
+# Permissions: train, order-imports, sell-exports.
+
+# How many groups an owner may add besides workers and everyone.
+max-custom-groups: 8
+
+# What the built-in groups of a new business start with.
+defaults:
+  workers:
+    permissions: [train, sell-exports]
+    training-price: 0
+  everyone:
+    permissions: []
+    training-price: 10

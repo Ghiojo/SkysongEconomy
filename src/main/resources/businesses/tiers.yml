@@ -1,0 +1,17 @@
+# Business tiers, 1 to 5. Staff set a business's tier with /se business settier.
+# Every tier must be listed. Fields:
+#   workers     how many workers a business of this tier can hire (the owner doesn't count)
+#   vault-cut   money each finished worker shift adds to the business vault for the owner,
+#               on top of the worker's pay (the owner's own shifts add nothing). Default 0.
+#   max-proficiency
+#               the highest SkysongStats proficiency tier (proficiencies.yml) that training at
+#               a Service business of this tier can reach. Default proficient.
+#
+# When a business goes down a tier and has more workers than the new tier allows, the newest
+# hires are removed first.
+tiers:
+  1: {workers: 2, vault-cut: 1, max-proficiency: proficient}
+  2: {workers: 3, vault-cut: 1.5, max-proficiency: proficient}
+  3: {workers: 4, vault-cut: 2, max-proficiency: adept}
+  4: {workers: 5, vault-cut: 2.5, max-proficiency: adept}
+  5: {workers: 6, vault-cut: 3, max-proficiency: master}
