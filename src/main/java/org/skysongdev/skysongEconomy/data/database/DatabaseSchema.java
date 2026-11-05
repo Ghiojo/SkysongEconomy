@@ -130,7 +130,19 @@ public final class DatabaseSchema {
                     + "worked_seconds BIGINT NOT NULL, "
                     + "price DECIMAL(19, 4) NOT NULL, "
                     + "INDEX (business_id), "
-                    + "FOREIGN KEY (business_id) REFERENCES businesses(id) ON DELETE CASCADE) ENGINE=InnoDB");
+                    + "FOREIGN KEY (business_id) REFERENCES businesses(id) ON DELETE CASCADE) ENGINE=InnoDB",
+            // Gathering nodes. The owning business has no foreign key on purpose: when a business is
+            // deleted its nodes become 'unowned' (not public), which the plugin does itself.
+            "CREATE TABLE IF NOT EXISTS nodes ("
+                    + "id VARCHAR(64) PRIMARY KEY NOT NULL, "
+                    + "kind VARCHAR(16) NOT NULL, "
+                    + "source VARCHAR(64) NOT NULL, "
+                    + "tier TINYINT NOT NULL, "
+                    + "owner_kind VARCHAR(16) NOT NULL, "
+                    + "owner_business VARCHAR(64) NULL, "
+                    + "display_name VARCHAR(255) NULL, "
+                    + "world VARCHAR(255) NULL, "
+                    + "x INT NULL, y INT NULL, z INT NULL) ENGINE=InnoDB");
 
     private DatabaseSchema() {
     }

@@ -5,6 +5,7 @@ import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.Nullable;
 import org.skysongdev.skysongEconomy.business.Business;
+import org.skysongdev.skysongEconomy.business.BusinessBlockGuard;
 import org.skysongdev.skysongEconomy.business.BusinessChangeListener;
 import org.skysongdev.skysongEconomy.business.BusinessService;
 import org.skysongdev.skysongEconomy.business.access.AccessDefaults;
@@ -75,9 +76,10 @@ import org.skysongdev.skysongEconomy.integration.placeholderapi.TokenExpansion;
 import org.skysongdev.skysongEconomy.integration.skysongstats.SkysongStatsAdapter;
 import org.skysongdev.skysongEconomy.items.SkysongItemFactory;
 import org.skysongdev.skysongEconomy.listeners.ActivityTimer;
-import org.skysongdev.skysongEconomy.listeners.BusinessBlockListener;
 import org.skysongdev.skysongEconomy.listeners.BusinessInteractListener;
 import org.skysongdev.skysongEconomy.listeners.BusinessNameplates;
+import org.skysongdev.skysongEconomy.listeners.FloatingNames;
+import org.skysongdev.skysongEconomy.listeners.ProtectedBlockListener;
 import org.skysongdev.skysongEconomy.messaging.MessageCatalog;
 import org.skysongdev.skysongEconomy.messaging.Messenger;
 import org.skysongdev.skysongEconomy.money.Wallet;
@@ -199,10 +201,10 @@ public final class BusinessFeature implements AutoCloseable {
         // Deliveries are refunded before the business's other rows go.
         businesses.addListener(deliveries);
 
-        BusinessNameplates nameplates = new BusinessNameplates(businesses, nameplateSettings(configFiles, logger), messenger);
-        businesses.addListener(nameplates);
+        FloatingNames nameplates = new FloatingNames(nameplateSettings(configFiles, logger));
+        businesses.addListener(new BusinessNameplates(nameplates, messenger));
         events.registerEvents(nameplates, plugin);
-        resources.add(nameplates::close);
+        resources.add(nameplates);
         try {
             logger.info("Loaded " + businesses.loadAll() + " business(es) of " + settings.types().all().size() + " type(s)");
             access.loadAll();
@@ -218,7 +220,7 @@ public final class BusinessFeature implements AutoCloseable {
             logger.log(Level.SEVERE, "Businesses could not be loaded from the database", e);
         }
 
-        events.registerEvents(new BusinessBlockListener(businesses, messenger), plugin);
+        events.registerEvents(new ProtectedBlockListener(List.of(new BusinessBlockGuard(businesses)), messenger), plugin);
         BusinessMenus menus = createMenus(plugin, configFiles, businesses, settings.types(), skysongStats, messenger, messages);
         menus.addEntry(new WorkShiftEntry(menus, shifts, activities, wallet, messenger));
         menus.addEntry(new RetrievePayEntry(menus, shifts, wallet, messenger));

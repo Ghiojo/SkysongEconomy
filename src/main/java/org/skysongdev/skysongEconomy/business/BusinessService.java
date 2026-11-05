@@ -1,6 +1,7 @@
 package org.skysongdev.skysongEconomy.business;
 
 import org.jetbrains.annotations.Nullable;
+import org.skysongdev.skysongEconomy.blocks.BlockGuard;
 import org.skysongdev.skysongEconomy.business.tier.BusinessTiers;
 import org.skysongdev.skysongEconomy.business.type.BusinessTypeRegistry;
 import org.skysongdev.skysongEconomy.character.CharacterRef;
@@ -39,6 +40,7 @@ public final class BusinessService {
     private final Map<String, Business> byId = new LinkedHashMap<>();
     private final Map<BlockPosition, Business> byPosition = new HashMap<>();
     private final List<BusinessChangeListener> listeners = new ArrayList<>();
+    private final List<BlockGuard> otherBlocks = new ArrayList<>();
 
     public BusinessService(BusinessTypeRegistry types, BusinessTiers tiers, BusinessRepository repository, Clock clock) {
         this.types = types;
@@ -50,6 +52,14 @@ public final class BusinessService {
     /** Tells {@code listener} about every later change. */
     public void addListener(BusinessChangeListener listener) {
         listeners.add(listener);
+    }
+
+    /**
+     * Keeps businesses off the blocks another feature holds, such as gathering nodes: creating or
+     * moving a business onto one is refused.
+     */
+    public void addBlockGuard(BlockGuard guard) {
+        otherBlocks.add(guard);
     }
 
     /**
@@ -148,7 +158,7 @@ public final class BusinessService {
     /**
      * Moves the business to another block.
      *
-     * @throws BusinessException {@code business.block-taken} when another business uses the block
+     * @throws BusinessException {@code business.block-taken} when another business or feature uses the block
      */
     public void move(Business business, BlockPosition position) {
         if (business.position().filter(position::equals).isPresent()) {
@@ -312,6 +322,11 @@ public final class BusinessService {
         Business other = byPosition.get(position);
         if (other != null) {
             throw new BusinessException("business.block-taken", Map.of("business", other.displayName()));
+        }
+        for (BlockGuard guard : otherBlocks) {
+            guard.at(position).ifPresent(held -> {
+                throw new BusinessException("business.block-taken", Map.of("business", held.name()));
+            });
         }
     }
 
