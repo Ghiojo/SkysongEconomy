@@ -74,7 +74,12 @@ public final class DatabaseSchema {
             "CREATE TABLE IF NOT EXISTS business_vaults ("
                     + "business_id VARCHAR(64) PRIMARY KEY NOT NULL, "
                     + "balance DECIMAL(19, 4) NOT NULL, "
-                    + "FOREIGN KEY (business_id) REFERENCES businesses(id) ON DELETE CASCADE) ENGINE=InnoDB");
+                    + "FOREIGN KEY (business_id) REFERENCES businesses(id) ON DELETE CASCADE) ENGINE=InnoDB",
+            "CREATE TABLE IF NOT EXISTS gathering_tokens ("
+                    + "player_uuid CHAR(36) NOT NULL, "
+                    + "profile VARCHAR(64) NOT NULL, "
+                    + "balance BIGINT NOT NULL, "
+                    + "PRIMARY KEY (player_uuid, profile)) ENGINE=InnoDB");
 
     private DatabaseSchema() {
     }

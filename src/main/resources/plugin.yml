@@ -8,6 +8,9 @@ depend:
   - Skysong_Items
   - SkysongStats
 
+softdepend:
+  - PlaceholderAPI
+
 commands:
   se:
     description: Main command for SkysongEconomy
@@ -39,6 +42,12 @@ permissions:
   skysongeconomy.business.break:
     description: Allows breaking business blocks; the business is kept until it is moved
     default: op
+  skysongeconomy.tokens:
+    description: Allows /se tokens balance, to see your own Gathering Tokens
+    default: true
+  skysongeconomy.tokens.admin:
+    description: Allows seeing and changing anyone's Gathering Tokens
+    default: op
   skysongeconomy.*:
     description: Gives access to all SkysongEconomy features
     default: op
@@ -51,3 +60,5 @@ permissions:
       skysongeconomy.business: true
       skysongeconomy.business.admin: true
       skysongeconomy.business.break: true
+      skysongeconomy.tokens: true
+      skysongeconomy.tokens.admin: true

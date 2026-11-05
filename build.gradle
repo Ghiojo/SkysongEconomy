@@ -13,6 +13,10 @@ repositories {
         url = "https://repo.papermc.io/repository/maven-public/"
     }
     maven {
+        name = "placeholderapi"
+        url = "https://repo.extendedclip.com/releases/"
+    }
+    maven {
         name = "jitpack"
         url = "https://jitpack.io"
     }
@@ -25,6 +29,8 @@ dependencies {
     compileOnly files("libs/SkysongSpecialItems-1.6.0.jar")
     // Characters, skills, proficiencies and downtime. Provided at runtime by the SkysongStats plugin.
     compileOnly 'com.github.Ghiojo.SkysongStats:api:1.0.0'
+    // Optional: the Gathering Token placeholders, when PlaceholderAPI is installed.
+    compileOnly 'me.clip:placeholderapi:2.11.6'
 
     // Unit tests cover the server-independent logic, so they only need JUnit and SnakeYAML
     // (which Paper bundles at runtime).

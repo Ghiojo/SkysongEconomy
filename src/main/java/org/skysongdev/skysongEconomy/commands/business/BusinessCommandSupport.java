@@ -1,8 +1,5 @@
 package org.skysongdev.skysongEconomy.commands.business;
 
-import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
-import org.bukkit.Bukkit;
-import org.bukkit.OfflinePlayer;
 import org.bukkit.block.Block;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -13,6 +10,7 @@ import org.skysongdev.skysongEconomy.business.BusinessException;
 import org.skysongdev.skysongEconomy.business.BusinessService;
 import org.skysongdev.skysongEconomy.character.CharacterDirectory;
 import org.skysongdev.skysongEconomy.character.CharacterRef;
+import org.skysongdev.skysongEconomy.commands.CharacterArguments;
 import org.skysongdev.skysongEconomy.messaging.Messenger;
 
 import java.util.List;
@@ -21,8 +19,9 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * What the /se business commands share: finding players' characters, the block a player is
- * looking at, and who may manage a business. Each lookup that fails tells the sender why.
+ * What the /se business commands share: finding players' characters (through
+ * {@link CharacterArguments}), the block a player is looking at, and who may manage a business.
+ * Each lookup that fails tells the sender why.
  */
 final class BusinessCommandSupport {
     /** Staff permission: every business command, on every business. */
@@ -33,19 +32,17 @@ final class BusinessCommandSupport {
     final BusinessService businesses;
     final CharacterDirectory characters;
     final Messenger messenger;
+    private final CharacterArguments characterArgs;
 
     BusinessCommandSupport(BusinessService businesses, CharacterDirectory characters, Messenger messenger) {
         this.businesses = businesses;
         this.characters = characters;
         this.messenger = messenger;
+        this.characterArgs = new CharacterArguments(characters, messenger);
     }
 
     Optional<Player> requirePlayer(CommandSender sender) {
-        if (sender instanceof Player player) {
-            return Optional.of(player);
-        }
-        messenger.send(sender, "command.players-only");
-        return Optional.empty();
+        return characterArgs.requirePlayer(sender);
     }
 
     /** @return the block the player is looking at, within reach */
@@ -62,41 +59,14 @@ final class BusinessCommandSupport {
         return new BlockPosition(block.getWorld().getName(), block.getX(), block.getY(), block.getZ());
     }
 
-    /**
-     * Finds a player's character: the named profile, or the one they are playing now.
-     *
-     * @param profile a profile name, or {@code null} for their active character
-     */
+    /** @see CharacterArguments#character */
     Optional<CharacterRef> character(CommandSender sender, String playerName, @Nullable String profile) {
-        Optional<OfflinePlayer> player = findPlayer(playerName);
-        if (player.isEmpty()) {
-            messenger.send(sender, "command.unknown-player", Placeholder.unparsed("player", playerName));
-            return Optional.empty();
-        }
-        if (profile == null) {
-            Optional<CharacterRef> active = characters.active(player.get().getUniqueId());
-            if (active.isEmpty()) {
-                messenger.send(sender, "command.no-active-character", Placeholder.unparsed("player", playerName));
-            }
-            return active;
-        }
-        Optional<CharacterRef> named = characters.all(player.get().getUniqueId()).stream()
-                .filter(character -> character.profile().equalsIgnoreCase(profile))
-                .findFirst();
-        if (named.isEmpty()) {
-            messenger.send(sender, "command.unknown-character",
-                    Placeholder.unparsed("player", playerName), Placeholder.unparsed("profile", profile));
-        }
-        return named;
+        return characterArgs.character(sender, playerName, profile);
     }
 
-    /** @return the character the player is playing now */
+    /** @see CharacterArguments#ownCharacter */
     Optional<CharacterRef> ownCharacter(Player player) {
-        Optional<CharacterRef> active = characters.active(player.getUniqueId());
-        if (active.isEmpty()) {
-            messenger.send(player, "command.you-have-no-character");
-        }
-        return active;
+        return characterArgs.ownCharacter(player);
     }
 
     /**
@@ -117,11 +87,7 @@ final class BusinessCommandSupport {
 
     /** @return a character's name for messages: the profile, and the player when they differ */
     String describe(CharacterRef character) {
-        String playerName = Bukkit.getOfflinePlayer(character.player()).getName();
-        if (playerName == null || playerName.equalsIgnoreCase(character.profile())) {
-            return character.profile();
-        }
-        return character.profile() + " (" + playerName + ")";
+        return characterArgs.describe(character);
     }
 
     List<String> businessIds(String typed) {
@@ -130,24 +96,10 @@ final class BusinessCommandSupport {
     }
 
     List<String> onlinePlayers(String typed) {
-        String prefix = typed.toLowerCase(Locale.ROOT);
-        return Bukkit.getOnlinePlayers().stream().map(Player::getName)
-                .filter(name -> name.toLowerCase(Locale.ROOT).startsWith(prefix)).toList();
+        return characterArgs.onlinePlayers(typed);
     }
 
     List<String> profiles(String playerName, String typed) {
-        String prefix = typed.toLowerCase(Locale.ROOT);
-        return findPlayer(playerName)
-                .map(player -> characters.all(player.getUniqueId()).stream().map(CharacterRef::profile)
-                        .filter(profile -> profile.toLowerCase(Locale.ROOT).startsWith(prefix)).toList())
-                .orElse(List.of());
-    }
-
-    private static Optional<OfflinePlayer> findPlayer(String name) {
-        Player online = Bukkit.getPlayerExact(name);
-        if (online != null) {
-            return Optional.of(online);
-        }
-        return Optional.ofNullable(Bukkit.getOfflinePlayerIfCached(name));
+        return characterArgs.profiles(playerName, typed);
     }
 }
