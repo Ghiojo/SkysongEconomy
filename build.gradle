@@ -12,6 +12,10 @@ repositories {
         name = "papermc-repo"
         url = "https://repo.papermc.io/repository/maven-public/"
     }
+    maven {
+        name = "jitpack"
+        url = "https://jitpack.io"
+    }
 }
 
 dependencies {
@@ -19,6 +23,19 @@ dependencies {
     // Provided at runtime by the Gringotts and Skysong_Items plugins, so they must not be bundled.
     compileOnly files("libs/gringotts-3.0.1.jar")
     compileOnly files("libs/SkysongSpecialItems-1.6.0.jar")
+    // Characters, skills, proficiencies and downtime. Provided at runtime by the SkysongStats plugin.
+    compileOnly 'com.github.Ghiojo.SkysongStats:api:1.0.0'
+
+    // Unit tests cover the server-independent logic, so they only need JUnit and SnakeYAML
+    // (which Paper bundles at runtime).
+    testImplementation platform('org.junit:junit-bom:5.11.3')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    testImplementation 'org.yaml:snakeyaml:2.2'
+}
+
+test {
+    useJUnitPlatform()
 }
 
 tasks {

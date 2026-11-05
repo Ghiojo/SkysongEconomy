@@ -1,0 +1,24 @@
+# Business types.
+#
+# Every business has exactly one type. The type decides which skills its owner can pick
+# (one pick per tier) and which pay table its shifts use (see businesses/shifts.yml).
+#
+# Each entry's key is the type's id (lower case letters, digits, '_' and '-'). Fields:
+#   name                MiniMessage name shown to players
+#   skills              SkysongStats skill ids this type offers. A skill can belong to only one type.
+#   trains-proficiency  true if Train/Learn here also trains the player's proficiency focus
+#
+# To add a type, add an entry. To move a skill, move it between lists.
+types:
+  gathering:
+    name: "<green>Gathering"
+    skills: [animalhandling, farming, forestry, mining, mistgathering, woodprocessing]
+    trains-proficiency: false
+  crafting:
+    name: "<blue>Crafting"
+    skills: [alchemy, artificing, cooking, craftsman, metalworking, tailoring, witchcraft]
+    trains-proficiency: false
+  service:
+    name: "<gold>Service"
+    skills: [economical, entertainment, martial, medical, tande]
+    trains-proficiency: true

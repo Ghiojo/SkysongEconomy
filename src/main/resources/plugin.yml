@@ -6,6 +6,7 @@ api-version: '1.21'
 depend:
   - Gringotts
   - Skysong_Items
+  - SkysongStats
 
 commands:
   se:
