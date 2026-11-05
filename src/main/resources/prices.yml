@@ -1,0 +1,9 @@
+# How prices are worked out.
+#
+# Prices in ledgers and in the /se ledger price database can be expressions: numbers, + - * /,
+# parentheses, {base} (the base value of what is being priced) and {item:<material_id>} (the
+# base value of another item in the price database). For example:
+#   /se ledger add steel_sword {item:steel_ingot} * 2 + 1
+#
+# How many decimals a price keeps. Prices are truncated, never rounded: with 1, 4.09 is 4.0.
+decimals: 1
