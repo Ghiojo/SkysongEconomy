@@ -34,6 +34,7 @@ import org.skysongdev.skysongEconomy.config.PluginPaths;
 import org.skysongdev.skysongEconomy.config.YamlFiles;
 import org.skysongdev.skysongEconomy.data.database.AsyncAccessRepository;
 import org.skysongdev.skysongEconomy.data.database.AsyncBusinessRepository;
+import org.skysongdev.skysongEconomy.data.database.AsyncLedgerSelectionRepository;
 import org.skysongdev.skysongEconomy.data.database.AsyncModifierRepository;
 import org.skysongdev.skysongEconomy.data.database.AsyncShiftRepository;
 import org.skysongdev.skysongEconomy.data.database.AsyncTokenRepository;
@@ -44,6 +45,7 @@ import org.skysongdev.skysongEconomy.data.database.ConnectionProvider;
 import org.skysongdev.skysongEconomy.data.database.DatabaseSettings;
 import org.skysongdev.skysongEconomy.data.database.SqlAccessRepository;
 import org.skysongdev.skysongEconomy.data.database.SqlBusinessRepository;
+import org.skysongdev.skysongEconomy.data.database.SqlLedgerSelectionRepository;
 import org.skysongdev.skysongEconomy.data.database.SqlModifierRepository;
 import org.skysongdev.skysongEconomy.data.database.SqlShiftRepository;
 import org.skysongdev.skysongEconomy.data.database.SqlTokenRepository;
@@ -55,6 +57,7 @@ import org.skysongdev.skysongEconomy.gui.ChatPrompts;
 import org.skysongdev.skysongEconomy.gui.MenuListener;
 import org.skysongdev.skysongEconomy.gui.MenuTheme;
 import org.skysongdev.skysongEconomy.gui.business.BusinessMenus;
+import org.skysongdev.skysongEconomy.gui.business.LedgersEntry;
 import org.skysongdev.skysongEconomy.gui.business.RetrievePayEntry;
 import org.skysongdev.skysongEconomy.gui.business.SkillPicksEntry;
 import org.skysongdev.skysongEconomy.gui.business.TrainEntry;
@@ -82,6 +85,7 @@ import org.skysongdev.skysongEconomy.trade.EconomyLogisticsSettingsParser;
 import org.skysongdev.skysongEconomy.trade.LedgerLoader;
 import org.skysongdev.skysongEconomy.trade.LedgerParser;
 import org.skysongdev.skysongEconomy.trade.LedgerRegistry;
+import org.skysongdev.skysongEconomy.trade.LedgerSelections;
 
 import java.time.Clock;
 import java.util.ArrayList;
@@ -158,6 +162,10 @@ public final class BusinessFeature implements AutoCloseable {
                 settings.types(), settings.tiers(), access, activities, vaults, wallet, skysongStats, skysongStats),
                 new AsyncTrainingRepository(new SqlTrainingRepository(connections), writer), Clock.systemUTC(),
                 logger::warning);
+        LedgerRegistry ledgers = loadLedgers(plugin, paths, settings.economyLogistics(), items);
+        LedgerSelections ledgerSelections = new LedgerSelections(settings.economyLogistics(), ledgers,
+                new AsyncLedgerSelectionRepository(new SqlLedgerSelectionRepository(connections), writer), wallet,
+                Clock.systemUTC());
         PriceModifiers modifiers = new PriceModifiers(
                 new AsyncModifierRepository(new SqlModifierRepository(connections), writer), Clock.systemUTC());
         businesses.addListener(new BusinessChangeListener() {
@@ -171,6 +179,7 @@ public final class BusinessFeature implements AutoCloseable {
         businesses.addListener(shifts);
         businesses.addListener(training);
         businesses.addListener(vaults);
+        businesses.addListener(ledgerSelections);
 
         BusinessNameplates nameplates = new BusinessNameplates(businesses, nameplateSettings(configFiles, logger), messenger);
         businesses.addListener(nameplates);
@@ -183,6 +192,7 @@ public final class BusinessFeature implements AutoCloseable {
             tokens.loadAll();
             shifts.loadAll();
             training.loadAll();
+            ledgerSelections.loadAll();
             logger.info("Loaded " + modifiers.loadAll() + " price modifier(s)");
         } catch (StorageException e) {
             // Keep the commands so staff get clear errors, but nothing loaded means nothing to protect yet.
@@ -196,6 +206,7 @@ public final class BusinessFeature implements AutoCloseable {
         menus.addEntry(new TrainEntry(menus, training, activities, skysongStats, wallet, messenger));
         menus.addEntry(new VaultEntry(menus, vaults, messenger));
         menus.addEntry(new SkillPicksEntry(menus, businesses, skysongStats, messenger));
+        menus.addEntry(new LedgersEntry(menus, ledgers, ledgerSelections, settings.economyLogistics(), wallet, messenger));
         events.registerEvents(new BusinessInteractListener(businesses, menus), plugin);
 
         resources.add(new ActivityTimer(plugin, businesses, shifts, training, skysongStats, afkCheck(plugin), messenger)
@@ -205,9 +216,8 @@ public final class BusinessFeature implements AutoCloseable {
                 new BusinessCommand(businesses, settings.types(), access, vaults, skysongStats, messenger),
                 new TokensCommand(tokens, new CharacterArguments(skysongStats, messenger), messenger),
                 new ModifierCommand(modifiers, messenger, Clock.systemUTC()));
-        LedgerRegistry ledgers = loadLedgers(plugin, paths, settings.economyLogistics(), items);
         BusinessSystem system = new BusinessSystem(businesses, settings.types(), access, vaults, tokens, activities,
-                shifts, training, settings.economyLogistics(), ledgers, modifiers, menus);
+                shifts, training, settings.economyLogistics(), ledgers, ledgerSelections, modifiers, menus);
         return new BusinessFeature(system, commands, resources, logger);
     }
 

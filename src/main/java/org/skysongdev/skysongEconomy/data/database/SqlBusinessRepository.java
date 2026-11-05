@@ -28,7 +28,7 @@ import java.util.UUID;
  * uses transactions, so only share its {@link ConnectionProvider} with repositories that write
  * on the same {@link BackgroundWriter} (such as {@link SqlAccessRepository}): otherwise their
  * statements could land inside its transactions. Deleting a business deletes its access groups,
- * vault, shifts and training sessions.
+ * vault, shifts, training sessions and selected ledgers.
  */
 public final class SqlBusinessRepository implements BusinessRepository {
     private final ConnectionProvider connections;
@@ -118,7 +118,7 @@ public final class SqlBusinessRepository implements BusinessRepository {
         inTransaction(connection -> {
             for (String child : List.of(
                     "business_workers", "business_skill_picks", "business_access_members", "business_access_groups",
-                    "business_vaults", "business_shifts", "business_training")) {
+                    "business_vaults", "business_shifts", "business_training", "business_ledgers")) {
                 try (PreparedStatement statement = connection.prepareStatement("DELETE FROM " + child + " WHERE business_id = ?")) {
                     statement.setString(1, id);
                     statement.executeUpdate();

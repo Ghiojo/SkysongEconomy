@@ -73,6 +73,11 @@ public final class DatabaseSchema {
                     + "profile VARCHAR(64) NOT NULL, "
                     + "balance BIGINT NOT NULL, "
                     + "PRIMARY KEY (player_uuid, profile)) ENGINE=InnoDB",
+            "CREATE TABLE IF NOT EXISTS business_ledgers ("
+                    + "business_id VARCHAR(64) NOT NULL, "
+                    + "ledger_id VARCHAR(100) NOT NULL, "
+                    + "selected_at BIGINT NOT NULL, "
+                    + "PRIMARY KEY (business_id, ledger_id)) ENGINE=InnoDB",
             // target is written like ledger:smugglers; expires_at is NULL for never.
             "CREATE TABLE IF NOT EXISTS price_modifiers ("
                     + "id VARCHAR(16) PRIMARY KEY NOT NULL, "

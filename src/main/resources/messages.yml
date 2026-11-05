@@ -108,6 +108,80 @@ business:
       lore-empty:
         - "<gray>Empty. It fills with your cut"
         - "<gray>of shift pay and paid training."
+  ledgers:
+    not-enabled: "<red><business> has no Economy and Logistics. Pick an Economy and Logistics skill first."
+    unknown: "<red>There is no ledger <yellow><ledger></yellow>."
+    already-selected: "<red>This business has already selected <yellow><ledger></yellow>."
+    full: "<red>All <max> ledger slot(s) are in use. Remove a ledger first."
+    not-selected: "<red>This business hasn't selected <yellow><ledger></yellow>."
+    cannot-afford-fine: "<red>Removing a ledger costs <white><fine></white>, and you don't have that much."
+    selected: "<green>Selected <ledger><green> for <business>."
+    removed: "<green>Removed <ledger><green> from <business> and paid the fine of <white><fine></white>."
+    button:
+      name: "<gold>Ledgers"
+      lore:
+        - "<gray>The trade ledgers this business"
+        - "<gray>imports and exports through."
+        - ""
+        - "<white><used>/<max></white> <gray>ledger slots used"
+        - ""
+        - "<yellow>Click to browse them."
+    menu:
+      title: "Ledgers · <business>"
+      header:
+        name: "<gold>Ledger slots"
+        lore:
+          - "<white><used>/<max></white> <gray>used"
+          - "<gray>Removing a ledger costs <white><fine></white>."
+      selected: "<green>Selected by this business"
+      not-selected: "<gray>Not selected"
+      click: "<yellow>Click to see its imports and exports."
+    details:
+      title: "<ledger>"
+      counts: "<white><imports></white> <gray>import(s), <white><exports></white> <gray>export(s)"
+      import-tag: "<aqua>Import"
+      export-tag: "<light_purple>Export"
+      import-times: "<gray>Delivery: <times>"
+      export-item: "<gray>Sells <white><batch></white> × <white><item></white> per click"
+      export-good-type: "<gray>Sells <white><batch></white> item(s) of type <white><type></white> per click"
+      select:
+        name: "<green>Select this ledger"
+        lore:
+          - "<gray>Puts it in a free ledger slot"
+          - "<gray>(<white><used>/<max></white> <gray>used)."
+          - "<gray>Removing it later costs <white><fine></white>."
+          - ""
+          - "<yellow>Click to select it."
+      remove:
+        name: "<red>Remove this ledger"
+        lore:
+          - "<gray>Frees its slot for a fine of <white><fine></white>."
+          - "<gray>Deliveries on the way still arrive."
+          - ""
+          - "<yellow>Click to remove it."
+      owner-only:
+        name: "<gray>Select this ledger"
+        lore:
+          - "<gray>Only the owner can select"
+          - "<gray>and remove ledgers."
+      full:
+        name: "<gray>No free ledger slot"
+        lore:
+          - "<gray>All <white><max></white> <gray>ledger slots are used."
+          - "<gray>Remove a ledger first."
+    confirm:
+      select-title: "Select this ledger?"
+      select:
+        name: "<ledger>"
+        lore:
+          - "<gray>Uses one of your ledger slots."
+          - "<gray>Removing it later costs <white><fine></white>."
+      remove-title: "Remove this ledger?"
+      remove:
+        name: "<red>Remove <ledger>"
+        lore:
+          - "<gray>You pay a fine of <white><fine></white>."
+          - "<gray>Deliveries on the way still arrive."
   activity:
     busy-shift: "<red>You're already working a shift (at <business>). One shift or training at a time."
     busy-training: "<red>You're already training (at <business>). One shift or training at a time."

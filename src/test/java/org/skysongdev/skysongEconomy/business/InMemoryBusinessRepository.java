@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Map;
 
 /** Keeps saved businesses in a map, so tests can check what was written. */
-final class InMemoryBusinessRepository implements BusinessRepository {
+public final class InMemoryBusinessRepository implements BusinessRepository {
     final Map<String, BusinessSnapshot> saved = new LinkedHashMap<>();
     int writes;
 
