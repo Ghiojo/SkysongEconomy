@@ -54,7 +54,9 @@ public final class SkysongEconomy extends JavaPlugin {
 
     @Override
     public void onDisable() {
-        // Plugin shutdown logic
+        if(database != null){
+            database.close();
+        }
     }
 
     public void InitializeDatabase(){
