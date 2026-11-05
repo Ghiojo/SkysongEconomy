@@ -59,6 +59,7 @@ import org.skysongdev.skysongEconomy.gui.ChatPrompts;
 import org.skysongdev.skysongEconomy.gui.MenuListener;
 import org.skysongdev.skysongEconomy.gui.MenuTheme;
 import org.skysongdev.skysongEconomy.gui.business.BusinessMenus;
+import org.skysongdev.skysongEconomy.gui.business.ExportsEntry;
 import org.skysongdev.skysongEconomy.gui.business.ImportsEntry;
 import org.skysongdev.skysongEconomy.gui.business.LedgersEntry;
 import org.skysongdev.skysongEconomy.gui.business.RetrievePayEntry;
@@ -86,6 +87,7 @@ import org.skysongdev.skysongEconomy.tokens.GatheringTokens;
 import org.skysongdev.skysongEconomy.tokens.TokenPlaceholders;
 import org.skysongdev.skysongEconomy.trade.EconomyLogisticsSettings;
 import org.skysongdev.skysongEconomy.trade.EconomyLogisticsSettingsParser;
+import org.skysongdev.skysongEconomy.trade.ExportService;
 import org.skysongdev.skysongEconomy.trade.LedgerLoader;
 import org.skysongdev.skysongEconomy.trade.LedgerParser;
 import org.skysongdev.skysongEconomy.trade.LedgerRegistry;
@@ -180,6 +182,8 @@ public final class BusinessFeature implements AutoCloseable {
                 ledgerSelections, access, pricing, wallet),
                 new AsyncDeliveryRepository(new SqlDeliveryRepository(connections), writer), Clock.systemUTC(),
                 new SecureRandom(), logger::warning);
+        ExportService exports = new ExportService(settings.economyLogistics(), ledgerSelections, access, pricing,
+                trade.goodTypes(), wallet);
         businesses.addListener(new BusinessChangeListener() {
             @Override
             public void deleted(Business business) {
@@ -223,6 +227,8 @@ public final class BusinessFeature implements AutoCloseable {
         menus.addEntry(new SkillPicksEntry(menus, businesses, skysongStats, messenger));
         menus.addEntry(new ImportsEntry(menus, ledgerSelections, deliveries, pricing, settings.economyLogistics(), wallet,
                 messenger));
+        menus.addEntry(new ExportsEntry(menus, ledgerSelections, exports, settings.economyLogistics(), trade.materialIds(),
+                wallet, messenger));
         menus.addEntry(new SlotsEntry(menus, deliveries, settings.economyLogistics(), ledgers, trade.items(), messenger,
                 Clock.systemUTC()));
         menus.addEntry(new LedgersEntry(menus, ledgers, ledgerSelections, settings.economyLogistics(), wallet, messenger));
@@ -236,7 +242,7 @@ public final class BusinessFeature implements AutoCloseable {
                 new TokensCommand(tokens, new CharacterArguments(skysongStats, messenger), messenger),
                 new ModifierCommand(modifiers, messenger, Clock.systemUTC()));
         BusinessSystem system = new BusinessSystem(businesses, settings.types(), access, vaults, tokens, activities,
-                shifts, training, settings.economyLogistics(), ledgers, ledgerSelections, modifiers, pricing, deliveries, menus);
+                shifts, training, settings.economyLogistics(), ledgers, ledgerSelections, modifiers, pricing, deliveries, exports, menus);
         return new BusinessFeature(system, commands, resources, logger);
     }
 

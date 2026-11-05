@@ -11,6 +11,7 @@ import org.skysongdev.skysongEconomy.gui.business.BusinessMenus;
 import org.skysongdev.skysongEconomy.prices.modifier.PriceModifiers;
 import org.skysongdev.skysongEconomy.tokens.GatheringTokens;
 import org.skysongdev.skysongEconomy.trade.EconomyLogisticsSettings;
+import org.skysongdev.skysongEconomy.trade.ExportService;
 import org.skysongdev.skysongEconomy.trade.LedgerRegistry;
 import org.skysongdev.skysongEconomy.trade.LedgerSelections;
 import org.skysongdev.skysongEconomy.trade.TradePricing;
@@ -33,6 +34,7 @@ import org.skysongdev.skysongEconomy.trade.delivery.DeliveryService;
  * @param modifiers  the price modifiers on imports and exports
  * @param pricing    what imports cost
  * @param deliveries ordered imports, until they are collected
+ * @param exports    selling exports
  * @param menus      the business menus, to add main menu buttons to
  */
 public record BusinessSystem(BusinessService businesses, BusinessTypeRegistry types, AccessService access,
@@ -40,5 +42,6 @@ public record BusinessSystem(BusinessService businesses, BusinessTypeRegistry ty
                              ShiftService shifts, TrainingService training,
                              EconomyLogisticsSettings economyLogistics, LedgerRegistry ledgers, LedgerSelections ledgerSelections,
                              PriceModifiers modifiers, TradePricing pricing, DeliveryService deliveries,
+                             ExportService exports,
                              BusinessMenus menus) {
 }
