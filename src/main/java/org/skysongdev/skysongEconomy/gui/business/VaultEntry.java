@@ -14,7 +14,8 @@ import java.util.Optional;
 
 /**
  * The main menu's Vault button: shows what the vault holds and collects it with a click. Only
- * the owner sees it; staff use {@code /se business vault}.
+ * the owner sees it, or staff on a server-owned business (they collect into their own balance);
+ * staff can also use {@code /se business vault}.
  */
 public final class VaultEntry implements MainMenuEntry {
     private final BusinessMenus menus;
@@ -34,7 +35,7 @@ public final class VaultEntry implements MainMenuEntry {
 
     @Override
     public Optional<MenuButton> button(BusinessMenuContext context) {
-        if (!context.isOwner()) {
+        if (!context.actsAsOwner()) {
             return Optional.empty();
         }
         Business business = context.business();
@@ -48,13 +49,13 @@ public final class VaultEntry implements MainMenuEntry {
 
     private void collect(MenuClick click, Business business) {
         // The menu may have stayed open while the business changed hands.
-        if (!menus.context(click.player(), business).isOwner()) {
+        if (!menus.context(click.player(), business).actsAsOwner()) {
             messenger.send(click.player(), "business.not-owner", Placeholder.unparsed("business", business.displayName()));
             click.player().closeInventory();
             return;
         }
         try {
-            BigDecimal paid = vaults.collect(business);
+            BigDecimal paid = vaults.collect(business, click.player().getUniqueId());
             messenger.send(click.player(), "business.vault.collected-own", Placeholder.unparsed("amount", vaults.format(paid)));
         } catch (BusinessException refusal) {
             messenger.send(click.player(), refusal);

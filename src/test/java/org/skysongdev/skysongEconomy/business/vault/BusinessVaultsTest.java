@@ -102,13 +102,25 @@ class BusinessVaultsTest {
     }
 
     @Test
-    void nobodyCollectsTheVaultOfAServerOwnedBusiness() {
+    void staffCollectTheVaultOfAServerOwnedBusinessIntoTheirOwnBalance() {
         Business market = Business.create("market", "crafting", null, null);
+        UUID staff = UUID.randomUUID();
         vaults.deposit(market, money("5"));
 
         assertEquals("business.vault.server-owned",
                 assertThrows(BusinessException.class, () -> vaults.collect(market)).messageKey());
-        assertMoney("5", vaults.balance(market));
+        assertMoney("5", vaults.collect(market, staff));
+        assertMoney("5", wallet.balance(staff));
+        assertMoney("0", vaults.balance(market));
+    }
+
+    @Test
+    void collectingAnOwnedBusinessAlwaysPaysTheOwner() {
+        vaults.deposit(business, money("3"));
+
+        vaults.collect(business, UUID.randomUUID());
+
+        assertMoney("3", wallet.balance(owner.player()));
     }
 
     @Test

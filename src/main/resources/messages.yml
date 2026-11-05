@@ -96,7 +96,7 @@ business:
     permissions-none: "may do nothing"
   vault:
     empty: "<red>The vault is empty."
-    server-owned: "<red><business> belongs to the server, so nobody can collect its vault."
+    server-owned: "<red><business> belongs to the server: its vault pays whoever collects it, so collect it in game."
     collect-failed: "<red>Couldn't pay out <amount>. Make room for the coins and try again; the vault keeps them."
     balance: "<gold>The vault of <business> holds <white><amount></white>."
     collected: "<green>Paid <white><amount></white> from the vault of <business> to <owner>."
