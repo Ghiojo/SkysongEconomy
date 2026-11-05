@@ -53,7 +53,24 @@ public final class DatabaseSchema {
                     + "skill_id VARCHAR(64) NOT NULL, "
                     + "picked_at BIGINT NOT NULL, "
                     + "INDEX (business_id), "
-                    + "FOREIGN KEY (business_id) REFERENCES businesses(id) ON DELETE CASCADE) ENGINE=InnoDB");
+                    + "FOREIGN KEY (business_id) REFERENCES businesses(id) ON DELETE CASCADE) ENGINE=InnoDB",
+            // position keeps the owner's groups in the order they were made.
+            "CREATE TABLE IF NOT EXISTS business_access_groups ("
+                    + "business_id VARCHAR(64) NOT NULL, "
+                    + "group_id VARCHAR(32) NOT NULL, "
+                    + "position INT NOT NULL, "
+                    + "permissions VARCHAR(255) NOT NULL, "
+                    + "training_price DECIMAL(19, 4) NOT NULL, "
+                    + "PRIMARY KEY (business_id, group_id), "
+                    + "FOREIGN KEY (business_id) REFERENCES businesses(id) ON DELETE CASCADE) ENGINE=InnoDB",
+            "CREATE TABLE IF NOT EXISTS business_access_members ("
+                    + "business_id VARCHAR(64) NOT NULL, "
+                    + "group_id VARCHAR(32) NOT NULL, "
+                    + "player_uuid CHAR(36) NOT NULL, "
+                    + "profile VARCHAR(64) NOT NULL, "
+                    + "PRIMARY KEY (business_id, group_id, player_uuid, profile), "
+                    + "FOREIGN KEY (business_id, group_id) REFERENCES business_access_groups(business_id, group_id) "
+                    + "ON DELETE CASCADE) ENGINE=InnoDB");
 
     private DatabaseSchema() {
     }

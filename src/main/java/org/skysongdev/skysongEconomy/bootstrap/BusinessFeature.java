@@ -4,6 +4,8 @@ import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.Nullable;
 import org.skysongdev.skysongEconomy.business.BusinessService;
+import org.skysongdev.skysongEconomy.business.access.AccessDefaults;
+import org.skysongdev.skysongEconomy.business.access.AccessService;
 import org.skysongdev.skysongEconomy.business.display.NameplateSettings;
 import org.skysongdev.skysongEconomy.business.display.NameplateSettingsParser;
 import org.skysongdev.skysongEconomy.business.tier.BusinessTiers;
@@ -15,9 +17,12 @@ import org.skysongdev.skysongEconomy.commands.business.BusinessCommand;
 import org.skysongdev.skysongEconomy.config.ConfigException;
 import org.skysongdev.skysongEconomy.config.ConfigSection;
 import org.skysongdev.skysongEconomy.config.YamlFiles;
+import org.skysongdev.skysongEconomy.data.database.AsyncAccessRepository;
 import org.skysongdev.skysongEconomy.data.database.AsyncBusinessRepository;
+import org.skysongdev.skysongEconomy.data.database.BackgroundWriter;
 import org.skysongdev.skysongEconomy.data.database.ConnectionProvider;
 import org.skysongdev.skysongEconomy.data.database.DatabaseSettings;
+import org.skysongdev.skysongEconomy.data.database.SqlAccessRepository;
 import org.skysongdev.skysongEconomy.data.database.SqlBusinessRepository;
 import org.skysongdev.skysongEconomy.data.database.StorageException;
 import org.skysongdev.skysongEconomy.integration.skysongstats.SkysongStatsAdapter;
@@ -47,19 +52,21 @@ public final class BusinessFeature implements AutoCloseable {
     private final @Nullable BusinessTypeRegistry types;
     private final @Nullable SubCommand command;
     private final @Nullable ConnectionProvider connections;
-    private final @Nullable AsyncBusinessRepository repository;
+    private final @Nullable AccessService access;
+    private final @Nullable BackgroundWriter writer;
     private final @Nullable BusinessNameplates nameplates;
     private final @Nullable BusinessMenus menus;
 
     private BusinessFeature(@Nullable BusinessService businesses, @Nullable BusinessTypeRegistry types,
                             @Nullable SubCommand command, @Nullable ConnectionProvider connections,
-                            @Nullable AsyncBusinessRepository repository, @Nullable BusinessNameplates nameplates,
-                            @Nullable BusinessMenus menus) {
+                            @Nullable AccessService access, @Nullable BackgroundWriter writer,
+                            @Nullable BusinessNameplates nameplates, @Nullable BusinessMenus menus) {
         this.businesses = businesses;
         this.types = types;
         this.command = command;
         this.connections = connections;
-        this.repository = repository;
+        this.access = access;
+        this.writer = writer;
         this.nameplates = nameplates;
         this.menus = menus;
     }
@@ -74,23 +81,30 @@ public final class BusinessFeature implements AutoCloseable {
         Logger logger = plugin.getLogger();
         BusinessTypeRegistry types;
         BusinessTiers tiers;
+        AccessDefaults accessDefaults;
         try {
             types = new BusinessTypesParser(skysongStats, logger::warning).parse(configFiles.load(BusinessTypesParser.FILE));
             tiers = new BusinessTiersParser().parse(configFiles.load(BusinessTiersParser.FILE));
+            accessDefaults = AccessDefaults.parse(configFiles.load(AccessDefaults.FILE));
         } catch (ConfigException e) {
             logger.severe("Businesses are disabled until this is fixed: " + e.getMessage());
-            return new BusinessFeature(null, null, null, null, null, null, null);
+            return new BusinessFeature(null, null, null, null, null, null, null, null);
         }
 
         ConnectionProvider connections = new ConnectionProvider(database, logger);
-        AsyncBusinessRepository repository = new AsyncBusinessRepository(new SqlBusinessRepository(connections), logger);
-        BusinessService businesses = new BusinessService(types, tiers, repository, Clock.systemUTC());
+        BackgroundWriter writer = new BackgroundWriter(logger);
+        BusinessService businesses = new BusinessService(types, tiers,
+                new AsyncBusinessRepository(new SqlBusinessRepository(connections), writer), Clock.systemUTC());
+        AccessService access = new AccessService(accessDefaults,
+                new AsyncAccessRepository(new SqlAccessRepository(connections), writer));
+        businesses.addListener(access);
         PluginManager events = plugin.getServer().getPluginManager();
         BusinessNameplates nameplates = new BusinessNameplates(businesses, nameplateSettings(configFiles, logger), messenger);
         businesses.addListener(nameplates);
         events.registerEvents(nameplates, plugin);
         try {
             logger.info("Loaded " + businesses.loadAll() + " business(es) of " + types.all().size() + " type(s)");
+            access.loadAll();
         } catch (StorageException e) {
             // Keep the commands so staff get clear errors, but nothing loaded means nothing to protect yet.
             logger.log(Level.SEVERE, "Businesses could not be loaded from the database", e);
@@ -100,8 +114,8 @@ public final class BusinessFeature implements AutoCloseable {
         BusinessMenus menus = createMenus(plugin, configFiles, businesses, types, skysongStats, messenger, messages);
         menus.addEntry(new SkillPicksEntry(menus, businesses, skysongStats, messenger));
         events.registerEvents(new BusinessInteractListener(businesses, menus), plugin);
-        SubCommand command = new BusinessCommand(businesses, types, skysongStats, messenger);
-        return new BusinessFeature(businesses, types, command, connections, repository, nameplates, menus);
+        SubCommand command = new BusinessCommand(businesses, types, access, skysongStats, messenger);
+        return new BusinessFeature(businesses, types, command, connections, access, writer, nameplates, menus);
     }
 
     private static BusinessMenus createMenus(JavaPlugin plugin, YamlFiles configFiles, BusinessService businesses,
@@ -147,6 +161,11 @@ public final class BusinessFeature implements AutoCloseable {
         return Optional.ofNullable(menus);
     }
 
+    /** @return who may train, order and sell at each business; empty when businesses are disabled */
+    public Optional<AccessService> access() {
+        return Optional.ofNullable(access);
+    }
+
     /** @return the business types, empty when businesses are disabled */
     public Optional<BusinessTypeRegistry> types() {
         return Optional.ofNullable(types);
@@ -158,8 +177,8 @@ public final class BusinessFeature implements AutoCloseable {
         if (nameplates != null) {
             nameplates.close();
         }
-        if (repository != null) {
-            repository.close();
+        if (writer != null) {
+            writer.close();
         }
         if (connections != null) {
             connections.close();

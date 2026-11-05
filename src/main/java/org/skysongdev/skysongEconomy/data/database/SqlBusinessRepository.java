@@ -25,8 +25,9 @@ import java.util.UUID;
  * pick rows in one transaction.
  * <p>
  * It blocks on the database, so wrap it in {@link AsyncBusinessRepository} on the server. It
- * uses transactions, so give it its own {@link ConnectionProvider} rather than the one other
- * repositories share: otherwise their statements could land inside its transactions.
+ * uses transactions, so only share its {@link ConnectionProvider} with repositories that write
+ * on the same {@link BackgroundWriter} (such as {@link SqlAccessRepository}): otherwise their
+ * statements could land inside its transactions. Deleting a business deletes its access groups.
  */
 public final class SqlBusinessRepository implements BusinessRepository {
     private final ConnectionProvider connections;
@@ -114,7 +115,8 @@ public final class SqlBusinessRepository implements BusinessRepository {
     @Override
     public void delete(String id) {
         inTransaction(connection -> {
-            for (String child : List.of("business_workers", "business_skill_picks")) {
+            for (String child : List.of(
+                    "business_workers", "business_skill_picks", "business_access_members", "business_access_groups")) {
                 try (PreparedStatement statement = connection.prepareStatement("DELETE FROM " + child + " WHERE business_id = ?")) {
                     statement.setString(1, id);
                     statement.executeUpdate();
@@ -176,27 +178,7 @@ public final class SqlBusinessRepository implements BusinessRepository {
         statement.setInt(10, position.z());
     }
 
-    private void inTransaction(SqlWork work) {
-        try {
-            Connection connection = connections.getConnection();
-            boolean autoCommit = connection.getAutoCommit();
-            connection.setAutoCommit(false);
-            try {
-                work.run(connection);
-                connection.commit();
-            } catch (SQLException | RuntimeException e) {
-                connection.rollback();
-                throw e;
-            } finally {
-                connection.setAutoCommit(autoCommit);
-            }
-        } catch (SQLException e) {
-            throw new StorageException("Failed to save businesses", e);
-        }
-    }
-
-    @FunctionalInterface
-    private interface SqlWork {
-        void run(Connection connection) throws SQLException;
+    private void inTransaction(SqlTransaction.Work work) {
+        SqlTransaction.run(connections, "Failed to save businesses", work);
     }
 }
