@@ -6,6 +6,7 @@ import org.skysongdev.skysongEconomy.business.type.BusinessTypeRegistry;
 import org.skysongdev.skysongEconomy.character.CharacterRef;
 
 import java.time.Clock;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -36,12 +37,18 @@ public final class BusinessService {
     private final Clock clock;
     private final Map<String, Business> byId = new LinkedHashMap<>();
     private final Map<BlockPosition, Business> byPosition = new HashMap<>();
+    private final List<BusinessChangeListener> listeners = new ArrayList<>();
 
     public BusinessService(BusinessTypeRegistry types, BusinessTiers tiers, BusinessRepository repository, Clock clock) {
         this.types = types;
         this.tiers = tiers;
         this.repository = repository;
         this.clock = clock;
+    }
+
+    /** Tells {@code listener} about every later change. */
+    public void addListener(BusinessChangeListener listener) {
+        listeners.add(listener);
     }
 
     /**
@@ -63,6 +70,8 @@ public final class BusinessService {
                 }
             });
         }
+        List<Business> loaded = List.copyOf(byId.values());
+        listeners.forEach(listener -> listener.loaded(loaded));
         return byId.size();
     }
 
@@ -109,6 +118,7 @@ public final class BusinessService {
         byId.put(normalized, business);
         byPosition.put(position, business);
         repository.save(business.snapshot());
+        listeners.forEach(listener -> listener.changed(business, null));
         return business;
     }
 
@@ -117,6 +127,7 @@ public final class BusinessService {
         byId.remove(business.id());
         business.position().ifPresent(byPosition::remove);
         repository.delete(business.id());
+        listeners.forEach(listener -> listener.deleted(business));
     }
 
     /**
@@ -129,17 +140,19 @@ public final class BusinessService {
             return;
         }
         requireFree(position);
+        BlockPosition previous = business.position().orElse(null);
         business.position().ifPresent(byPosition::remove);
         business.setPosition(position);
         byPosition.put(position, business);
-        save(business);
+        save(business, previous);
     }
 
     /** Takes the business off its block, which happens when staff break the block. */
     public void unplace(Business business) {
+        BlockPosition previous = business.position().orElse(null);
         business.position().ifPresent(byPosition::remove);
         business.setPosition(null);
-        save(business);
+        save(business, previous);
     }
 
     /**
@@ -243,6 +256,11 @@ public final class BusinessService {
     }
 
     private void save(Business business) {
+        save(business, business.position().orElse(null));
+    }
+
+    private void save(Business business, @Nullable BlockPosition previousPosition) {
         repository.save(business.snapshot());
+        listeners.forEach(listener -> listener.changed(business, previousPosition));
     }
 }

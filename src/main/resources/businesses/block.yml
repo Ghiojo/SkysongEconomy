@@ -1,0 +1,16 @@
+# The business block.
+#
+# nameplate: the business's name floating above its block. It is a text display, which the
+# server doesn't tick, so it costs next to nothing. It is never saved in the world: the plugin
+# shows it again whenever the block's chunk loads. Its text is business.nameplate in messages.yml.
+#   enabled        false hides every nameplate
+#   height         how far above the top of the block, in blocks
+#   view-distance  how far away players can see it, in blocks
+#   shadow         text shadow
+#   background     the default dark box behind the text
+nameplate:
+  enabled: true
+  height: 0.4
+  view-distance: 16
+  shadow: true
+  background: false

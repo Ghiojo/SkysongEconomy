@@ -3,6 +3,8 @@ package org.skysongdev.skysongEconomy.bootstrap;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.Nullable;
 import org.skysongdev.skysongEconomy.business.BusinessService;
+import org.skysongdev.skysongEconomy.business.display.NameplateSettings;
+import org.skysongdev.skysongEconomy.business.display.NameplateSettingsParser;
 import org.skysongdev.skysongEconomy.business.tier.BusinessTiers;
 import org.skysongdev.skysongEconomy.business.tier.BusinessTiersParser;
 import org.skysongdev.skysongEconomy.business.type.BusinessTypeRegistry;
@@ -18,6 +20,7 @@ import org.skysongdev.skysongEconomy.data.database.SqlBusinessRepository;
 import org.skysongdev.skysongEconomy.data.database.StorageException;
 import org.skysongdev.skysongEconomy.integration.skysongstats.SkysongStatsAdapter;
 import org.skysongdev.skysongEconomy.listeners.BusinessBlockListener;
+import org.skysongdev.skysongEconomy.listeners.BusinessNameplates;
 import org.skysongdev.skysongEconomy.messaging.Messenger;
 
 import java.time.Clock;
@@ -35,15 +38,17 @@ public final class BusinessFeature implements AutoCloseable {
     private final @Nullable SubCommand command;
     private final @Nullable ConnectionProvider connections;
     private final @Nullable AsyncBusinessRepository repository;
+    private final @Nullable BusinessNameplates nameplates;
 
     private BusinessFeature(@Nullable BusinessService businesses, @Nullable BusinessTypeRegistry types,
                             @Nullable SubCommand command, @Nullable ConnectionProvider connections,
-                            @Nullable AsyncBusinessRepository repository) {
+                            @Nullable AsyncBusinessRepository repository, @Nullable BusinessNameplates nameplates) {
         this.businesses = businesses;
         this.types = types;
         this.command = command;
         this.connections = connections;
         this.repository = repository;
+        this.nameplates = nameplates;
     }
 
     /**
@@ -61,12 +66,15 @@ public final class BusinessFeature implements AutoCloseable {
             tiers = new BusinessTiersParser().parse(configFiles.load(BusinessTiersParser.FILE));
         } catch (ConfigException e) {
             logger.severe("Businesses are disabled until this is fixed: " + e.getMessage());
-            return new BusinessFeature(null, null, null, null, null);
+            return new BusinessFeature(null, null, null, null, null, null);
         }
 
         ConnectionProvider connections = new ConnectionProvider(database, logger);
         AsyncBusinessRepository repository = new AsyncBusinessRepository(new SqlBusinessRepository(connections), logger);
         BusinessService businesses = new BusinessService(types, tiers, repository, Clock.systemUTC());
+        BusinessNameplates nameplates = new BusinessNameplates(businesses, nameplateSettings(configFiles, logger), messenger);
+        businesses.addListener(nameplates);
+        plugin.getServer().getPluginManager().registerEvents(nameplates, plugin);
         try {
             logger.info("Loaded " + businesses.loadAll() + " business(es) of " + types.all().size() + " type(s)");
         } catch (StorageException e) {
@@ -76,7 +84,17 @@ public final class BusinessFeature implements AutoCloseable {
 
         plugin.getServer().getPluginManager().registerEvents(new BusinessBlockListener(businesses, messenger), plugin);
         SubCommand command = new BusinessCommand(businesses, types, skysongStats, messenger);
-        return new BusinessFeature(businesses, types, command, connections, repository);
+        return new BusinessFeature(businesses, types, command, connections, repository, nameplates);
+    }
+
+    /** A broken block.yml only turns the floating names off. */
+    private static NameplateSettings nameplateSettings(YamlFiles configFiles, Logger logger) {
+        try {
+            return new NameplateSettingsParser().parse(configFiles.load(NameplateSettingsParser.FILE));
+        } catch (ConfigException e) {
+            logger.warning("Business nameplates are off until this is fixed: " + e.getMessage());
+            return new NameplateSettings(false, 0, 1, false, false);
+        }
     }
 
     /** @return the {@code /se business} command, empty when businesses are disabled */
@@ -94,9 +112,12 @@ public final class BusinessFeature implements AutoCloseable {
         return Optional.ofNullable(types);
     }
 
-    /** Waits for pending saves, then closes the feature's database connection. */
+    /** Removes the floating names, waits for pending saves, then closes the database connection. */
     @Override
     public void close() {
+        if (nameplates != null) {
+            nameplates.close();
+        }
         if (repository != null) {
             repository.close();
         }
