@@ -24,9 +24,11 @@ repositories {
 
 dependencies {
     compileOnly("io.papermc.paper:paper-api:1.21-R0.1-SNAPSHOT")
-    // Provided at runtime by the Gringotts and Skysong_Items plugins, so they must not be bundled.
+    // Provided at runtime by the Gringotts plugin, so it must not be bundled.
     compileOnly files("libs/gringotts-3.0.1.jar")
-    compileOnly files("libs/SkysongSpecialItems-1.6.0.jar")
+    // The public API of Skysong_Items (SkysongItemsApi). Its classes ship inside the Skysong_Items
+    // plugin jar, so it must not be bundled either.
+    compileOnly 'com.github.Ghiojo.Skysong-Special-Items:api:1.0.1'
     // Characters, skills, proficiencies and downtime. Provided at runtime by the SkysongStats plugin.
     compileOnly 'com.github.Ghiojo:SkysongStats:1.0.0'
     // Optional: the Gathering Token placeholders, when PlaceholderAPI is installed.

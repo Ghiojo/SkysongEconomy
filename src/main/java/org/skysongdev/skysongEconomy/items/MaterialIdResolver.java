@@ -1,29 +1,31 @@
 package org.skysongdev.skysongEconomy.items;
 
-import org.bukkit.NamespacedKey;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.persistence.PersistentDataType;
+import org.skysongdev.skysongitems.api.ItemTags;
 
 import java.util.Optional;
 
 /**
  * Reads the Skysong Items {@code material_id} tag, which identifies every Skysong item in the
- * price ledger and good type tables.
+ * price ledger and good type tables. Reads go through the SkysongItems API, so they must run on
+ * the server's main thread.
  */
 public final class MaterialIdResolver {
-    private final NamespacedKey materialIdKey;
+    /** The id of the built-in SkysongItems string tag that holds an item's material ID. */
+    static final String MATERIAL_ID_TAG = "material_id";
 
-    public MaterialIdResolver(NamespacedKey materialIdKey) {
-        this.materialIdKey = materialIdKey;
+    private final ItemTags tags;
+
+    /** @param tags the SkysongItems tag API, from {@code SkysongItemsApi.get().tags()} */
+    public MaterialIdResolver(ItemTags tags) {
+        this.tags = tags;
     }
 
+    /** The item's material ID; empty for null, air or an item without one. */
     public Optional<String> fromItem(ItemStack item) {
-        if (item == null || item.getType().isAir() || !item.hasItemMeta()) {
-            return Optional.empty();
-        }
-        return Optional.ofNullable(item.getItemMeta().getPersistentDataContainer().get(materialIdKey, PersistentDataType.STRING));
+        return tags.getString(item, MATERIAL_ID_TAG);
     }
 
     /** The material ID of the item in the sender's main hand; empty for the console or an untagged item. */
