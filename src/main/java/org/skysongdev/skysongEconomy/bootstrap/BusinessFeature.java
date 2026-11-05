@@ -1,13 +1,18 @@
 package org.skysongdev.skysongEconomy.bootstrap;
 
+import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.Nullable;
 import org.skysongdev.skysongEconomy.business.BusinessService;
 import org.skysongdev.skysongEconomy.business.access.AccessDefaults;
 import org.skysongdev.skysongEconomy.business.access.AccessService;
+import org.skysongdev.skysongEconomy.business.activity.ActivityLock;
 import org.skysongdev.skysongEconomy.business.display.NameplateSettings;
 import org.skysongdev.skysongEconomy.business.display.NameplateSettingsParser;
+import org.skysongdev.skysongEconomy.business.shift.ShiftService;
+import org.skysongdev.skysongEconomy.business.shift.ShiftSettings;
+import org.skysongdev.skysongEconomy.business.shift.ShiftSettingsParser;
 import org.skysongdev.skysongEconomy.business.tier.BusinessTiers;
 import org.skysongdev.skysongEconomy.business.tier.BusinessTiersParser;
 import org.skysongdev.skysongEconomy.business.type.BusinessTypeRegistry;
@@ -22,6 +27,7 @@ import org.skysongdev.skysongEconomy.config.ConfigSection;
 import org.skysongdev.skysongEconomy.config.YamlFiles;
 import org.skysongdev.skysongEconomy.data.database.AsyncAccessRepository;
 import org.skysongdev.skysongEconomy.data.database.AsyncBusinessRepository;
+import org.skysongdev.skysongEconomy.data.database.AsyncShiftRepository;
 import org.skysongdev.skysongEconomy.data.database.AsyncTokenRepository;
 import org.skysongdev.skysongEconomy.data.database.AsyncVaultRepository;
 import org.skysongdev.skysongEconomy.data.database.BackgroundWriter;
@@ -29,125 +35,157 @@ import org.skysongdev.skysongEconomy.data.database.ConnectionProvider;
 import org.skysongdev.skysongEconomy.data.database.DatabaseSettings;
 import org.skysongdev.skysongEconomy.data.database.SqlAccessRepository;
 import org.skysongdev.skysongEconomy.data.database.SqlBusinessRepository;
+import org.skysongdev.skysongEconomy.data.database.SqlShiftRepository;
 import org.skysongdev.skysongEconomy.data.database.SqlTokenRepository;
 import org.skysongdev.skysongEconomy.data.database.SqlVaultRepository;
 import org.skysongdev.skysongEconomy.data.database.StorageException;
-import org.skysongdev.skysongEconomy.integration.placeholderapi.TokenExpansion;
-import org.skysongdev.skysongEconomy.integration.skysongstats.SkysongStatsAdapter;
-import org.skysongdev.skysongEconomy.money.Wallet;
-import org.skysongdev.skysongEconomy.tokens.GatheringTokens;
-import org.skysongdev.skysongEconomy.tokens.TokenPlaceholders;
+import org.skysongdev.skysongEconomy.events.BukkitShiftEvents;
 import org.skysongdev.skysongEconomy.gui.ChatPrompts;
 import org.skysongdev.skysongEconomy.gui.MenuListener;
 import org.skysongdev.skysongEconomy.gui.MenuTheme;
 import org.skysongdev.skysongEconomy.gui.business.BusinessMenus;
+import org.skysongdev.skysongEconomy.gui.business.RetrievePayEntry;
 import org.skysongdev.skysongEconomy.gui.business.SkillPicksEntry;
 import org.skysongdev.skysongEconomy.gui.business.VaultEntry;
+import org.skysongdev.skysongEconomy.gui.business.WorkShiftEntry;
 import org.skysongdev.skysongEconomy.gui.layout.MenuIcons;
+import org.skysongdev.skysongEconomy.integration.cmi.AfkCheck;
+import org.skysongdev.skysongEconomy.integration.cmi.CmiAfkCheck;
+import org.skysongdev.skysongEconomy.integration.placeholderapi.TokenExpansion;
+import org.skysongdev.skysongEconomy.integration.skysongstats.SkysongStatsAdapter;
 import org.skysongdev.skysongEconomy.listeners.BusinessBlockListener;
 import org.skysongdev.skysongEconomy.listeners.BusinessInteractListener;
 import org.skysongdev.skysongEconomy.listeners.BusinessNameplates;
+import org.skysongdev.skysongEconomy.listeners.ShiftTimer;
 import org.skysongdev.skysongEconomy.messaging.MessageCatalog;
 import org.skysongdev.skysongEconomy.messaging.Messenger;
+import org.skysongdev.skysongEconomy.money.Wallet;
+import org.skysongdev.skysongEconomy.tokens.GatheringTokens;
+import org.skysongdev.skysongEconomy.tokens.TokenPlaceholders;
 
 import java.time.Clock;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * Builds the business system and connects it to the server: config, storage, commands and
- * listeners. If its config can't be read the system stays off and the rest of the plugin runs.
+ * Builds the business system and connects it to the server: config, storage, commands, menus,
+ * timers and listeners. If its config can't be read the system stays off and the rest of the
+ * plugin runs.
  */
 public final class BusinessFeature implements AutoCloseable {
-    private final @Nullable BusinessService businesses;
-    private final @Nullable BusinessTypeRegistry types;
+    private final @Nullable BusinessSystem system;
     private final List<SubCommand> commands;
-    private final @Nullable ConnectionProvider connections;
-    private final @Nullable AccessService access;
-    private final @Nullable BusinessVaults vaults;
-    private final @Nullable GatheringTokens tokens;
-    private final @Nullable BackgroundWriter writer;
-    private final @Nullable BusinessNameplates nameplates;
-    private final @Nullable BusinessMenus menus;
+    /** Closed in reverse order on shutdown. */
+    private final List<AutoCloseable> resources;
+    private final Logger logger;
 
-    private BusinessFeature(@Nullable BusinessService businesses, @Nullable BusinessTypeRegistry types,
-                            List<SubCommand> commands, @Nullable ConnectionProvider connections,
-                            @Nullable AccessService access, @Nullable BusinessVaults vaults,
-                            @Nullable GatheringTokens tokens,
-                            @Nullable BackgroundWriter writer,
-                            @Nullable BusinessNameplates nameplates, @Nullable BusinessMenus menus) {
-        this.businesses = businesses;
-        this.types = types;
+    private BusinessFeature(@Nullable BusinessSystem system, List<SubCommand> commands, List<AutoCloseable> resources,
+                            Logger logger) {
+        this.system = system;
+        this.logger = logger;
         this.commands = List.copyOf(commands);
-        this.connections = connections;
-        this.access = access;
-        this.vaults = vaults;
-        this.tokens = tokens;
-        this.writer = writer;
-        this.nameplates = nameplates;
-        this.menus = menus;
+        this.resources = List.copyOf(resources);
+    }
+
+    /** The config every part of the business system needs. */
+    private record Settings(BusinessTypeRegistry types, BusinessTiers tiers, AccessDefaults access, ShiftSettings shifts) {
     }
 
     /**
-     * Reads the business config, loads every business and registers the block listener.
+     * Reads the business config, loads every business and registers the commands, menus and
+     * listeners.
      *
      * @param database the database to keep businesses in; the feature opens its own connection
-     * @param wallet   players' money, for collecting vaults
+     * @param wallet   players' money, for pay and vaults
      */
     public static BusinessFeature start(JavaPlugin plugin, YamlFiles configFiles, DatabaseSettings database,
                                         SkysongStatsAdapter skysongStats, Wallet wallet, Messenger messenger,
                                         MessageCatalog messages) {
         Logger logger = plugin.getLogger();
-        BusinessTypeRegistry types;
-        BusinessTiers tiers;
-        AccessDefaults accessDefaults;
+        Settings settings;
         try {
-            types = new BusinessTypesParser(skysongStats, logger::warning).parse(configFiles.load(BusinessTypesParser.FILE));
-            tiers = new BusinessTiersParser().parse(configFiles.load(BusinessTiersParser.FILE));
-            accessDefaults = AccessDefaults.parse(configFiles.load(AccessDefaults.FILE));
+            settings = readSettings(configFiles, skysongStats, logger);
         } catch (ConfigException e) {
             logger.severe("Businesses are disabled until this is fixed: " + e.getMessage());
-            return new BusinessFeature(null, null, List.of(), null, null, null, null, null, null, null);
+            return new BusinessFeature(null, List.of(), List.of(), logger);
         }
 
+        List<AutoCloseable> resources = new ArrayList<>();
         ConnectionProvider connections = new ConnectionProvider(database, logger);
+        resources.add(connections);
+        // Every repository shares one writer thread, so rows are written in the order they changed.
         BackgroundWriter writer = new BackgroundWriter(logger);
-        BusinessService businesses = new BusinessService(types, tiers,
+        resources.add(writer);
+
+        BusinessService businesses = new BusinessService(settings.types(), settings.tiers(),
                 new AsyncBusinessRepository(new SqlBusinessRepository(connections), writer), Clock.systemUTC());
-        AccessService access = new AccessService(accessDefaults,
+        AccessService access = new AccessService(settings.access(),
                 new AsyncAccessRepository(new SqlAccessRepository(connections), writer));
-        businesses.addListener(access);
         BusinessVaults vaults = new BusinessVaults(new AsyncVaultRepository(new SqlVaultRepository(connections), writer),
                 wallet, logger::warning);
-        businesses.addListener(vaults);
         GatheringTokens tokens = new GatheringTokens(new AsyncTokenRepository(new SqlTokenRepository(connections), writer));
+        ActivityLock activities = new ActivityLock();
         PluginManager events = plugin.getServer().getPluginManager();
+        ShiftService shifts = new ShiftService(settings.shifts(), new ShiftService.Dependencies(businesses,
+                settings.tiers(), activities, vaults, tokens, wallet, skysongStats, new BukkitShiftEvents(events)),
+                new AsyncShiftRepository(new SqlShiftRepository(connections), writer), Clock.systemUTC(), logger::warning);
+        // Shifts are paid before the vault is emptied, so a deleted business pays everyone first.
+        businesses.addListener(access);
+        businesses.addListener(shifts);
+        businesses.addListener(vaults);
+
         BusinessNameplates nameplates = new BusinessNameplates(businesses, nameplateSettings(configFiles, logger), messenger);
         businesses.addListener(nameplates);
         events.registerEvents(nameplates, plugin);
+        resources.add(nameplates::close);
         try {
-            logger.info("Loaded " + businesses.loadAll() + " business(es) of " + types.all().size() + " type(s)");
+            logger.info("Loaded " + businesses.loadAll() + " business(es) of " + settings.types().all().size() + " type(s)");
             access.loadAll();
             vaults.loadAll();
             tokens.loadAll();
+            shifts.loadAll();
         } catch (StorageException e) {
             // Keep the commands so staff get clear errors, but nothing loaded means nothing to protect yet.
             logger.log(Level.SEVERE, "Businesses could not be loaded from the database", e);
         }
 
         events.registerEvents(new BusinessBlockListener(businesses, messenger), plugin);
-        BusinessMenus menus = createMenus(plugin, configFiles, businesses, types, skysongStats, messenger, messages);
-        menus.addEntry(new SkillPicksEntry(menus, businesses, skysongStats, messenger));
+        BusinessMenus menus = createMenus(plugin, configFiles, businesses, settings.types(), skysongStats, messenger, messages);
+        menus.addEntry(new WorkShiftEntry(menus, shifts, activities, wallet, messenger));
+        menus.addEntry(new RetrievePayEntry(menus, shifts, wallet, messenger));
         menus.addEntry(new VaultEntry(menus, vaults, messenger));
+        menus.addEntry(new SkillPicksEntry(menus, businesses, skysongStats, messenger));
         events.registerEvents(new BusinessInteractListener(businesses, menus), plugin);
+
+        resources.add(new ShiftTimer(plugin, shifts, businesses, afkCheck(plugin), messenger).start()::cancel);
         registerPlaceholders(plugin, tokens, skysongStats);
         List<SubCommand> commands = List.of(
-                new BusinessCommand(businesses, types, access, vaults, skysongStats, messenger),
+                new BusinessCommand(businesses, settings.types(), access, vaults, skysongStats, messenger),
                 new TokensCommand(tokens, new CharacterArguments(skysongStats, messenger), messenger));
-        return new BusinessFeature(businesses, types, commands, connections, access, vaults, tokens, writer,
-                nameplates, menus);
+        BusinessSystem system = new BusinessSystem(businesses, settings.types(), access, vaults, tokens, activities,
+                shifts, menus);
+        return new BusinessFeature(system, commands, resources, logger);
+    }
+
+    private static Settings readSettings(YamlFiles configFiles, SkysongStatsAdapter skysongStats, Logger logger) {
+        BusinessTypeRegistry types = new BusinessTypesParser(skysongStats, logger::warning)
+                .parse(configFiles.load(BusinessTypesParser.FILE));
+        return new Settings(types,
+                new BusinessTiersParser().parse(configFiles.load(BusinessTiersParser.FILE)),
+                AccessDefaults.parse(configFiles.load(AccessDefaults.FILE)),
+                new ShiftSettingsParser(types, logger::warning).parse(configFiles.load(ShiftSettingsParser.FILE)));
+    }
+
+    /** CMI is optional: without it, AFK time counts like any other online time. */
+    private static AfkCheck afkCheck(JavaPlugin plugin) {
+        Plugin cmi = plugin.getServer().getPluginManager().getPlugin("CMI");
+        if (cmi == null || !cmi.isEnabled()) {
+            return AfkCheck.NONE;
+        }
+        return CmiAfkCheck.create(cmi.getClass().getClassLoader(), plugin.getLogger());
     }
 
     /** PlaceholderAPI is optional: without it there are simply no placeholders. */
@@ -194,47 +232,24 @@ public final class BusinessFeature implements AutoCloseable {
         return commands;
     }
 
-    /** @return every business, empty when businesses are disabled */
-    public Optional<BusinessService> businesses() {
-        return Optional.ofNullable(businesses);
+    /** @return the running business system, empty when businesses are disabled */
+    public Optional<BusinessSystem> system() {
+        return Optional.ofNullable(system);
     }
 
-    /** @return the business menus, to add main menu buttons to; empty when businesses are disabled */
-    public Optional<BusinessMenus> menus() {
-        return Optional.ofNullable(menus);
-    }
-
-    /** @return who may train, order and sell at each business; empty when businesses are disabled */
-    public Optional<AccessService> access() {
-        return Optional.ofNullable(access);
-    }
-
-    /** @return the business vaults, empty when businesses are disabled */
-    public Optional<BusinessVaults> vaults() {
-        return Optional.ofNullable(vaults);
-    }
-
-    /** @return every character's Gathering Tokens, empty when businesses are disabled */
-    public Optional<GatheringTokens> tokens() {
-        return Optional.ofNullable(tokens);
-    }
-
-    /** @return the business types, empty when businesses are disabled */
-    public Optional<BusinessTypeRegistry> types() {
-        return Optional.ofNullable(types);
-    }
-
-    /** Removes the floating names, waits for pending saves, then closes the database connection. */
+    /**
+     * Stops the shift timer, removes the floating names, waits for pending saves, then closes
+     * the database connection.
+     */
     @Override
     public void close() {
-        if (nameplates != null) {
-            nameplates.close();
-        }
-        if (writer != null) {
-            writer.close();
-        }
-        if (connections != null) {
-            connections.close();
+        for (int i = resources.size() - 1; i >= 0; i--) {
+            try {
+                resources.get(i).close();
+            } catch (Exception e) {
+                // Keep closing the rest; a failed close must not leave the database open.
+                logger.log(Level.WARNING, "Failed to close " + resources.get(i), e);
+            }
         }
     }
 }

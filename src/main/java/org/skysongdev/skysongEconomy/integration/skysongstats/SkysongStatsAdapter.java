@@ -50,6 +50,11 @@ public final class SkysongStatsAdapter implements CharacterDirectory, DowntimeWa
     }
 
     @Override
+    public int available(UUID player) {
+        return preferredPool(player).map(pool -> api.downtime().get(pool).orElse(0)).orElse(0);
+    }
+
+    @Override
     public boolean trySpend(UUID player, int amount) {
         if (amount < 0) {
             throw new IllegalArgumentException("amount must not be negative: " + amount);

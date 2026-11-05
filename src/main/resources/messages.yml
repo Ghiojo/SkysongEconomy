@@ -108,6 +108,49 @@ business:
       lore-empty:
         - "<gray>Empty. It fills with your cut"
         - "<gray>of shift pay and paid training."
+  activity:
+    busy-shift: "<red>You're already working a shift (at <business>). One shift or training at a time."
+    busy-training: "<red>You're already training (at <business>). One shift or training at a time."
+  shift:
+    not-worker: "<red>Only the owner and workers of <business> can work shifts there."
+    no-downtime: "<red>A shift costs <cost> downtime and your preferred pool doesn't have that much. See /downtime preference."
+    cancelled: "<red>Your shift couldn't start right now."
+    nothing-owed: "<red><business> owes you nothing yet."
+    pay-failed: "<red>Couldn't pay you <amount>. Make room for the coins and try again; nothing was lost."
+    started: "<green>You started a shift at <yellow><business></yellow>. It ends after <minutes> minute(s) online and not AFK."
+    finished: "<green>Your shift at <yellow><business></yellow> is done. Open the business and use Retrieve Pay."
+    retrieved: "<green>You were paid <pay>."
+    pay-money: "<white><money></white>"
+    pay-with-tokens: "<white><money></white> and <white><tokens></white> Gathering Token(s)"
+    button:
+      name: "<green>Work a Shift"
+      name-unavailable: "<gray>Work a Shift"
+      lore:
+        - "<gray>Takes <white><minutes> minute(s)</white> online, not AFK."
+        - "<gray>Costs <white><cost> downtime</white>."
+        - "<gray>Pays <pay><gray>."
+        - ""
+        - "<yellow>Click to start."
+      lore-working:
+        - "<gray>You're working a shift here."
+        - "<gray>About <white><minutes> minute(s)</white> left."
+      lore-busy:
+        - "<gray>You're already busy with a"
+        - "<gray>shift or training somewhere."
+      lore-not-worker:
+        - "<gray>Only the owner and workers"
+        - "<gray>can work shifts here."
+      lore-no-character:
+        - "<gray>Play a character to work shifts."
+    retrieve:
+      name: "<gold>Retrieve Pay"
+      lore:
+        - "<gray>You're owed <pay><gray>."
+        - ""
+        - "<yellow>Click to collect it."
+      lore-nothing:
+        - "<gray>Nothing to collect here."
+        - "<gray>Finished shifts are paid here."
   picks:
     not-offered: "<red>A business of this type can't pick <yellow><skill></yellow>."
     none-free: "<red>Every skill pick is used. A tier <tier> business has <tier> pick(s)."

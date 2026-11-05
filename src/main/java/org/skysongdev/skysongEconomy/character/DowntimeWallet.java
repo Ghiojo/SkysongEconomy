@@ -18,4 +18,7 @@ public interface DowntimeWallet {
      * @throws IllegalArgumentException when the amount is negative
      */
     boolean trySpend(UUID player, int amount);
+
+    /** @return the downtime in the player's preferred pool, 0 when they have none */
+    int available(UUID player);
 }

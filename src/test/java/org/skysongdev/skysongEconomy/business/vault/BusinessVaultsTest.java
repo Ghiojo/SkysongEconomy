@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import org.skysongdev.skysongEconomy.business.Business;
 import org.skysongdev.skysongEconomy.business.BusinessException;
 import org.skysongdev.skysongEconomy.character.CharacterRef;
+import org.skysongdev.skysongEconomy.money.MapWallet;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;

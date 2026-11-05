@@ -1,6 +1,4 @@
-package org.skysongdev.skysongEconomy.business.vault;
-
-import org.skysongdev.skysongEconomy.money.Wallet;
+package org.skysongdev.skysongEconomy.money;
 
 import java.math.BigDecimal;
 import java.util.HashMap;
@@ -8,9 +6,9 @@ import java.util.Map;
 import java.util.UUID;
 
 /** Balances in a map. Set {@link #refuseDeposits} to act like a player with no room for coins. */
-final class MapWallet implements Wallet {
-    final Map<UUID, BigDecimal> balances = new HashMap<>();
-    boolean refuseDeposits;
+public final class MapWallet implements Wallet {
+    public final Map<UUID, BigDecimal> balances = new HashMap<>();
+    public boolean refuseDeposits;
 
     @Override
     public BigDecimal balance(UUID player) {
