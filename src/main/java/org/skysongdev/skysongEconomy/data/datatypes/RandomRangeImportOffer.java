@@ -2,13 +2,11 @@ package org.skysongdev.skysongEconomy.data.datatypes;
 
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
-import org.skysongdev.skysongEconomy.SkysongEconomy;
 import org.skysongdev.skysongEconomy.utils.Constants;
 import org.skysongdev.skysongitems.SkysongItems;
 import org.skysongdev.skysongitems.utils.SkysongItem;
 
 import java.io.File;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -38,15 +36,6 @@ public class RandomRangeImportOffer extends ImportOffer{
                 itemIds.remove(itemIds.size() - 1); // Remove the last added ID if parsing fails
             }
         }
-    }
-
-    @Override
-    public List<String> getTags() throws SQLException {
-        List<String> tags = new ArrayList<>();
-        for (String itemId : itemIds) {
-            tags.addAll(SkysongEconomy.Instance().getDatabase().findAllGoodTypesFromMaterial(itemId));
-        }
-        return tags;
     }
 
     @Override

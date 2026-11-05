@@ -3,7 +3,7 @@ package org.skysongdev.skysongEconomy.commands.ledger;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.command.CommandSender;
 import org.skysongdev.skysongEconomy.commands.SubCommand;
-import org.skysongdev.skysongEconomy.data.database.Database;
+import org.skysongdev.skysongEconomy.data.database.PriceLedgerRepository;
 import org.skysongdev.skysongEconomy.items.MaterialIdResolver;
 import org.skysongdev.skysongEconomy.messaging.Messenger;
 
@@ -14,13 +14,13 @@ import java.util.logging.Logger;
 
 /** /se ledger add [materialId] &lt;value&gt;: sets the ledger price of an item. */
 final class AddLedgerEntry implements SubCommand {
-    private final Database database;
+    private final PriceLedgerRepository ledger;
     private final MaterialIdResolver materialIds;
     private final Messenger messenger;
     private final Logger logger;
 
-    AddLedgerEntry(Database database, MaterialIdResolver materialIds, Messenger messenger, Logger logger) {
-        this.database = database;
+    AddLedgerEntry(PriceLedgerRepository ledger, MaterialIdResolver materialIds, Messenger messenger, Logger logger) {
+        this.ledger = ledger;
         this.materialIds = materialIds;
         this.messenger = messenger;
         this.logger = logger;
@@ -64,11 +64,7 @@ final class AddLedgerEntry implements SubCommand {
         }
 
         try {
-            if (database.findItemCost(materialId.get()) == -1) {
-                database.createLedgerData(materialId.get(), value);
-            } else {
-                database.updateLedgerData(materialId.get(), value);
-            }
+            ledger.setCost(materialId.get(), value);
         } catch (SQLException e) {
             logger.log(Level.SEVERE, "Failed to save the ledger price of " + materialId.get(), e);
             messenger.error(sender, "A database error occurred while saving the ledger entry.");

@@ -7,12 +7,9 @@ import org.skysongdev.skysongitems.SkysongItems;
 import org.skysongdev.skysongitems.utils.SkysongItem;
 
 import java.io.File;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
-import static org.skysongdev.skysongEconomy.SkysongEconomy.Instance;
 
 /*
  * This class represents an import offer that provides a fixed set of items based on their IDs and quantities.
@@ -37,15 +34,6 @@ public class StaticItemImportOffer extends ImportOffer {
         }
     }
 
-
-    @Override
-    public List<String> getTags() throws SQLException {
-        List<String> tags = new ArrayList<>();
-        for(String itemId : itemIds) {
-            tags.addAll(Instance().getDatabase().findAllGoodTypesFromMaterial(itemId));
-        }
-        return tags;
-    }
 
     @Override
     public ArrayList<ItemStack> generateItems() {
