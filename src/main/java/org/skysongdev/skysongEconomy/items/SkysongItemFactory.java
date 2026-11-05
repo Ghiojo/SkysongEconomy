@@ -8,4 +8,7 @@ public interface SkysongItemFactory {
      * @throws IllegalArgumentException if no item with that material ID exists
      */
     ItemStack create(String materialId, int amount);
+
+    /** @return whether an item with that material ID exists */
+    boolean exists(String materialId);
 }
