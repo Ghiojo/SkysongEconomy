@@ -79,7 +79,22 @@ public final class DatabaseSchema {
                     + "player_uuid CHAR(36) NOT NULL, "
                     + "profile VARCHAR(64) NOT NULL, "
                     + "balance BIGINT NOT NULL, "
-                    + "PRIMARY KEY (player_uuid, profile)) ENGINE=InnoDB");
+                    + "PRIMARY KEY (player_uuid, profile)) ENGINE=InnoDB",
+            // A shift is kept from its start until its pay is retrieved; finished_at is NULL while it runs.
+            "CREATE TABLE IF NOT EXISTS business_shifts ("
+                    + "id CHAR(36) PRIMARY KEY NOT NULL, "
+                    + "business_id VARCHAR(64) NOT NULL, "
+                    + "player_uuid CHAR(36) NOT NULL, "
+                    + "profile VARCHAR(64) NOT NULL, "
+                    + "started_at BIGINT NOT NULL, "
+                    + "required_seconds BIGINT NOT NULL, "
+                    + "worked_seconds BIGINT NOT NULL, "
+                    + "money DECIMAL(19, 4) NOT NULL, "
+                    + "tokens BIGINT NOT NULL, "
+                    + "vault_cut DECIMAL(19, 4) NOT NULL, "
+                    + "finished_at BIGINT NULL, "
+                    + "INDEX (business_id), "
+                    + "FOREIGN KEY (business_id) REFERENCES businesses(id) ON DELETE CASCADE) ENGINE=InnoDB");
 
     private DatabaseSchema() {
     }

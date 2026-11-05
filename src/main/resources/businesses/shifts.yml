@@ -1,0 +1,39 @@
+# Work a Shift. Owners and workers start a shift from the business menu.
+#
+# A player account works one shift (or trains once) at a time. The pay is fixed when the shift
+# starts and can be collected with Retrieve Pay once it has ended, even after leaving the job.
+
+# How long a shift takes. Only time online counts and, when CMI is installed, time spent AFK
+# doesn't. Players don't need to stay near the business.
+duration-minutes: 30
+
+# Downtime spent to start a shift, taken from the pool chosen with /downtime preference.
+downtime-cost: 1
+
+# The shift message of businesses whose owner hasn't set one (/se business shiftmessage).
+# It isn't shown in game: other plugins read it from ShiftStartEvent (for example a Discord
+# bridge). Placeholders: {character}, {player}, {business}.
+default-message: "{character} started a shift at {business}"
+
+# Pay per business type and tier. money goes to the player's balance, tokens are Gathering
+# Tokens for the character. Skill picks don't change pay. Anything left out pays nothing.
+# The owner's vault also gets each tier's vault-cut from tiers.yml for every worker shift.
+pay:
+  gathering:
+    1: {money: 5, tokens: 1}
+    2: {money: 6, tokens: 1}
+    3: {money: 7, tokens: 2}
+    4: {money: 8, tokens: 2}
+    5: {money: 9, tokens: 3}
+  crafting:
+    1: {money: 6}
+    2: {money: 7}
+    3: {money: 8}
+    4: {money: 9}
+    5: {money: 10}
+  service:
+    1: {money: 6}
+    2: {money: 7}
+    3: {money: 8}
+    4: {money: 9}
+    5: {money: 10}

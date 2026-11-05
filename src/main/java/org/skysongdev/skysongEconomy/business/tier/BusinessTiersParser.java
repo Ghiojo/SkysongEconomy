@@ -4,6 +4,7 @@ import org.skysongdev.skysongEconomy.business.Business;
 import org.skysongdev.skysongEconomy.config.ConfigException;
 import org.skysongdev.skysongEconomy.config.ConfigSection;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -11,8 +12,8 @@ import java.util.List;
  * Reads {@code businesses/tiers.yml}, which must define every tier from 1 to 5:
  * <pre>{@code
  * tiers:
- *   1: {workers: 2}
- *   2: {workers: 3}
+ *   1: {workers: 2, vault-cut: 1}
+ *   2: {workers: 3, vault-cut: 1.5}
  * }</pre>
  */
 public final class BusinessTiersParser {
@@ -32,7 +33,11 @@ public final class BusinessTiersParser {
             if (workers < 0) {
                 throw section.error("workers", "is required and must be 0 or more");
             }
-            parsed.add(new TierSettings(tier, workers));
+            double vaultCut = section.number("vault-cut", 0);
+            if (vaultCut < 0) {
+                throw section.error("vault-cut", "must be 0 or more");
+            }
+            parsed.add(new TierSettings(tier, workers, BigDecimal.valueOf(vaultCut).stripTrailingZeros()));
         }
         for (int tier = Business.MIN_TIER; tier <= Business.MAX_TIER; tier++) {
             if (!tiers.contains(String.valueOf(tier))) {

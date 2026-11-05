@@ -40,6 +40,16 @@ class BusinessTiersParserTest {
     }
 
     @Test
+    void readsTheVaultCutAndDefaultsItToZero() {
+        BusinessTiers tiers = parse("tiers: {1: {workers: 1, vault-cut: 1.5}, 2: {workers: 1}, 3: {workers: 1}, "
+                + "4: {workers: 1}, 5: {workers: 1}}");
+
+        assertEquals("1.5", tiers.get(1).vaultCut().toPlainString());
+        assertEquals(0, tiers.get(2).vaultCut().signum());
+        assertThrows(ConfigException.class, () -> parse("tiers: {1: {workers: 1, vault-cut: -1}}"));
+    }
+
+    @Test
     void everyTierMustBeDefined() {
         ConfigException error = assertThrows(ConfigException.class,
                 () -> parse("tiers: {1: {workers: 1}, 2: {workers: 1}, 3: {workers: 1}, 4: {workers: 1}}"));
