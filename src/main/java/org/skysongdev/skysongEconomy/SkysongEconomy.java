@@ -71,10 +71,12 @@ public final class SkysongEconomy extends JavaPlugin {
         MessageCatalog messages = loadMessages(configFiles);
         Messenger messenger = new Messenger(MiniMessage.miniMessage(), messages);
         loadPrices(configFiles);
+        MaterialIdResolver materialIds = new MaterialIdResolver(new NamespacedKey(SkysongItems.getPlugin(), "material_id"));
         businessFeature = BusinessFeature.start(this, paths, configFiles, databaseSettings(), skysongStats,
-                new GringottsWallet(), new TradeInputs(importItems, prices, priceSettings, goodTypes), messenger, messages);
+                new GringottsWallet(), new TradeInputs(importItems, prices, priceSettings, goodTypes, materialIds),
+                messenger, messages);
 
-        registerCommands(messenger);
+        registerCommands(messenger, materialIds);
     }
 
     @Override
@@ -138,8 +140,7 @@ public final class SkysongEconomy extends JavaPlugin {
         }
     }
 
-    private void registerCommands(Messenger messenger) {
-        MaterialIdResolver materialIds = new MaterialIdResolver(new NamespacedKey(SkysongItems.getPlugin(), "material_id"));
+    private void registerCommands(Messenger messenger, MaterialIdResolver materialIds) {
         PluginCommand command = getCommand("se");
         if (command == null) {
             throw new IllegalStateException("The 'se' command is missing from plugin.yml");
