@@ -13,6 +13,9 @@ import java.util.Optional;
  * price ledger and good type tables.
  */
 public final class MaterialIdResolver {
+    /** The key Skysong Items stores every item's material ID under ({@code skysong_items:material_id}). */
+    public static final NamespacedKey SKYSONG_ITEMS_KEY = new NamespacedKey("skysong_items", "material_id");
+
     private final NamespacedKey materialIdKey;
 
     public MaterialIdResolver(NamespacedKey materialIdKey) {

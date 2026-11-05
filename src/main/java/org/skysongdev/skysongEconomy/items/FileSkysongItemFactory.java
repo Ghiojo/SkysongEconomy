@@ -1,17 +1,24 @@
 package org.skysongdev.skysongEconomy.items;
 
 import org.bukkit.inventory.ItemStack;
-import org.skysongdev.skysongitems.SkysongItems;
-import org.skysongdev.skysongitems.utils.SkysongItem;
-import org.skysongdev.skysongitems.utils.Utils;
+import org.skysongdev.skysongitems.api.ItemTemplates;
 
 import java.nio.file.Path;
 
-/** Builds Skysong items from the {@code <materialId>.yml} files in one folder, using the Skysong_Items plugin. */
+/**
+ * Builds Skysong items from the {@code <materialId>.yml} template files in one folder, through
+ * the public SkysongItems API, so it keeps working when the plugin's internal classes change.
+ */
 public final class FileSkysongItemFactory implements SkysongItemFactory {
+    private final ItemTemplates templates;
     private final Path folder;
 
-    public FileSkysongItemFactory(Path folder) {
+    /**
+     * @param templates the SkysongItems template API, from {@code SkysongItemsApi.get().templates()}
+     * @param folder    the folder holding one {@code <materialId>.yml} template per item
+     */
+    public FileSkysongItemFactory(ItemTemplates templates, Path folder) {
+        this.templates = templates;
         this.folder = folder;
     }
 
@@ -25,8 +32,7 @@ public final class FileSkysongItemFactory implements SkysongItemFactory {
         if (!exists(materialId)) {
             throw new IllegalArgumentException("No Skysong item file for '" + materialId + "' in " + folder);
         }
-        SkysongItem skysongItem = Utils.LoadSkysongItem(folder.resolve(materialId + ".yml").toFile());
-        ItemStack item = SkysongItems.getPlugin().getUtils().GenerateSkysongItem(skysongItem);
+        ItemStack item = templates.create(folder.resolve(materialId + ".yml"));
         item.setAmount(amount);
         return item;
     }

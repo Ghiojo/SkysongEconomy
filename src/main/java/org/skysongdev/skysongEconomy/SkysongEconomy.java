@@ -1,7 +1,6 @@
 package org.skysongdev.skysongEconomy;
 
 import net.kyori.adventure.text.minimessage.MiniMessage;
-import org.bukkit.NamespacedKey;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.skysongdev.skysongEconomy.bootstrap.BusinessFeature;
@@ -29,7 +28,8 @@ import org.skysongdev.skysongEconomy.messaging.MessageCatalog;
 import org.skysongdev.skysongEconomy.messaging.Messenger;
 import org.skysongdev.skysongEconomy.prices.PriceDatabase;
 import org.skysongdev.skysongEconomy.prices.PriceSettings;
-import org.skysongdev.skysongitems.SkysongItems;
+import org.skysongdev.skysongitems.api.ItemTemplates;
+import org.skysongdev.skysongitems.api.SkysongItemsApi;
 import org.skysongdev.skysongstats.api.SkysongStatsApi;
 
 import java.io.IOException;
@@ -62,16 +62,17 @@ public final class SkysongEconomy extends JavaPlugin {
         new ResourceExtractor(this, getFile()).extractFolder(PluginPaths.COINS_FOLDER);
 
         setUpDatabase();
-        new ArchititeCurrency(new FileSkysongItemFactory(paths.coins()), getLogger()).registerDenominations();
+        ItemTemplates itemTemplates = SkysongItemsApi.get().templates();
+        new ArchititeCurrency(new FileSkysongItemFactory(itemTemplates, paths.coins()), getLogger()).registerDenominations();
 
-        importItems = new FileSkysongItemFactory(paths.items());
+        importItems = new FileSkysongItemFactory(itemTemplates, paths.items());
 
         skysongStats = new SkysongStatsAdapter(SkysongStatsApi.get());
         YamlFiles configFiles = new YamlFiles(getDataFolder().toPath(), path -> saveResource(path, false));
         MessageCatalog messages = loadMessages(configFiles);
         Messenger messenger = new Messenger(MiniMessage.miniMessage(), messages);
         loadPrices(configFiles);
-        MaterialIdResolver materialIds = new MaterialIdResolver(new NamespacedKey(SkysongItems.getPlugin(), "material_id"));
+        MaterialIdResolver materialIds = new MaterialIdResolver(MaterialIdResolver.SKYSONG_ITEMS_KEY);
         businessFeature = BusinessFeature.start(this, paths, configFiles, databaseSettings(), skysongStats,
                 new GringottsWallet(), new TradeInputs(importItems, prices, priceSettings, goodTypes, materialIds),
                 messenger, messages);
