@@ -4,6 +4,7 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.command.CommandSender;
 import org.skysongdev.skysongEconomy.business.BusinessException;
 
@@ -48,6 +49,16 @@ public final class Messenger {
     /** @return the {@code messages.yml} text {@code key} as a component, without the prefix */
     public Component render(String key, TagResolver... placeholders) {
         return miniMessage.deserialize(catalog.text(key), placeholders);
+    }
+
+    /** @return the {@code messages.yml} text {@code key} without any formatting, e.g. a word players type */
+    public String plainText(String key) {
+        return PlainTextComponentSerializer.plainText().serialize(render(key));
+    }
+
+    /** @return MiniMessage text that is not in {@code messages.yml}, such as one lore line of a message */
+    public Component renderText(String template, TagResolver... placeholders) {
+        return miniMessage.deserialize(template, placeholders);
     }
 
     /** @return one unparsed placeholder per entry, so user-typed values can't inject tags */

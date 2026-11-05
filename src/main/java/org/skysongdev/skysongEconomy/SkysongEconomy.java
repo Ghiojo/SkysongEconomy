@@ -68,8 +68,9 @@ public final class SkysongEconomy extends JavaPlugin {
 
         skysongStats = new SkysongStatsAdapter(SkysongStatsApi.get());
         YamlFiles configFiles = new YamlFiles(getDataFolder().toPath(), path -> saveResource(path, false));
-        Messenger messenger = new Messenger(MiniMessage.miniMessage(), loadMessages(configFiles));
-        businessFeature = BusinessFeature.start(this, configFiles, databaseSettings(), skysongStats, messenger);
+        MessageCatalog messages = loadMessages(configFiles);
+        Messenger messenger = new Messenger(MiniMessage.miniMessage(), messages);
+        businessFeature = BusinessFeature.start(this, configFiles, databaseSettings(), skysongStats, messenger, messages);
 
         registerCommands(messenger);
     }
