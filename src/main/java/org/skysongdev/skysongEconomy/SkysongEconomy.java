@@ -28,9 +28,13 @@ public final class SkysongEconomy extends JavaPlugin {
     MiniMessage mm;
     org.skysongdev.skysongEconomy.utils.Utils utils;
 
+    /**
+     * Returns the instance Bukkit enabled. Bukkit refuses JavaPlugins created with {@code new},
+     * so this must never construct one.
+     */
     public static SkysongEconomy Instance(){
         if(instance == null) {
-            instance = new SkysongEconomy();
+            throw new IllegalStateException("SkysongEconomy has not been enabled yet");
         }
         return instance;
     }

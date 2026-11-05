@@ -206,6 +206,16 @@ public class Database {
         }
     }
 
+    /** Splits a ';'-joined column, treating null or empty as an empty list (not a list with one empty string). */
+    private static ArrayList<String> splitList(String joined){
+        ArrayList<String> values = new ArrayList<>();
+        if(joined == null || joined.isEmpty()){
+            return values;
+        }
+        values.addAll(List.of(joined.split(";")));
+        return values;
+    }
+
     //Dump Functions
     public void dumpEconomyBusinessData() throws SQLException{
         try (Statement statement = getConnection().createStatement();
@@ -221,7 +231,7 @@ public class Database {
                 int z = resultSet.getInt("z");
                 String world = resultSet.getString("world");
 
-                Utils.economyBusinesses.put(businessId, new EconomyBusiness(businessId, world, businessName, ownerUUID, new ArrayList<String>(List.of(catalogIDs.split(";"))), new ArrayList<String>(List.of(memberUUIDs.split(";"))), new ArrayList<Integer>(List.of(x, y, z)), new ArrayList<DeliveringOffer>()));
+                Utils.economyBusinesses.put(businessId, new EconomyBusiness(businessId, world, businessName, ownerUUID, splitList(catalogIDs), splitList(memberUUIDs), new ArrayList<Integer>(List.of(x, y, z)), new ArrayList<DeliveringOffer>()));
 
                 Bukkit.getLogger().info("Business ID: " + businessId + ", Owner UUID: " + ownerUUID + ", Business Name: " + businessName +
                         ", Member UUIDs: " + memberUUIDs + ", Catalog IDs: " + catalogIDs +
@@ -241,10 +251,14 @@ public class Database {
 
                 EconomyBusiness business = Utils.economyBusinesses.get(businessId);
                 if(business != null){
-                    business.getImportSlots().set(slotId, new DeliveringOffer(importId, arrivalDate));
+                    List<DeliveringOffer> slots = business.getImportSlots();
+                    while(slots.size() <= slotId){
+                        slots.add(null); // empty slot
+                    }
+                    slots.set(slotId, new DeliveringOffer(importId, arrivalDate));
                 }
                 Bukkit.getLogger().info("Business ID: " + businessId + ", Slot ID: " + slotId +
-                        ", Import ID: " + importId + ", Arrival Date: " + arrivalDate.toString());
+                        ", Import ID: " + importId + ", Arrival Date: " + arrivalDate);
             }
         }
     }
