@@ -92,6 +92,22 @@ business:
     members-everyone: "everyone"
     members-none: "nobody yet"
     permissions-none: "may do nothing"
+  vault:
+    empty: "<red>The vault is empty."
+    collect-failed: "<red>Couldn't pay out <amount>. Make room for the coins and try again; the vault keeps them."
+    balance: "<gold>The vault of <business> holds <white><amount></white>."
+    collected: "<green>Paid <white><amount></white> from the vault of <business> to <owner>."
+    collected-own: "<green>You collected <white><amount></white> from the vault."
+    button:
+      name: "<gold>Vault"
+      lore:
+        - "<gray>Holds <white><amount></white>: your cut of"
+        - "<gray>shift pay and paid training."
+        - ""
+        - "<yellow>Click to collect it."
+      lore-empty:
+        - "<gray>Empty. It fills with your cut"
+        - "<gray>of shift pay and paid training."
   picks:
     not-offered: "<red>A business of this type can't pick <yellow><skill></yellow>."
     none-free: "<red>Every skill pick is used. A tier <tier> business has <tier> pick(s)."

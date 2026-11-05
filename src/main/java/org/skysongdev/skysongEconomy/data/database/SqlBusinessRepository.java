@@ -27,7 +27,8 @@ import java.util.UUID;
  * It blocks on the database, so wrap it in {@link AsyncBusinessRepository} on the server. It
  * uses transactions, so only share its {@link ConnectionProvider} with repositories that write
  * on the same {@link BackgroundWriter} (such as {@link SqlAccessRepository}): otherwise their
- * statements could land inside its transactions. Deleting a business deletes its access groups.
+ * statements could land inside its transactions. Deleting a business deletes its access groups
+ * and vault.
  */
 public final class SqlBusinessRepository implements BusinessRepository {
     private final ConnectionProvider connections;
@@ -116,7 +117,8 @@ public final class SqlBusinessRepository implements BusinessRepository {
     public void delete(String id) {
         inTransaction(connection -> {
             for (String child : List.of(
-                    "business_workers", "business_skill_picks", "business_access_members", "business_access_groups")) {
+                    "business_workers", "business_skill_picks", "business_access_members", "business_access_groups",
+                    "business_vaults")) {
                 try (PreparedStatement statement = connection.prepareStatement("DELETE FROM " + child + " WHERE business_id = ?")) {
                     statement.setString(1, id);
                     statement.executeUpdate();
