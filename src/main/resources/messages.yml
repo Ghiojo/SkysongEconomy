@@ -236,6 +236,38 @@ business:
       title: "Order this import?"
       time: "<gray>Delivery: <time> <gray>(<white><duration></white><gray>)"
       final: "<red>Orders can't be cancelled."
+  slots:
+    gone: "<red>That delivery was already collected."
+    not-ready: "<red>That delivery arrives in <white><duration></white>."
+    not-allowed: "<red>Only whoever ordered it, the owner of <business> and groups allowed to order imports can collect deliveries."
+    item-missing: "<red>An item of that delivery has no item file any more, so it stays in its slot. Ask staff to restore it."
+    collected: "<green>Collected <import><green>."
+    collected-dropped: "<green>Collected <import><green>. Your inventory was full, so some items dropped at your feet."
+    button:
+      name: "<gold>Delivery slots"
+      lore:
+        - "<white><used>/<max></white> <gray>slots in use"
+        - "<white><ready></white> <gray>delivery(ies) ready to collect"
+        - ""
+        - "<yellow>Click to see your deliveries."
+      lore-not-allowed:
+        - "<gray>Only the owner and groups allowed"
+        - "<gray>to order imports can use this."
+    menu:
+      title: "Deliveries · <business>"
+      header:
+        name: "<gold>Delivery slots"
+        lore:
+          - "<white><used>/<max></white> <gray>slots in use"
+          - "<gray>Deliveries keep arriving while you're offline."
+      free:
+        name: "<gray>Free delivery slot"
+        lore:
+          - "<gray>Order an import to fill it."
+      item: "<white><amount></white> <gray>×</gray> <white><item></white>"
+      ordered-by: "<gray>Ordered by <white><character></white>"
+      arrives: "<yellow>Arrives in <white><duration></white>"
+      ready: "<green>Ready! Click to collect."
   activity:
     busy-shift: "<red>You're already working a shift (at <business>). One shift or training at a time."
     busy-training: "<red>You're already training (at <business>). One shift or training at a time."

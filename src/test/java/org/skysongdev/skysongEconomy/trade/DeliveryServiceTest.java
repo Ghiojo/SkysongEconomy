@@ -12,7 +12,10 @@ import org.skysongdev.skysongEconomy.trade.delivery.DeliveryRepository;
 import org.skysongdev.skysongEconomy.trade.delivery.DeliveryService;
 
 import java.math.BigDecimal;
+import java.time.Clock;
 import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -111,6 +114,50 @@ class DeliveryServiceTest {
         Delivery delivery = order(TradeFixture.OWNER);
         deliveries.loadAll();
         assertEquals(List.of(delivery), deliveries.deliveries(trade.shop));
+    }
+
+    private DeliveryService at(Instant now) {
+        DeliveryService later = new DeliveryService(new DeliveryService.Dependencies(trade.settings, trade.selections,
+                trade.access, trade.pricing, trade.wallet), repository, Clock.fixed(now, ZoneOffset.UTC),
+                new Random(3), warnings::add);
+        later.loadAll();
+        return later;
+    }
+
+    @Test
+    void collectingHandsOverTheItemsAndFreesTheSlot() {
+        Delivery delivery = order(TradeFixture.OWNER);
+        assertEquals("business.slots.not-ready", refusal(() -> deliveries.collect(trade.shop, TradeFixture.OWNER, delivery,
+                items -> { })));
+        DeliveryService later = at(delivery.arrivesAt());
+        List<ItemAmount> given = new ArrayList<>();
+        later.collect(trade.shop, TradeFixture.OWNER, delivery, given::addAll);
+        assertEquals(delivery.items(), given);
+        assertEquals(2, later.freeSlots(trade.shop));
+        assertTrue(repository.saved.isEmpty());
+        assertEquals("business.slots.gone", refusal(() -> later.collect(trade.shop, TradeFixture.OWNER, delivery, items -> { })));
+    }
+
+    @Test
+    void aFailedHandOverKeepsTheDelivery() {
+        Delivery delivery = order(TradeFixture.OWNER);
+        DeliveryService later = at(delivery.arrivesAt());
+        assertThrows(IllegalStateException.class, () -> later.collect(trade.shop, TradeFixture.OWNER, delivery, items -> {
+            throw new IllegalStateException("item file missing");
+        }));
+        assertEquals(List.of(delivery), later.deliveries(trade.shop));
+    }
+
+    @Test
+    void theOrdererCanCollectEvenWithoutOrderingRights() {
+        trade.access.setPermission(trade.shop, AccessGroup.WORKERS, Permission.ORDER_IMPORTS, true);
+        trade.wallet.balances.put(TradeFixture.WORKER.player(), new BigDecimal("500"));
+        Delivery delivery = order(TradeFixture.WORKER);
+        trade.access.setPermission(trade.shop, AccessGroup.WORKERS, Permission.ORDER_IMPORTS, false);
+        DeliveryService later = at(delivery.arrivesAt());
+        assertEquals("business.slots.not-allowed", refusal(() -> later.collect(trade.shop, TradeFixture.STRANGER, delivery,
+                items -> { })));
+        later.collect(trade.shop, TradeFixture.WORKER, delivery, items -> { });
     }
 
     /** Keeps deliveries in a list. */

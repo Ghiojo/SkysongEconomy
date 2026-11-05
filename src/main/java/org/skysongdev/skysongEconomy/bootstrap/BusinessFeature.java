@@ -63,6 +63,7 @@ import org.skysongdev.skysongEconomy.gui.business.ImportsEntry;
 import org.skysongdev.skysongEconomy.gui.business.LedgersEntry;
 import org.skysongdev.skysongEconomy.gui.business.RetrievePayEntry;
 import org.skysongdev.skysongEconomy.gui.business.SkillPicksEntry;
+import org.skysongdev.skysongEconomy.gui.business.SlotsEntry;
 import org.skysongdev.skysongEconomy.gui.business.TrainEntry;
 import org.skysongdev.skysongEconomy.gui.business.VaultEntry;
 import org.skysongdev.skysongEconomy.gui.business.WorkShiftEntry;
@@ -222,6 +223,8 @@ public final class BusinessFeature implements AutoCloseable {
         menus.addEntry(new SkillPicksEntry(menus, businesses, skysongStats, messenger));
         menus.addEntry(new ImportsEntry(menus, ledgerSelections, deliveries, pricing, settings.economyLogistics(), wallet,
                 messenger));
+        menus.addEntry(new SlotsEntry(menus, deliveries, settings.economyLogistics(), ledgers, trade.items(), messenger,
+                Clock.systemUTC()));
         menus.addEntry(new LedgersEntry(menus, ledgers, ledgerSelections, settings.economyLogistics(), wallet, messenger));
         events.registerEvents(new BusinessInteractListener(businesses, menus), plugin);
 
