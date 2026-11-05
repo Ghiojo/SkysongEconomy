@@ -1,0 +1,10 @@
+# The buttons every menu shares. Each value is a Minecraft item name, such as ARROW or
+# GRAY_STAINED_GLASS_PANE. Their names and descriptions are under menu in messages.yml.
+icons:
+  border: GRAY_STAINED_GLASS_PANE
+  previous-page: ARROW
+  next-page: ARROW
+  back: DARK_OAK_DOOR
+  close: BARRIER
+  confirm: LIME_CONCRETE
+  cancel: RED_CONCRETE

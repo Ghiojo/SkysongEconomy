@@ -65,7 +65,7 @@ class MessageCatalogTest {
                 getClass().getResourceAsStream("/messages.yml")), StandardCharsets.UTF_8)) {
             catalog = MessageCatalog.of(YamlFiles.parse("messages.yml", reader), yaml(""), w -> { });
         }
-        Pattern key = Pattern.compile("\"((?:command|business)\\.[a-z0-9.-]+)\"");
+        Pattern key = Pattern.compile("\"((?:command|business|menu|prompt)\\.[a-z0-9.-]+)\"");
         List<String> missing = new ArrayList<>();
         try (Stream<Path> sources = Files.walk(Path.of("src/main/java"))) {
             for (Path source : sources.filter(path -> path.toString().endsWith(".java")).toList()) {
