@@ -14,6 +14,9 @@ import org.skysongdev.skysongEconomy.business.shift.ShiftService;
 import org.skysongdev.skysongEconomy.business.shift.ShiftSettings;
 import org.skysongdev.skysongEconomy.business.shift.ShiftSettingsParser;
 import org.skysongdev.skysongEconomy.business.tier.BusinessTiers;
+import org.skysongdev.skysongEconomy.business.training.TrainingService;
+import org.skysongdev.skysongEconomy.business.training.TrainingSettings;
+import org.skysongdev.skysongEconomy.business.training.TrainingSettingsParser;
 import org.skysongdev.skysongEconomy.business.tier.BusinessTiersParser;
 import org.skysongdev.skysongEconomy.business.type.BusinessTypeRegistry;
 import org.skysongdev.skysongEconomy.business.type.BusinessTypesParser;
@@ -29,6 +32,7 @@ import org.skysongdev.skysongEconomy.data.database.AsyncAccessRepository;
 import org.skysongdev.skysongEconomy.data.database.AsyncBusinessRepository;
 import org.skysongdev.skysongEconomy.data.database.AsyncShiftRepository;
 import org.skysongdev.skysongEconomy.data.database.AsyncTokenRepository;
+import org.skysongdev.skysongEconomy.data.database.AsyncTrainingRepository;
 import org.skysongdev.skysongEconomy.data.database.AsyncVaultRepository;
 import org.skysongdev.skysongEconomy.data.database.BackgroundWriter;
 import org.skysongdev.skysongEconomy.data.database.ConnectionProvider;
@@ -37,6 +41,7 @@ import org.skysongdev.skysongEconomy.data.database.SqlAccessRepository;
 import org.skysongdev.skysongEconomy.data.database.SqlBusinessRepository;
 import org.skysongdev.skysongEconomy.data.database.SqlShiftRepository;
 import org.skysongdev.skysongEconomy.data.database.SqlTokenRepository;
+import org.skysongdev.skysongEconomy.data.database.SqlTrainingRepository;
 import org.skysongdev.skysongEconomy.data.database.SqlVaultRepository;
 import org.skysongdev.skysongEconomy.data.database.StorageException;
 import org.skysongdev.skysongEconomy.events.BukkitShiftEvents;
@@ -46,6 +51,7 @@ import org.skysongdev.skysongEconomy.gui.MenuTheme;
 import org.skysongdev.skysongEconomy.gui.business.BusinessMenus;
 import org.skysongdev.skysongEconomy.gui.business.RetrievePayEntry;
 import org.skysongdev.skysongEconomy.gui.business.SkillPicksEntry;
+import org.skysongdev.skysongEconomy.gui.business.TrainEntry;
 import org.skysongdev.skysongEconomy.gui.business.VaultEntry;
 import org.skysongdev.skysongEconomy.gui.business.WorkShiftEntry;
 import org.skysongdev.skysongEconomy.gui.layout.MenuIcons;
@@ -53,10 +59,10 @@ import org.skysongdev.skysongEconomy.integration.cmi.AfkCheck;
 import org.skysongdev.skysongEconomy.integration.cmi.CmiAfkCheck;
 import org.skysongdev.skysongEconomy.integration.placeholderapi.TokenExpansion;
 import org.skysongdev.skysongEconomy.integration.skysongstats.SkysongStatsAdapter;
+import org.skysongdev.skysongEconomy.listeners.ActivityTimer;
 import org.skysongdev.skysongEconomy.listeners.BusinessBlockListener;
 import org.skysongdev.skysongEconomy.listeners.BusinessInteractListener;
 import org.skysongdev.skysongEconomy.listeners.BusinessNameplates;
-import org.skysongdev.skysongEconomy.listeners.ShiftTimer;
 import org.skysongdev.skysongEconomy.messaging.MessageCatalog;
 import org.skysongdev.skysongEconomy.messaging.Messenger;
 import org.skysongdev.skysongEconomy.money.Wallet;
@@ -91,7 +97,8 @@ public final class BusinessFeature implements AutoCloseable {
     }
 
     /** The config every part of the business system needs. */
-    private record Settings(BusinessTypeRegistry types, BusinessTiers tiers, AccessDefaults access, ShiftSettings shifts) {
+    private record Settings(BusinessTypeRegistry types, BusinessTiers tiers, AccessDefaults access, ShiftSettings shifts,
+                            TrainingSettings training) {
     }
 
     /**
@@ -132,9 +139,14 @@ public final class BusinessFeature implements AutoCloseable {
         ShiftService shifts = new ShiftService(settings.shifts(), new ShiftService.Dependencies(businesses,
                 settings.tiers(), activities, vaults, tokens, wallet, skysongStats, new BukkitShiftEvents(events)),
                 new AsyncShiftRepository(new SqlShiftRepository(connections), writer), Clock.systemUTC(), logger::warning);
-        // Shifts are paid before the vault is emptied, so a deleted business pays everyone first.
+        TrainingService training = new TrainingService(settings.training(), new TrainingService.Dependencies(businesses,
+                settings.types(), settings.tiers(), access, activities, vaults, wallet, skysongStats, skysongStats),
+                new AsyncTrainingRepository(new SqlTrainingRepository(connections), writer), Clock.systemUTC(),
+                logger::warning);
+        // Shifts and training finish before the vault is emptied, so a deleted business pays everyone first.
         businesses.addListener(access);
         businesses.addListener(shifts);
+        businesses.addListener(training);
         businesses.addListener(vaults);
 
         BusinessNameplates nameplates = new BusinessNameplates(businesses, nameplateSettings(configFiles, logger), messenger);
@@ -147,6 +159,7 @@ public final class BusinessFeature implements AutoCloseable {
             vaults.loadAll();
             tokens.loadAll();
             shifts.loadAll();
+            training.loadAll();
         } catch (StorageException e) {
             // Keep the commands so staff get clear errors, but nothing loaded means nothing to protect yet.
             logger.log(Level.SEVERE, "Businesses could not be loaded from the database", e);
@@ -156,17 +169,19 @@ public final class BusinessFeature implements AutoCloseable {
         BusinessMenus menus = createMenus(plugin, configFiles, businesses, settings.types(), skysongStats, messenger, messages);
         menus.addEntry(new WorkShiftEntry(menus, shifts, activities, wallet, messenger));
         menus.addEntry(new RetrievePayEntry(menus, shifts, wallet, messenger));
+        menus.addEntry(new TrainEntry(menus, training, activities, skysongStats, wallet, messenger));
         menus.addEntry(new VaultEntry(menus, vaults, messenger));
         menus.addEntry(new SkillPicksEntry(menus, businesses, skysongStats, messenger));
         events.registerEvents(new BusinessInteractListener(businesses, menus), plugin);
 
-        resources.add(new ShiftTimer(plugin, shifts, businesses, afkCheck(plugin), messenger).start()::cancel);
+        resources.add(new ActivityTimer(plugin, businesses, shifts, training, skysongStats, afkCheck(plugin), messenger)
+                .start()::cancel);
         registerPlaceholders(plugin, tokens, skysongStats);
         List<SubCommand> commands = List.of(
                 new BusinessCommand(businesses, settings.types(), access, vaults, skysongStats, messenger),
                 new TokensCommand(tokens, new CharacterArguments(skysongStats, messenger), messenger));
         BusinessSystem system = new BusinessSystem(businesses, settings.types(), access, vaults, tokens, activities,
-                shifts, menus);
+                shifts, training, menus);
         return new BusinessFeature(system, commands, resources, logger);
     }
 
@@ -176,7 +191,8 @@ public final class BusinessFeature implements AutoCloseable {
         return new Settings(types,
                 new BusinessTiersParser().parse(configFiles.load(BusinessTiersParser.FILE)),
                 AccessDefaults.parse(configFiles.load(AccessDefaults.FILE)),
-                new ShiftSettingsParser(types, logger::warning).parse(configFiles.load(ShiftSettingsParser.FILE)));
+                new ShiftSettingsParser(types, logger::warning).parse(configFiles.load(ShiftSettingsParser.FILE)),
+                new TrainingSettingsParser().parse(configFiles.load(TrainingSettingsParser.FILE)));
     }
 
     /** CMI is optional: without it, AFK time counts like any other online time. */
@@ -238,7 +254,7 @@ public final class BusinessFeature implements AutoCloseable {
     }
 
     /**
-     * Stops the shift timer, removes the floating names, waits for pending saves, then closes
+     * Stops the shift and training timer, removes the floating names, waits for pending saves, then closes
      * the database connection.
      */
     @Override

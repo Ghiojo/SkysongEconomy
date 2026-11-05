@@ -12,8 +12,8 @@ import java.util.List;
  * Reads {@code businesses/tiers.yml}, which must define every tier from 1 to 5:
  * <pre>{@code
  * tiers:
- *   1: {workers: 2, vault-cut: 1}
- *   2: {workers: 3, vault-cut: 1.5}
+ *   1: {workers: 2, vault-cut: 1, max-proficiency: proficient}
+ *   2: {workers: 3, vault-cut: 1.5, max-proficiency: proficient}
  * }</pre>
  */
 public final class BusinessTiersParser {
@@ -37,7 +37,8 @@ public final class BusinessTiersParser {
             if (vaultCut < 0) {
                 throw section.error("vault-cut", "must be 0 or more");
             }
-            parsed.add(new TierSettings(tier, workers, BigDecimal.valueOf(vaultCut).stripTrailingZeros()));
+            String maxProficiency = section.string("max-proficiency", TierSettings.DEFAULT_MAX_PROFICIENCY);
+            parsed.add(new TierSettings(tier, workers, BigDecimal.valueOf(vaultCut).stripTrailingZeros(), maxProficiency));
         }
         for (int tier = Business.MIN_TIER; tier <= Business.MAX_TIER; tier++) {
             if (!tiers.contains(String.valueOf(tier))) {

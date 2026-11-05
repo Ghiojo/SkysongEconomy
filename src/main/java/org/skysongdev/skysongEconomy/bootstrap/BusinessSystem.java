@@ -4,6 +4,7 @@ import org.skysongdev.skysongEconomy.business.BusinessService;
 import org.skysongdev.skysongEconomy.business.access.AccessService;
 import org.skysongdev.skysongEconomy.business.activity.ActivityLock;
 import org.skysongdev.skysongEconomy.business.shift.ShiftService;
+import org.skysongdev.skysongEconomy.business.training.TrainingService;
 import org.skysongdev.skysongEconomy.business.type.BusinessTypeRegistry;
 import org.skysongdev.skysongEconomy.business.vault.BusinessVaults;
 import org.skysongdev.skysongEconomy.gui.business.BusinessMenus;
@@ -19,9 +20,10 @@ import org.skysongdev.skysongEconomy.tokens.GatheringTokens;
  * @param tokens     every character's Gathering Tokens
  * @param activities which players are busy with a shift or training
  * @param shifts     Work a Shift and Retrieve Pay
+ * @param training   Train/Learn
  * @param menus      the business menus, to add main menu buttons to
  */
 public record BusinessSystem(BusinessService businesses, BusinessTypeRegistry types, AccessService access,
                              BusinessVaults vaults, GatheringTokens tokens, ActivityLock activities,
-                             ShiftService shifts, BusinessMenus menus) {
+                             ShiftService shifts, TrainingService training, BusinessMenus menus) {
 }
