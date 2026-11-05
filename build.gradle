@@ -28,7 +28,7 @@ dependencies {
     compileOnly files("libs/gringotts-3.0.1.jar")
     compileOnly files("libs/SkysongSpecialItems-1.6.0.jar")
     // Characters, skills, proficiencies and downtime. Provided at runtime by the SkysongStats plugin.
-    compileOnly 'com.github.Ghiojo.SkysongStats:api:1.0.0'
+    compileOnly 'com.github.Ghiojo:SkysongStats:1.0.0'
     // Optional: the Gathering Token placeholders, when PlaceholderAPI is installed.
     compileOnly 'me.clip:placeholderapi:2.11.6'
 
