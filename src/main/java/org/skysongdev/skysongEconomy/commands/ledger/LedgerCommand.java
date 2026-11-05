@@ -51,6 +51,9 @@ public class LedgerCommand implements TabExecutor {
 
     @Override
     public @Nullable List<String> onTabComplete(@NotNull CommandSender commandSender, @NotNull Command command, @NotNull String s, @NotNull String[] strings) {
-        return List.of("view", "add", "remove").stream().filter(a -> a.startsWith(strings[0])).toList();
+        if(strings.length != 1){
+            return List.of();
+        }
+        return List.of("view", "add", "remove").stream().filter(a -> a.startsWith(strings[0].toLowerCase())).toList();
     }
 }

@@ -16,17 +16,17 @@ import static org.skysongdev.skysongEconomy.utils.Constants.PLUGIN_TAG;
 public class RemoveLedgerEntry implements CommandExecutor {
     @Override
     public boolean onCommand(@NotNull CommandSender commandSender, @NotNull Command command, @NotNull String s, @NotNull String[] strings) {
-        Player player = (Player) commandSender;
-        if(strings.length < 1 && (player.getInventory().getItemInMainHand().getType() == org.bukkit.Material.AIR || !player.getInventory().getItemInMainHand().getItemMeta().getPersistentDataContainer().has(new NamespacedKey(SkysongItems.getPlugin(), "material_id")))){
-            commandSender.sendMessage("Usage: /seco ledger remove <entryID> (or hold item with a material id)");
-            return true;
-        }
         String materialId;
 
         if(strings.length >= 1){
             materialId = strings[0];
-        } else {
+        } else if(commandSender instanceof Player player
+                && player.getInventory().getItemInMainHand().getType() != org.bukkit.Material.AIR
+                && player.getInventory().getItemInMainHand().getItemMeta().getPersistentDataContainer().has(new NamespacedKey(SkysongItems.getPlugin(), "material_id"))){
             materialId = player.getInventory().getItemInMainHand().getItemMeta().getPersistentDataContainer().get(new NamespacedKey(SkysongItems.getPlugin(), "material_id"), org.bukkit.persistence.PersistentDataType.STRING);
+        } else {
+            commandSender.sendMessage(SkysongEconomy.Instance().getMm().deserialize(PLUGIN_TAG + "<red>Usage: /seco ledger remove <materialId> (or hold an item with a material ID)"));
+            return true;
         }
 
         try {
@@ -37,6 +37,7 @@ public class RemoveLedgerEntry implements CommandExecutor {
             return true;
         }
 
+        commandSender.sendMessage(SkysongEconomy.Instance().getMm().deserialize(PLUGIN_TAG + "<green>Removed the ledger entry for material ID <yellow>" + materialId + "<green>."));
         return true;
     }
 }

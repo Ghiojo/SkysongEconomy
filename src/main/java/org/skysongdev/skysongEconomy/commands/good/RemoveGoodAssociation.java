@@ -20,12 +20,15 @@ public class RemoveGoodAssociation implements CommandExecutor {
     public boolean onCommand(@NotNull CommandSender commandSender, @NotNull Command command, @NotNull String s, @NotNull String[] strings) {
         String goodType;
         String materialId;
-        Player player = (Player) commandSender;
         if(strings.length < 1){
-            commandSender.sendMessage(SkysongEconomy.Instance().getMm().deserialize(PLUGIN_TAG + "<red>Usage: /seco good add <materialId> <goodType>"));
+            commandSender.sendMessage(SkysongEconomy.Instance().getMm().deserialize(PLUGIN_TAG + "<red>Usage: /seco good remove [materialId] <goodType>"));
             return true;
         }
         if(strings.length == 1){
+            if(!(commandSender instanceof Player player)){
+                commandSender.sendMessage(SkysongEconomy.Instance().getMm().deserialize(PLUGIN_TAG + "<red>From the console you must specify a material ID: /seco good remove <materialId> <goodType>"));
+                return true;
+            }
             if(player.getInventory().getItemInMainHand().getType() == Material.AIR || !player.getInventory().getItemInMainHand().getItemMeta().getPersistentDataContainer().has(new NamespacedKey(SkysongItems.getPlugin(), "material_id"))){
                 commandSender.sendMessage(SkysongEconomy.Instance().getMm().deserialize(PLUGIN_TAG + "<red>You must either specify a material ID or hold an item with a material ID in your main hand."));
                 return true;

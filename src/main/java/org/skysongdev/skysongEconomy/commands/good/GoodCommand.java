@@ -3,7 +3,6 @@ package org.skysongdev.skysongEconomy.commands.good;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabExecutor;
-import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -16,12 +15,11 @@ public class GoodCommand implements TabExecutor {
             commandSender.sendMessage("Usage: /skysongeconomy good <subcommand> [args]");
             return true;
         }
-        Player player = (Player) commandSender;
         String[] newArgs = java.util.Arrays.copyOfRange(strings, 1, strings.length);
         switch(strings[0].toLowerCase()){
             // Add subcommands here
             case "add":
-                if(player.hasPermission("skysongeconomy.good.manage")){
+                if(commandSender.hasPermission("skysongeconomy.good.manage")){
                     AddGoodAssociation addGood = new AddGoodAssociation();
                     addGood.onCommand(commandSender, command, s, newArgs);
                     break;
@@ -31,7 +29,7 @@ public class GoodCommand implements TabExecutor {
                 }
 
             case "remove":
-                if(player.hasPermission("skysongeconomy.good.manage")){
+                if(commandSender.hasPermission("skysongeconomy.good.manage")){
                     RemoveGoodAssociation removeGood = new RemoveGoodAssociation();
                     removeGood.onCommand(commandSender, command, s, newArgs);
                     break;
@@ -49,6 +47,9 @@ public class GoodCommand implements TabExecutor {
 
     @Override
     public @Nullable List<String> onTabComplete(@NotNull CommandSender commandSender, @NotNull Command command, @NotNull String s, @NotNull String[] strings) {
-        return List.of("add", "remove").stream().filter(a -> a.startsWith(strings[0])).toList();
+        if(strings.length != 1){
+            return List.of();
+        }
+        return List.of("add", "remove").stream().filter(a -> a.startsWith(strings[0].toLowerCase())).toList();
     }
 }

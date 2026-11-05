@@ -19,12 +19,15 @@ public class AddLedgerEntry implements CommandExecutor {
     public boolean onCommand(@NotNull CommandSender commandSender, @NotNull Command command, @NotNull String s, @NotNull String[] strings) {
         float value;
         String materialId = "";
-        Player player = (Player) commandSender;
         if(strings.length < 1){
             commandSender.sendMessage(SkysongEconomy.Instance().getMm().deserialize(PLUGIN_TAG + "<red>Usage: /seco ledger add [optional: materialId] (You can also hold the item with an id and just put in the value) <value>"));
             return true;
         }
         if(strings.length < 2){
+            if(!(commandSender instanceof Player player)){
+                commandSender.sendMessage(SkysongEconomy.Instance().getMm().deserialize(PLUGIN_TAG + "<red>From the console you must specify a material ID: /seco ledger add <materialId> <value>"));
+                return true;
+            }
             if(player.getInventory().getItemInMainHand().getType() == Material.AIR || !player.getInventory().getItemInMainHand().getItemMeta().getPersistentDataContainer().has(new NamespacedKey(SkysongItems.getPlugin(), "material_id")))  {
                 commandSender.sendMessage(SkysongEconomy.Instance().getMm().deserialize(PLUGIN_TAG + "<red>No material ID provided and no item with a material ID held in main hand."));
                 return true;
