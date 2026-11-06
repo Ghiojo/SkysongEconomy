@@ -58,6 +58,9 @@ permissions:
   skysongeconomy.nodes:
     description: Allows the /se node commands, to set up gathering nodes, and breaking node blocks
     default: op
+  skysongeconomy.nodes.tend-bypass:
+    description: Lets staff plant and take out primers at every farm node, including server-owned businesses' farms
+    default: op
   skysongeconomy.*:
     description: Gives access to all SkysongEconomy features
     default: op
@@ -75,3 +78,4 @@ permissions:
       skysongeconomy.modifiers: true
       skysongeconomy.modifiers.edit: true
       skysongeconomy.nodes: true
+      skysongeconomy.nodes.tend-bypass: true

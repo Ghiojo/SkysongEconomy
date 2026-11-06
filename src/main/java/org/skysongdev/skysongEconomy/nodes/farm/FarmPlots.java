@@ -23,7 +23,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 /**
  * What is planted in each farm node, and planting and taking out primers.
@@ -46,9 +48,11 @@ public final class FarmPlots implements NodeChangeListener {
      * @param downtime   pays for taking primers out
      * @param repository where plantings are saved
      * @param returns    gives primers back to their planters
+     * @param bypass     whether a player has {@link #BYPASS_PERMISSION}, so they tend every farm node
      */
     public record Dependencies(NodeTables tables, NodeSettings settings, NodeAccess access, AccessService permissions,
-                               DowntimeWallet downtime, PlantingRepository repository, PrimerReturns returns) {
+                               DowntimeWallet downtime, PlantingRepository repository, PrimerReturns returns,
+                               Predicate<UUID> bypass) {
         public Dependencies {
             Objects.requireNonNull(tables, "tables");
             Objects.requireNonNull(settings, "settings");
@@ -57,8 +61,17 @@ public final class FarmPlots implements NodeChangeListener {
             Objects.requireNonNull(downtime, "downtime");
             Objects.requireNonNull(repository, "repository");
             Objects.requireNonNull(returns, "returns");
+            Objects.requireNonNull(bypass, "bypass");
         }
     }
+
+    /**
+     * Staff permission: plant and take out primers at every farm node, whoever owns it and
+     * whatever its groups allow. Server-owned businesses have no owner character, so without it
+     * nobody could tend their farms until a group allowed it. Taking a primer out still costs the
+     * removal downtime.
+     */
+    public static final String BYPASS_PERMISSION = "skysongeconomy.nodes.tend-bypass";
 
     private final Dependencies deps;
     private final Map<String, Planting> plantings = new HashMap<>();
@@ -132,11 +145,13 @@ public final class FarmPlots implements NodeChangeListener {
      * @return the business that owns the node
      * @throws NodeException {@code node.harvest.unowned} when no business owns it, or
      *                       {@code node.farm.no-tending} when the character is neither its owner nor
-     *                       in a group with {@code tend-farms}
+     *                       in a group with {@code tend-farms}, and their player doesn't have
+     *                       {@link #BYPASS_PERMISSION}
      */
     public Business requireTender(Node node, CharacterRef character) {
         Business business = deps.access().owner(node);
-        if (!deps.permissions().allows(business, character, Permission.TEND_FARMS)) {
+        if (!deps.bypass().test(character.player())
+                && !deps.permissions().allows(business, character, Permission.TEND_FARMS)) {
             throw new NodeException("node.farm.no-tending", Map.of("business", business.displayName()));
         }
         return business;

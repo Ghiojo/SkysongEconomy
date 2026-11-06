@@ -1,5 +1,6 @@
 package org.skysongdev.skysongEconomy.bootstrap;
 
+import org.bukkit.entity.Player;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.skysongdev.skysongEconomy.commands.SubCommand;
@@ -51,6 +52,7 @@ import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -129,7 +131,8 @@ public final class NodeFeature implements AutoCloseable {
                 new AsyncPrimerReturnRepository(new SqlPrimerReturnRepository(connections, logger), writer),
                 new InventoryPrimerDelivery(plugin.getServer(), handOver, messenger));
         FarmPlots plots = new FarmPlots(new FarmPlots.Dependencies(tables, settings, access, system.access(), skysongStats,
-                new AsyncPlantingRepository(new SqlPlantingRepository(connections, logger), writer), returns));
+                new AsyncPlantingRepository(new SqlPlantingRepository(connections, logger), writer), returns,
+                player -> hasPermission(plugin, player, FarmPlots.BYPASS_PERMISSION)));
         FloatingNames nameplates = new FloatingNames(settings.nameplate());
         NodeNameplates nodeNameplates = new NodeNameplates(nodes, nameplates, messenger, plots::plantedName);
         nodes.addListener(nodeNameplates);
@@ -182,6 +185,12 @@ public final class NodeFeature implements AutoCloseable {
         logger.info("Loaded " + loaded.groups().ids().size() + " loot group(s), " + loaded.random().size()
                 + " random node table(s), " + loaded.farmResources().size() + " farm resource(s) and "
                 + loaded.farmTypes().size() + " farm type(s)");
+    }
+
+    /** @return whether the player is online and has the permission; offline players have none */
+    private static boolean hasPermission(JavaPlugin plugin, UUID playerId, String permission) {
+        Player player = plugin.getServer().getPlayer(playerId);
+        return player != null && player.hasPermission(permission);
     }
 
     private static NodeFeature disabled(Logger logger) {

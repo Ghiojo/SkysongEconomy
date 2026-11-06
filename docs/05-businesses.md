@@ -158,7 +158,7 @@ Each group has a set of permissions and a training price:
 | `train` | use Train/Learn, at the group's price |
 | `order-imports` | order E&L imports, and collect any delivery |
 | `sell-exports` | sell E&L exports |
-| `tend-farms` | plant and take out primers in the business's farm nodes |
+| `tend-farms` | plant and take out primers in the business's farm nodes (staff with `skysongeconomy.nodes.tend-bypass` always can) |
 
 A character may do something when **any** of their groups allows it, and pays the **lowest** training price among
 their groups that allow training. The **owner** may always do everything and trains for free.

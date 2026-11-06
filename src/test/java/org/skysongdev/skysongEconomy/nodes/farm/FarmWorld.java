@@ -73,6 +73,8 @@ final class FarmWorld {
     final Map<CharacterRef, String> farmingLevels = new HashMap<>();
     final Map<UUID, Integer> downtime = new HashMap<>();
     final Set<UUID> online = new HashSet<>();
+    /** Players with the staff bypass permission. */
+    final Set<UUID> bypassing = new HashSet<>();
     final Map<UUID, List<StoredItems>> received = new HashMap<>();
     final List<Harvest> heard = new ArrayList<>();
     final Map<String, Planting> savedPlantings = new LinkedHashMap<>();
@@ -171,7 +173,7 @@ final class FarmWorld {
                     public void delete(String nodeId) {
                         savedPlantings.remove(nodeId);
                     }
-                }, returns));
+                }, returns, bypassing::contains));
         plots.addListener(plantingChanges::add);
         nodes.addListener(plots);
         businesses.addListener(nodes);
