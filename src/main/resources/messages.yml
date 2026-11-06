@@ -452,6 +452,7 @@ business:
 
 node:
   nameplate: "<white><node>, Tier <tier>"
+  nameplate-farm: "<white><node>, Tier <tier>\n<gray><planted>"
   nameplate-unavailable: "<gray><node>, Tier <tier> <red>(unavailable)"
   owner-public: "everyone"
   owner-unowned: "nobody"
@@ -527,8 +528,7 @@ node:
       business-only: "<red>Not offered on public nodes."
       too-low: "<red>Your skill level is too low."
   harvest:
-    unavailable: "<red>This node can't be used right now: its table didn't load. Tell staff."
-    farm-not-ready: "<red>Farm nodes can't be harvested yet."
+    unavailable: "<red>This node can't be used right now: its table or farm type didn't load. Tell staff."
     gone: "<red>That node no longer exists."
     unowned: "<red>Nobody owns this node, so it can't be gathered from."
     not-member: "<red>Only the owner and workers of <yellow><business></yellow> can gather here."
@@ -544,6 +544,37 @@ node:
     got-nothing: "<gray>You gathered nothing this time."
     dropped: "<yellow>Your inventory was full, so some items dropped at your feet."
     item-missing: "<red>Something you gathered has no item file any more. Tell staff; the console names the node."
+  farm:
+    empty-name: "Empty"
+    info:
+      planted: "<gray>Planted: <white><resource>"
+      hint-plant: "<gray>Click a primer in your inventory to plant it."
+      hint-empty: "<gray>Nothing is planted. The owner plants here."
+    plot:
+      empty-name: "<gray>Empty plot"
+      empty: "<gray>Nothing is planted yet."
+      empty-tender: "<yellow>Click a primer in your inventory to plant it, for free."
+      planted-name: "<green><resource>"
+      planted: "<gray>Growing. Click a tier above to harvest."
+    take-out:
+      name: "<yellow>Take the primer out"
+      cost: "<gray>Costs <white><downtime></white> downtime. You get the primer back."
+      free: "<gray>Free. You get the primer back."
+      click: "<yellow>Click to take it out."
+    no-tending: "<red>Only the owner of <yellow><business></yellow>, or someone they allow to tend farms, can plant here."
+    occupied: "<red>Something is already planted here. Take it out first."
+    empty: "<red>Nothing is planted here."
+    resource-unavailable: "<red>What's planted here (<yellow><resource></yellow>) can't be harvested right now: its file didn't load or this farm type no longer takes it. Tell staff, or take the primer out."
+    not-a-primer: "<red>That item isn't a primer this plot takes."
+    unknown-primer: "<red>That item is a primer for <yellow><primer></yellow>, which isn't a farm resource. Tell staff."
+    wrong-primer: "<red><yellow><resource></yellow> can't be planted in a <yellow><type></yellow> plot."
+    not-enough: "<red>Planting <resource> takes <amount> of that item."
+    planted: "<green>You planted <resource>."
+    no-downtime: "<red>Taking the primer out costs <cost> downtime and your preferred pool doesn't have that much. See /downtime preference."
+    taken-out: "<green>You took the primer out."
+    taken-out-dropped: "<green>You took the primer out. <yellow>Your inventory was full, so some of it dropped at your feet."
+    returned: "<green>A primer you planted was given back to you."
+    returned-dropped: "<green>A primer you planted was given back to you. <yellow>Your inventory was full, so some of it dropped at your feet."
   reloaded: "<green>Reloaded <groups> loot group(s), <tables> random table(s), <resources> farm resource(s) and <types> farm type(s)."
   reload-warnings: "<yellow><count> problem(s) were found and skipped. The console names each file and key."
   block:

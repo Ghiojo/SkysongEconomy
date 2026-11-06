@@ -1,0 +1,144 @@
+package org.skysongdev.skysongEconomy.gui.node;
+
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
+import org.bukkit.Material;
+import org.bukkit.inventory.ItemStack;
+import org.skysongdev.skysongEconomy.character.CharacterRef;
+import org.skysongdev.skysongEconomy.gui.Menu;
+import org.skysongdev.skysongEconomy.gui.MenuButton;
+import org.skysongdev.skysongEconomy.gui.MenuClick;
+import org.skysongdev.skysongEconomy.items.ItemStackBytes;
+import org.skysongdev.skysongEconomy.messaging.RefusedException;
+import org.skysongdev.skysongEconomy.nodes.Node;
+import org.skysongdev.skysongEconomy.nodes.farm.FarmHarvester;
+import org.skysongdev.skysongEconomy.nodes.farm.FarmPlots;
+import org.skysongdev.skysongEconomy.nodes.farm.FarmTier;
+import org.skysongdev.skysongEconomy.nodes.farm.FarmType;
+import org.skysongdev.skysongEconomy.nodes.farm.Planting;
+import org.skysongdev.skysongEconomy.nodes.harvest.HarvestCost;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+
+import static net.kyori.adventure.text.minimessage.tag.resolver.Placeholder.component;
+import static net.kyori.adventure.text.minimessage.tag.resolver.Placeholder.parsed;
+import static net.kyori.adventure.text.minimessage.tag.resolver.Placeholder.unparsed;
+
+/**
+ * The menu of a farm node: its details on top, one button per tier of what is planted, and the
+ * planting slot below. Tenders plant by clicking a primer in their own inventory while the menu
+ * is open, so no item ever sits in the menu, and take it out with the button beside the slot.
+ * Each click on a tier is one instant harvest, and the menu stays open.
+ */
+final class FarmMenu extends Menu {
+    private static final int SIZE = 27;
+    private static final int INFO = 4;
+    /** Tier N goes in slot FIRST_TIER + N - 1, as in the random node menu. */
+    private static final int FIRST_TIER = 11;
+    private static final int PLOT = 20;
+    private static final int CLOSE = 22;
+    private static final int TAKE_OUT = 24;
+
+    private final NodeMenus menus;
+    private final String nodeId;
+    private final CharacterRef character;
+
+    FarmMenu(NodeMenus menus, String nodeId, CharacterRef character) {
+        super(SIZE, menus.messenger().render("node.gather.title",
+                parsed("node", menus.deps().nodes().find(nodeId).map(menus.deps().nodes()::name).orElse(nodeId))));
+        this.menus = menus;
+        this.nodeId = nodeId;
+        this.character = character;
+    }
+
+    @Override
+    protected void draw() {
+        MenuButton border = menus.theme().border();
+        for (int slot = 0; slot < SIZE; slot++) {
+            set(slot, border);
+        }
+        set(CLOSE, menus.theme().close());
+        Optional<Node> found = menus.deps().nodes().find(nodeId);
+        if (found.isEmpty()) {
+            return;
+        }
+        Node node = found.get();
+        FarmPlots plots = menus.deps().farms().plots();
+        FarmType type;
+        try {
+            type = plots.type(node);
+        } catch (RefusedException unavailable) {
+            return;
+        }
+        Optional<Planting> planting = plots.planting(node);
+        boolean tender = plots.canTend(node, character);
+        set(INFO, MenuButton.display(info(node, planting, tender)));
+        set(PLOT, MenuButton.display(plot(planting, tender)));
+        if (planting.isPresent() && tender) {
+            set(TAKE_OUT, takeOutButton());
+        }
+        FarmHarvester harvester = menus.deps().farms().harvester();
+        for (FarmTier tier : harvester.offered(node)) {
+            set(FIRST_TIER + tier.tier() - 1, menus.text().tierButton(character, tier.tier(),
+                    Optional.of(HarvestCost.tokens(tier.cost())), harvester.requiredLevel(tier), type.skill(),
+                    tier.output(), click -> {
+                        menus.harvest(click.player(), nodeId, tier.tier());
+                        redraw();
+                    }));
+        }
+    }
+
+    /** Planting: a click on a primer in the player's own inventory. */
+    @Override
+    protected void clickedOwnInventory(MenuClick click, int slot) {
+        menus.plant(click.player(), nodeId, slot);
+        redraw();
+    }
+
+    private ItemStack info(Node node, Optional<Planting> planting, boolean tender) {
+        List<Component> lore = new ArrayList<>();
+        lore.add(line("node.gather.info.owner", component("owner", menus.text().owner(node))));
+        lore.add(line("node.farm.info.planted", component("resource", plantedName(planting))));
+        lore.add(line("node.gather.info.tokens",
+                unparsed("tokens", String.valueOf(menus.deps().tokens().balance(character)))));
+        lore.add(line(planting.isEmpty() ? (tender ? "node.farm.info.hint-plant" : "node.farm.info.hint-empty")
+                : "node.gather.info.hint"));
+        return menus.theme().item(menus.icons().info(), line("node.gather.info.name",
+                parsed("node", menus.deps().nodes().name(node)), unparsed("tier", String.valueOf(node.tier()))), lore);
+    }
+
+    private ItemStack plot(Optional<Planting> planting, boolean tender) {
+        if (planting.isEmpty()) {
+            return menus.theme().item(menus.icons().emptyPlot(), line("node.farm.plot.empty-name"),
+                    List.of(line(tender ? "node.farm.plot.empty-tender" : "node.farm.plot.empty")));
+        }
+        Material icon = ItemStackBytes.restore(planting.get().primer()).getFirst().getType();
+        return menus.theme().item(icon, line("node.farm.plot.planted-name", component("resource", plantedName(planting))),
+                List.of(line("node.farm.plot.planted")));
+    }
+
+    private MenuButton takeOutButton() {
+        int cost = menus.deps().farms().plots().removalDowntime();
+        TagResolver downtime = unparsed("downtime", String.valueOf(cost));
+        return MenuButton.of(menus.theme().item(menus.icons().takeOut(), line("node.farm.take-out.name"),
+                        List.of(line(cost > 0 ? "node.farm.take-out.cost" : "node.farm.take-out.free", downtime),
+                                line("node.farm.take-out.click"))),
+                click -> {
+                    menus.takeOut(click.player(), nodeId);
+                    redraw();
+                });
+    }
+
+    /** @return the planted resource's name, or "Empty" */
+    private Component plantedName(Optional<Planting> planting) {
+        return menus.deps().nodes().find(nodeId).flatMap(menus.deps().farms().plots()::plantedName)
+                .map(name -> menus.messenger().renderText(name))
+                .orElseGet(() -> line("node.farm.empty-name"));
+    }
+
+    private Component line(String key, TagResolver... placeholders) {
+        return menus.text().line(key, placeholders);
+    }
+}

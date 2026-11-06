@@ -8,19 +8,26 @@ import org.skysongdev.skysongEconomy.commands.node.OddsSources;
 import org.skysongdev.skysongEconomy.config.ConfigException;
 import org.skysongdev.skysongEconomy.config.YamlFiles;
 import org.skysongdev.skysongEconomy.data.database.AsyncNodeRepository;
+import org.skysongdev.skysongEconomy.data.database.AsyncPlantingRepository;
+import org.skysongdev.skysongEconomy.data.database.AsyncPrimerReturnRepository;
 import org.skysongdev.skysongEconomy.data.database.BackgroundWriter;
 import org.skysongdev.skysongEconomy.data.database.ConnectionProvider;
 import org.skysongdev.skysongEconomy.data.database.DatabaseSettings;
 import org.skysongdev.skysongEconomy.data.database.SqlNodeRepository;
+import org.skysongdev.skysongEconomy.data.database.SqlPlantingRepository;
+import org.skysongdev.skysongEconomy.data.database.SqlPrimerReturnRepository;
 import org.skysongdev.skysongEconomy.data.database.StorageException;
 import org.skysongdev.skysongEconomy.events.BukkitNodeHarvestEvents;
 import org.skysongdev.skysongEconomy.gui.node.NodeMenus;
 import org.skysongdev.skysongEconomy.integration.skysongstats.SkysongStatsAdapter;
+import org.skysongdev.skysongEconomy.items.InventoryPrimerDelivery;
 import org.skysongdev.skysongEconomy.items.ItemHandOver;
+import org.skysongdev.skysongEconomy.items.PrimerItems;
 import org.skysongdev.skysongEconomy.listeners.FloatingNames;
 import org.skysongdev.skysongEconomy.listeners.NodeInteractListener;
 import org.skysongdev.skysongEconomy.listeners.NodeItemTags;
 import org.skysongdev.skysongEconomy.listeners.NodeNameplates;
+import org.skysongdev.skysongEconomy.listeners.PrimerReturnListener;
 import org.skysongdev.skysongEconomy.listeners.ProtectedBlockListener;
 import org.skysongdev.skysongEconomy.loot.LootRoller;
 import org.skysongdev.skysongEconomy.messaging.Messenger;
@@ -31,7 +38,13 @@ import org.skysongdev.skysongEconomy.nodes.NodeService;
 import org.skysongdev.skysongEconomy.nodes.NodeSettings;
 import org.skysongdev.skysongEconomy.nodes.NodeSettingsParser;
 import org.skysongdev.skysongEconomy.nodes.NodeTables;
+import org.skysongdev.skysongEconomy.nodes.farm.FarmHarvester;
+import org.skysongdev.skysongEconomy.nodes.farm.FarmPlots;
+import org.skysongdev.skysongEconomy.nodes.farm.PrimerReturns;
+import org.skysongdev.skysongEconomy.nodes.harvest.HarvestPayer;
+import org.skysongdev.skysongEconomy.nodes.harvest.NodeAccess;
 import org.skysongdev.skysongEconomy.nodes.harvest.RandomHarvester;
+import org.skysongdev.skysongitems.api.SkysongItemsApi;
 
 import java.security.SecureRandom;
 import java.util.ArrayList;
@@ -44,7 +57,8 @@ import java.util.logging.Logger;
 /**
  * Builds the nodes system and connects it to the server: settings, the node files (loot groups,
  * random tables, farm resources and farm types), storage, block protection, nameplates, the
- * gather menu, the node item tags and the {@code /se node} commands. Nodes need businesses, so the
+ * random and farm node menus, giving primers back, the node item tags and the {@code /se node}
+ * commands. Nodes need businesses, so the
  * system stays off when businesses are off or {@code nodes/settings.yml} can't be read.
  */
 public final class NodeFeature implements AutoCloseable {
@@ -108,23 +122,44 @@ public final class NodeFeature implements AutoCloseable {
         system.businesses().addBlockGuard(new NodeBlockGuard(nodes));
 
         PluginManager events = plugin.getServer().getPluginManager();
+        ItemHandOver handOver = new ItemHandOver(trade.items());
+        NodeAccess access = new NodeAccess(system.businesses());
+        PrimerReturns returns = new PrimerReturns(
+                new AsyncPrimerReturnRepository(new SqlPrimerReturnRepository(connections, logger), writer),
+                new InventoryPrimerDelivery(plugin.getServer(), handOver, messenger));
+        FarmPlots plots = new FarmPlots(new FarmPlots.Dependencies(tables, settings, access, system.access(), skysongStats,
+                new AsyncPlantingRepository(new SqlPlantingRepository(connections, logger), writer), returns));
         FloatingNames nameplates = new FloatingNames(settings.nameplate());
-        nodes.addListener(new NodeNameplates(nodes, nameplates, messenger));
+        NodeNameplates nodeNameplates = new NodeNameplates(nodes, nameplates, messenger, plots::plantedName);
+        nodes.addListener(nodeNameplates);
+        // After the nameplates, so a primer given back on a change shows on the nameplate at once.
+        nodes.addListener(plots);
+        plots.addListener(nodeNameplates::refresh);
         events.registerEvents(nameplates, plugin);
         resources.add(nameplates);
         try {
+            logger.info("Loaded " + returns.loadAll() + " primer(s) waiting for their planters and "
+                    + plots.loadAll() + " planted farm node(s)");
+            // Plantings load first, so ones whose node is gone or changed are given back now.
             logger.info("Loaded " + nodes.loadAll() + " node(s)");
         } catch (StorageException e) {
             logger.log(Level.SEVERE, "Nodes could not be loaded from the database", e);
         }
         events.registerEvents(new NodeItemTags(plugin, logger), plugin);
+        events.registerEvents(new PrimerReturnListener(returns), plugin);
         events.registerEvents(new ProtectedBlockListener(List.of(new NodeBlockGuard(nodes)), messenger), plugin);
 
-        RandomHarvester harvester = new RandomHarvester(new RandomHarvester.Dependencies(tables, settings,
-                system.businesses(), system.tokens(), skysongStats, wallet, skysongStats, new BukkitNodeHarvestEvents(events)),
-                new LootRoller(new SecureRandom()));
-        NodeMenus menus = new NodeMenus(new NodeMenus.Dependencies(nodes, harvester, system.businesses(), skysongStats,
-                system.tokens(), skysongStats, skysongStats, wallet, new ItemHandOver(trade.items())),
+        HarvestPayer payer = new HarvestPayer(system.tokens(), skysongStats, wallet);
+        BukkitNodeHarvestEvents harvestEvents = new BukkitNodeHarvestEvents(events);
+        LootRoller roller = new LootRoller(new SecureRandom());
+        RandomHarvester harvester = new RandomHarvester(new RandomHarvester.Dependencies(tables, settings, access, payer,
+                skysongStats, harvestEvents), roller);
+        FarmHarvester farmHarvester = new FarmHarvester(new FarmHarvester.Dependencies(plots, settings, access, payer,
+                skysongStats, harvestEvents), roller);
+        NodeMenus.Farms farms = new NodeMenus.Farms(plots, farmHarvester,
+                new PrimerItems(SkysongItemsApi.get().tags(), trade.materialIds()));
+        NodeMenus menus = new NodeMenus(new NodeMenus.Dependencies(nodes, harvester, farms, system.businesses(),
+                skysongStats, system.tokens(), skysongStats, skysongStats, wallet, handOver),
                 system.menus().theme(), messenger, settings.menuIcons(), logger);
         events.registerEvents(new NodeInteractListener(nodes, menus), plugin);
 

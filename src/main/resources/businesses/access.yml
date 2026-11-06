@@ -6,7 +6,8 @@
 # allows, and pays the lowest training price among the groups that let them train. The owner
 # may do everything and trains for free.
 #
-# Permissions: train, order-imports, sell-exports.
+# Permissions: train, order-imports, sell-exports, tend-farms (plant primers in the business's
+# farm nodes and take them out; only the owner can unless a group allows it).
 
 # How many groups an owner may add besides workers and everyone.
 max-custom-groups: 8

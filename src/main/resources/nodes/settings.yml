@@ -21,10 +21,20 @@ tier-skill-levels:
 #   info         the node's details at the top
 #   tier         a tier you can gather at
 #   locked-tier  a tier you can't, such as one above your skill level
+#   empty-plot   a farm node's planting slot while nothing is planted
+#   take-out     the button that takes a farm node's primer out
 menu:
   info: BOOK
   tier: IRON_PICKAXE
   locked-tier: GRAY_DYE
+  empty-plot: DIRT
+  take-out: SHEARS
+
+# farm: farm node settings.
+#   primer-removal-downtime  the downtime taking a primer out costs (it is given back). Planting
+#                            is always free. 0 makes taking it out free too.
+farm:
+  primer-removal-downtime: 1
 
 # nameplate: the node's name and tier floating above its block, such as "Mine, Tier 3". Its text
 # is node.nameplate in messages.yml, or node.nameplate-unavailable while the node's table didn't

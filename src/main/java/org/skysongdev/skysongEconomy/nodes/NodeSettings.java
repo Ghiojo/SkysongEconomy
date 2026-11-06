@@ -14,9 +14,13 @@ import java.util.Set;
  * @param tierLevels         the skill level gathering at each tier needs, for tiers 1 to 5
  * @param nameplate          how the floating name above node blocks looks
  * @param menuIcons          the items the node menu shows
+ * @param primerRemovalDowntime the downtime taking a primer out of a farm node costs; 0 makes it free
  */
 public record NodeSettings(Set<String> ownerBusinessTypes, Map<Integer, String> tierLevels, NameplateSettings nameplate,
-                           NodeMenuIcons menuIcons) {
+                           NodeMenuIcons menuIcons, int primerRemovalDowntime) {
+    /** The removal cost used when {@code nodes/settings.yml} doesn't set one. */
+    public static final int DEFAULT_PRIMER_REMOVAL_DOWNTIME = 1;
+
     /** The levels used for tiers that {@code nodes/settings.yml} doesn't list, tier 1 first. */
     public static final List<String> DEFAULT_TIER_LEVELS = List.of("unskilled", "novice", "competent", "journeyman", "expert");
 
@@ -30,6 +34,9 @@ public record NodeSettings(Set<String> ownerBusinessTypes, Map<Integer, String> 
         }
         Objects.requireNonNull(nameplate, "nameplate");
         Objects.requireNonNull(menuIcons, "menuIcons");
+        if (primerRemovalDowntime < 0) {
+            throw new IllegalArgumentException("primerRemovalDowntime can't be negative: " + primerRemovalDowntime);
+        }
     }
 
     /** @return the skill level gathering at {@code tier} needs */

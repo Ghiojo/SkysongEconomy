@@ -36,6 +36,15 @@ public final class ItemHandOver {
                 stacks.add(items.create(item.materialId(), Math.min(left, maxStack)));
             }
         }
+        return giveStacks(player, stacks);
+    }
+
+    /**
+     * Puts the stacks in the player's inventory as they are, such as primers given back.
+     *
+     * @return whether some didn't fit and were dropped at the player's feet
+     */
+    public boolean giveStacks(Player player, List<ItemStack> stacks) {
         if (stacks.isEmpty()) {
             return false;
         }

@@ -39,6 +39,7 @@ public final class NodeSettingsParser {
     /** File name used in error messages and when loading. */
     public static final String FILE = "nodes/settings.yml";
     private static final String TIER_LEVELS = "tier-skill-levels";
+    private static final String PRIMER_REMOVAL = "primer-removal-downtime";
 
     private final Predicate<String> businessTypeExists;
     private final Predicate<String> levelExists;
@@ -72,8 +73,18 @@ public final class NodeSettingsParser {
         ConfigSection menu = root.section("menu");
         NodeMenuIcons defaults = NodeMenuIcons.DEFAULTS;
         NodeMenuIcons icons = new NodeMenuIcons(menu.string("info", defaults.info()), menu.string("tier", defaults.tier()),
-                menu.string("locked-tier", defaults.lockedTier()));
-        return new NodeSettings(types, tierLevels(root.section(TIER_LEVELS)), new NameplateSettingsParser().parse(root), icons);
+                menu.string("locked-tier", defaults.lockedTier()), menu.string("empty-plot", defaults.emptyPlot()),
+                menu.string("take-out", defaults.takeOut()));
+        return new NodeSettings(types, tierLevels(root.section(TIER_LEVELS)), new NameplateSettingsParser().parse(root), icons,
+                primerRemovalDowntime(root.section("farm")));
+    }
+
+    private static int primerRemovalDowntime(ConfigSection farm) {
+        int downtime = farm.integer(PRIMER_REMOVAL, NodeSettings.DEFAULT_PRIMER_REMOVAL_DOWNTIME);
+        if (downtime < 0) {
+            throw farm.error(PRIMER_REMOVAL, "must be 0 or more");
+        }
+        return downtime;
     }
 
     private Map<Integer, String> tierLevels(ConfigSection section) {

@@ -9,14 +9,18 @@ import java.util.Objects;
  * @param info       the node's details at the top
  * @param tier       a tier the player can gather at
  * @param lockedTier a tier they can't, such as one above their skill level
+ * @param emptyPlot  a farm node's planting slot while nothing is planted
+ * @param takeOut    the button that takes a farm node's primer out
  */
-public record NodeMenuIcons(String info, String tier, String lockedTier) {
+public record NodeMenuIcons(String info, String tier, String lockedTier, String emptyPlot, String takeOut) {
     /** The icons used when {@code nodes/settings.yml} doesn't name them. */
-    public static final NodeMenuIcons DEFAULTS = new NodeMenuIcons("BOOK", "IRON_PICKAXE", "GRAY_DYE");
+    public static final NodeMenuIcons DEFAULTS = new NodeMenuIcons("BOOK", "IRON_PICKAXE", "GRAY_DYE", "DIRT", "SHEARS");
 
     public NodeMenuIcons {
         Objects.requireNonNull(info, "info");
         Objects.requireNonNull(tier, "tier");
         Objects.requireNonNull(lockedTier, "lockedTier");
+        Objects.requireNonNull(emptyPlot, "emptyPlot");
+        Objects.requireNonNull(takeOut, "takeOut");
     }
 }
