@@ -10,7 +10,8 @@ import org.skysongdev.skysongEconomy.nodes.NodeService;
 
 /**
  * Shows each node's name and tier floating above its block, such as "Mine, Tier 3", through
- * {@link FloatingNames}. The text is {@code node.nameplate} in {@code messages.yml}.
+ * {@link FloatingNames}. The text is {@code node.nameplate} in {@code messages.yml}, or
+ * {@code node.nameplate-unavailable} while the node's table or farm type isn't loaded.
  */
 public final class NodeNameplates implements NodeChangeListener {
     private final NodeService nodes;
@@ -42,8 +43,9 @@ public final class NodeNameplates implements NodeChangeListener {
 
     private void show(Node node) {
         node.position().ifPresentOrElse(
-                position -> names.show(node.id(), position, messenger.render("node.nameplate",
-                        Placeholder.unparsed("node", nodes.name(node)),
+                position -> names.show(node.id(), position, messenger.render(
+                        nodes.isAvailable(node) ? "node.nameplate" : "node.nameplate-unavailable",
+                        Placeholder.parsed("node", nodes.name(node)),
                         Placeholder.unparsed("tier", String.valueOf(node.tier())))),
                 () -> names.hide(node.id()));
     }

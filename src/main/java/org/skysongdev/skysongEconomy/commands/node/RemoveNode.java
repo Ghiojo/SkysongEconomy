@@ -1,5 +1,6 @@
 package org.skysongdev.skysongEconomy.commands.node;
 
+import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import org.bukkit.command.CommandSender;
 import org.skysongdev.skysongEconomy.nodes.Node;
 
@@ -21,13 +22,13 @@ final class RemoveNode extends NodeSubCommand {
     @Override
     protected void run(CommandSender sender, String[] args) {
         Node node = support.nodes.require(args[0]);
-        String name = support.nodes.name(node);
+        TagResolver name = support.nodeName(node);
         if (args.length < 2 || !args[1].equalsIgnoreCase(CONFIRM)) {
-            support.messenger.send(sender, "node.remove-confirm", unparsed("node", name), unparsed("id", node.id()));
+            support.messenger.send(sender, "node.remove-confirm", name, unparsed("id", node.id()));
             return;
         }
         support.nodes.delete(node);
-        support.messenger.send(sender, "node.removed", unparsed("node", name));
+        support.messenger.send(sender, "node.removed", name);
     }
 
     @Override

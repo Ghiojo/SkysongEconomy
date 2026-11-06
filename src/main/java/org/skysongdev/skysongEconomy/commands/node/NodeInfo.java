@@ -27,7 +27,7 @@ final class NodeInfo extends NodeSubCommand {
 
     private void show(CommandSender sender, Node node) {
         support.messenger.send(sender, "node.info",
-                unparsed("node", support.nodes.name(node)),
+                support.nodeName(node),
                 unparsed("id", node.id()),
                 unparsed("kind", node.kind().key()),
                 unparsed("source", node.source()),

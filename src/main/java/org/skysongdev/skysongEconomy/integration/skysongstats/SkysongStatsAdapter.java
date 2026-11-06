@@ -5,11 +5,13 @@ import org.skysongdev.skysongEconomy.character.CharacterRef;
 import org.skysongdev.skysongEconomy.character.DowntimeWallet;
 import org.skysongdev.skysongEconomy.character.ProficiencyTraining;
 import org.skysongdev.skysongEconomy.character.SkillCatalog;
+import org.skysongdev.skysongEconomy.character.SkillLevels;
 import org.skysongdev.skysongEconomy.character.SkillProgression;
 import org.skysongdev.skysongstats.api.CharacterId;
 import org.skysongdev.skysongstats.api.Downtime;
 import org.skysongdev.skysongstats.api.DowntimeTarget;
 import org.skysongdev.skysongstats.api.Skill;
+import org.skysongdev.skysongstats.api.SkillLevel;
 import org.skysongdev.skysongstats.api.SkysongStatsApi;
 import org.skysongdev.skysongstats.api.Tier;
 import org.skysongdev.skysongstats.api.TrainingResult;
@@ -27,7 +29,8 @@ import java.util.UUID;
  * This is the only class that talks to the SkysongStats API; everything else depends on the
  * small interfaces it implements. Like the API itself, it must be used on the main thread.
  */
-public final class SkysongStatsAdapter implements CharacterDirectory, DowntimeWallet, SkillCatalog, SkillProgression {
+public final class SkysongStatsAdapter implements CharacterDirectory, DowntimeWallet, SkillCatalog, SkillLevels,
+        SkillProgression {
     private final SkysongStatsApi api;
 
     public SkysongStatsAdapter(SkysongStatsApi api) {
@@ -80,6 +83,20 @@ public final class SkysongStatsAdapter implements CharacterDirectory, DowntimeWa
     @Override
     public String displayName(String skillId) {
         return api.skills().find(skillId).map(skill -> skill.color() + skill.name()).orElse(skillId);
+    }
+
+    @Override
+    public List<String> levelIds() {
+        return api.skills().levels().stream().map(SkillLevel::id).toList();
+    }
+
+    @Override
+    public String levelName(String levelId) {
+        return api.skills().levels().stream()
+                .filter(level -> level.id().equals(levelId))
+                .findFirst()
+                .map(level -> level.color() + level.name())
+                .orElse(levelId);
     }
 
     @Override

@@ -26,7 +26,7 @@ final class SetNodeOwner extends NodeSubCommand {
             support.nodes.setOwner(node, args[1]);
         }
         support.messenger.send(sender, "node.owner-set",
-                unparsed("node", support.nodes.name(node)), unparsed("owner", support.describeOwner(node)));
+                support.nodeName(node), unparsed("owner", support.describeOwner(node)));
     }
 
     @Override

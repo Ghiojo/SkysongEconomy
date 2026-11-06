@@ -1,5 +1,6 @@
 package org.skysongdev.skysongEconomy.listeners;
 
+import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import org.bukkit.block.Block;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -16,8 +17,10 @@ import org.skysongdev.skysongEconomy.blocks.GuardedBlock;
 import org.skysongdev.skysongEconomy.business.BlockPosition;
 import org.skysongdev.skysongEconomy.messaging.Messenger;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 /**
  * Keeps guarded blocks, such as business and node blocks, in place. Players can't break them,
@@ -38,11 +41,11 @@ public final class ProtectedBlockListener implements Listener {
         guarded(event.getBlock()).ifPresent(block -> {
             if (!event.getPlayer().hasPermission(block.breakPermission())) {
                 event.setCancelled(true);
-                messenger.send(event.getPlayer(), block.protectedMessage(), Messenger.unparsed(block.placeholders()));
+                messenger.send(event.getPlayer(), block.protectedMessage(), placeholders(block));
                 return;
             }
             block.unplace().run();
-            messenger.send(event.getPlayer(), block.unplacedMessage(), Messenger.unparsed(block.placeholders()));
+            messenger.send(event.getPlayer(), block.unplacedMessage(), placeholders(block));
         });
     }
 
@@ -87,6 +90,11 @@ public final class ProtectedBlockListener implements Listener {
 
     private void protect(List<Block> exploded) {
         exploded.removeIf(block -> guarded(block).isPresent());
+    }
+
+    private static TagResolver[] placeholders(GuardedBlock block) {
+        return Stream.concat(Arrays.stream(Messenger.unparsed(block.placeholders())),
+                Arrays.stream(Messenger.parsed(block.formatted()))).toArray(TagResolver[]::new);
     }
 
     private Optional<GuardedBlock> guarded(Block block) {

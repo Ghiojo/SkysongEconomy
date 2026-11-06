@@ -22,7 +22,7 @@ final class ListNodes extends NodeSubCommand {
         support.messenger.send(sender, "node.list-header", unparsed("count", String.valueOf(nodes.size())));
         for (Node node : nodes) {
             support.messenger.send(sender, "node.list-entry",
-                    unparsed("node", support.nodes.name(node)), unparsed("id", node.id()),
+                    support.nodeName(node), unparsed("id", node.id()),
                     unparsed("kind", node.kind().key()), unparsed("tier", String.valueOf(node.tier())),
                     unparsed("owner", support.describeOwner(node)));
         }

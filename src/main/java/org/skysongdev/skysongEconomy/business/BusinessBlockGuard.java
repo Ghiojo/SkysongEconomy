@@ -24,6 +24,7 @@ public final class BusinessBlockGuard implements BlockGuard {
     public Optional<GuardedBlock> at(BlockPosition position) {
         return businesses.at(position).map(business -> new GuardedBlock(business.displayName(), BREAK_PERMISSION,
                 "business.block.protected", "business.block.unplaced",
-                Map.of("business", business.displayName(), "id", business.id()), () -> businesses.unplace(business)));
+                Map.of("business", business.displayName(), "id", business.id()), Map.of(),
+                () -> businesses.unplace(business)));
     }
 }

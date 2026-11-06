@@ -107,9 +107,23 @@ public final class NodeService implements BusinessChangeListener {
         return find(id).orElseThrow(() -> new NodeException("node.not-found", Map.of("id", id)));
     }
 
-    /** @return the name players see: the one staff gave it, else its table's or type's name, else its id */
+    /**
+     * @return the name players see, in MiniMessage: the one staff gave it, else its table's or
+     *         type's name, else its id
+     */
     public String name(Node node) {
         return node.displayName().or(() -> sources.name(node.kind(), node.source())).orElse(node.id());
+    }
+
+    /** @return whether the node's table or farm type is loaded, so it can be used */
+    public boolean isAvailable(Node node) {
+        return sources.name(node.kind(), node.source()).isPresent();
+    }
+
+    /** Tells every listener to show every node again, after the tables they use were reloaded. */
+    public void refresh() {
+        List<Node> current = List.copyOf(byId.values());
+        listeners.forEach(listener -> listener.loaded(current));
     }
 
     /**
@@ -227,8 +241,8 @@ public final class NodeService implements BusinessChangeListener {
     }
 
     /**
-     * Changes the name players see, or goes back to the table's or type's name. Text only:
-     * MiniMessage tags are shown as typed.
+     * Changes the name players see, or goes back to the table's or type's name. Only staff can
+     * rename nodes, so the name may use MiniMessage colours, like the table names do.
      *
      * @param displayName the new name, {@code null} for the table's or type's name
      * @throws NodeException {@code node.invalid-name} when it is blank or too long
@@ -262,7 +276,7 @@ public final class NodeService implements BusinessChangeListener {
     private void requireFree(BlockPosition position) {
         Node other = byPosition.get(position);
         if (other != null) {
-            throw new NodeException("node.block-taken", Map.of("holder", name(other)));
+            throw new NodeException("node.block-taken", Map.of("holder", other.id()));
         }
         businesses.at(position).ifPresent(business -> {
             throw new NodeException("node.block-taken", Map.of("holder", business.displayName()));

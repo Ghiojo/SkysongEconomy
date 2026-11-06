@@ -21,7 +21,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class NodeSettingsParserTest {
     private final List<String> warnings = new ArrayList<>();
-    private final NodeSettingsParser parser = new NodeSettingsParser(Set.of("gathering", "crafting")::contains, warnings::add);
+    private static final Set<String> LEVELS = Set.of("unskilled", "novice", "competent", "journeyman", "expert", "master");
+    private final NodeSettingsParser parser = new NodeSettingsParser(Set.of("gathering", "crafting")::contains,
+            LEVELS::contains, warnings::add);
 
     private NodeSettings parse(String yaml) {
         return parser.parse(YamlFiles.parse(NodeSettingsParser.FILE, new StringReader(yaml)));
@@ -35,6 +37,8 @@ class NodeSettingsParserTest {
             assertEquals(Set.of("gathering"), settings.ownerBusinessTypes());
             assertTrue(settings.nameplate().enabled());
             assertEquals(16, settings.nameplate().viewDistance());
+            assertEquals("unskilled", settings.levelFor(1));
+            assertEquals("expert", settings.levelFor(5));
         }
         assertEquals(List.of(), warnings);
     }
@@ -53,7 +57,25 @@ class NodeSettingsParserTest {
         NodeSettings settings = parse("");
 
         assertEquals(Set.of(), settings.ownerBusinessTypes());
+        assertEquals("novice", settings.levelFor(2));
         assertTrue(settings.nameplate().enabled());
+    }
+
+    @Test
+    void tierLevelsCanBeChangedAndTheOthersKeepTheirDefaults() {
+        NodeSettings settings = parse("tier-skill-levels:\n  5: Master\n  2: unskilled");
+
+        assertEquals("unskilled", settings.levelFor(1));
+        assertEquals("unskilled", settings.levelFor(2));
+        assertEquals("competent", settings.levelFor(3));
+        assertEquals("master", settings.levelFor(5));
+    }
+
+    @Test
+    void unknownLevelsAndTiersAreRefused() {
+        assertThrows(ConfigException.class, () -> parse("tier-skill-levels:\n  1: grandmaster"));
+        assertThrows(ConfigException.class, () -> parse("tier-skill-levels:\n  6: expert"));
+        assertThrows(ConfigException.class, () -> parse("tier-skill-levels:\n  first: expert"));
     }
 
     @Test

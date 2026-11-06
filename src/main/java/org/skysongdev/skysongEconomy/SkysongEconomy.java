@@ -27,6 +27,7 @@ import org.skysongdev.skysongEconomy.items.MaterialIdResolver;
 import org.skysongdev.skysongEconomy.items.SkysongItemFactory;
 import org.skysongdev.skysongEconomy.messaging.MessageCatalog;
 import org.skysongdev.skysongEconomy.messaging.Messenger;
+import org.skysongdev.skysongEconomy.money.Wallet;
 import org.skysongdev.skysongEconomy.prices.PriceDatabase;
 import org.skysongdev.skysongEconomy.prices.PriceSettings;
 import org.skysongdev.skysongitems.api.SkysongItemsApi;
@@ -75,10 +76,12 @@ public final class SkysongEconomy extends JavaPlugin {
         Messenger messenger = new Messenger(MiniMessage.miniMessage(), messages);
         loadPrices(configFiles);
         MaterialIdResolver materialIds = new MaterialIdResolver(skysongItems.tags());
-        businessFeature = BusinessFeature.start(this, paths, configFiles, databaseSettings(), skysongStats,
-                new GringottsWallet(), new TradeInputs(importItems, prices, priceSettings, goodTypes, materialIds),
+        Wallet wallet = new GringottsWallet();
+        TradeInputs trade = new TradeInputs(importItems, prices, priceSettings, goodTypes, materialIds);
+        businessFeature = BusinessFeature.start(this, paths, configFiles, databaseSettings(), skysongStats, wallet, trade,
                 messenger, messages);
-        nodeFeature = NodeFeature.start(this, configFiles, databaseSettings(), businessFeature.system(), messenger);
+        nodeFeature = NodeFeature.start(this, configFiles, databaseSettings(), businessFeature.system(), skysongStats,
+                wallet, trade, messenger);
 
         registerCommands(messenger, materialIds);
     }

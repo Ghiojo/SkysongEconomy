@@ -28,7 +28,7 @@ final class CreateNode extends NodeSubCommand {
         support.requirePlayer(sender).flatMap(support::targetBlock).ifPresent(block -> {
             Node node = support.nodes.create(args[0], kind, args[2], block);
             support.messenger.send(sender, "node.created." + kind.key(),
-                    unparsed("node", support.nodes.name(node)), unparsed("id", node.id()));
+                    support.nodeName(node), unparsed("id", node.id()));
         });
     }
 

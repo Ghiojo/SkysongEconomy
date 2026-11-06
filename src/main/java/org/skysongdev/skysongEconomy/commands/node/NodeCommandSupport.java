@@ -1,5 +1,7 @@
 package org.skysongdev.skysongEconomy.commands.node;
 
+import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
+import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.skysongdev.skysongEconomy.business.BlockPosition;
@@ -42,6 +44,11 @@ final class NodeCommandSupport {
     /** @see TargetBlocks#target */
     Optional<BlockPosition> targetBlock(Player player) {
         return TargetBlocks.target(player, messenger);
+    }
+
+    /** @return the node's name as the {@code <node>} placeholder; staff wrote it, so its colours show */
+    TagResolver nodeName(Node node) {
+        return Placeholder.parsed("node", nodes.name(node));
     }
 
     /** @return the owner's name for messages: the business's name, or the configured word for public or unowned */

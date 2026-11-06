@@ -24,6 +24,7 @@ import java.util.Set;
 import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -34,6 +35,7 @@ class NodeServiceTest {
     private static final BusinessTiers TIERS = new BusinessTiers(
             IntStream.rangeClosed(1, 5).mapToObj(tier -> new TierSettings(tier, tier)).toList());
     private static final NodeSettings SETTINGS = new NodeSettings(Set.of("gathering"),
+            Map.of(1, "unskilled", 2, "novice", 3, "competent", 4, "journeyman", 5, "expert"),
             new NameplateSettings(true, 0.4, 16, true, false));
     /** The random table "mine" and the farm type "crop" exist. */
     private static final NodeSources SOURCES = (kind, id) -> Optional.ofNullable(switch (kind) {
@@ -177,6 +179,41 @@ class NodeServiceTest {
     }
 
     @Test
+    void aNodeWhoseTableDidntLoadIsUnavailable() {
+        Node mine = nodes.create("quarry", NodeKind.RANDOM, "mine", BLOCK);
+        Node lost = Node.create("lost", NodeKind.RANDOM, "gone", null);
+
+        assertTrue(nodes.isAvailable(mine));
+        assertFalse(nodes.isAvailable(lost));
+    }
+
+    @Test
+    void refreshingShowsEveryNodeAgain() {
+        nodes.create("quarry", NodeKind.RANDOM, "mine", BLOCK);
+        List<String> heard = new ArrayList<>();
+        nodes.addListener(new NodeChangeListener() {
+            @Override
+            public void loaded(Iterable<Node> loaded) {
+                loaded.forEach(node -> heard.add(node.id()));
+            }
+        });
+
+        nodes.refresh();
+
+        assertEquals(List.of("quarry"), heard);
+    }
+
+    @Test
+    void aTakenBlockNamesTheNodeById() {
+        nodes.create("quarry", NodeKind.RANDOM, "mine", BLOCK);
+
+        RefusedException refusal = assertThrows(RefusedException.class,
+                () -> nodes.create("pit", NodeKind.RANDOM, "mine", BLOCK));
+
+        assertEquals(Map.of("holder", "quarry"), refusal.placeholders());
+    }
+
+    @Test
     void changingTheSourceKeepsTheKindsApart() {
         Node node = nodes.create("quarry", NodeKind.RANDOM, "mine", BLOCK);
 
@@ -252,7 +289,9 @@ class NodeServiceTest {
         var guarded = new NodeBlockGuard(nodes).at(BLOCK).orElseThrow();
 
         assertEquals("skysongeconomy.nodes", guarded.breakPermission());
-        assertEquals(Map.of("node", "Mine", "id", "quarry"), guarded.placeholders());
+        assertEquals("quarry", guarded.name());
+        assertEquals(Map.of("id", "quarry"), guarded.placeholders());
+        assertEquals(Map.of("node", "Mine"), guarded.formatted(), "the table's name keeps its colours");
         guarded.unplace().run();
         assertTrue(node.position().isEmpty());
         assertTrue(new NodeBlockGuard(nodes).at(BLOCK).isEmpty());
