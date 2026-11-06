@@ -1,11 +1,16 @@
 package org.skysongdev.skysongEconomy.nodes;
 
+import org.skysongdev.skysongEconomy.config.FileRegistry;
+import org.skysongdev.skysongEconomy.config.YamlFolder;
 import org.skysongdev.skysongEconomy.loot.LootGroupLibrary;
 import org.skysongdev.skysongEconomy.loot.LootGroupLoader;
 import org.skysongdev.skysongEconomy.loot.LootParser;
-import org.skysongdev.skysongEconomy.nodes.random.RandomTableLoader;
+import org.skysongdev.skysongEconomy.nodes.farm.FarmResource;
+import org.skysongdev.skysongEconomy.nodes.farm.FarmResourceParser;
+import org.skysongdev.skysongEconomy.nodes.farm.FarmType;
+import org.skysongdev.skysongEconomy.nodes.farm.FarmTypeParser;
+import org.skysongdev.skysongEconomy.nodes.random.RandomTable;
 import org.skysongdev.skysongEconomy.nodes.random.RandomTableParser;
-import org.skysongdev.skysongEconomy.nodes.random.RandomTableRegistry;
 
 import java.nio.file.Path;
 import java.util.Objects;
@@ -14,8 +19,10 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 /**
- * Reads the node files that {@code /se node reload} reloads: the loot groups in
- * {@code nodes/groups}, then the random tables in {@code nodes/random}, which roll on them.
+ * Reads the node files that {@code /se node reload} reloads, in the order they depend on each
+ * other: the loot groups in {@code nodes/groups}, the random tables in {@code nodes/random} and
+ * the farm resources in {@code nodes/farm/resources}, which roll on the groups, then the farm
+ * types in {@code nodes/farm/types}, which bundle the resources.
  */
 public final class NodeFiles {
     private final Path dataFolder;
@@ -39,11 +46,14 @@ public final class NodeFiles {
     /**
      * What one load read.
      *
-     * @param groups   the loot groups that loaded
-     * @param random   the random tables that loaded
-     * @param warnings how many problems were found; each was logged
+     * @param groups        the loot groups that loaded
+     * @param random        the random tables that loaded
+     * @param farmResources the farm resources that loaded
+     * @param farmTypes     the farm types that loaded
+     * @param warnings      how many problems were found; each was logged
      */
-    public record Loaded(LootGroupLibrary groups, RandomTableRegistry random, int warnings) {
+    public record Loaded(LootGroupLibrary groups, FileRegistry<RandomTable> random,
+                         FileRegistry<FarmResource> farmResources, FileRegistry<FarmType> farmTypes, int warnings) {
     }
 
     /** Reads every file again. Broken files are skipped with a warning, so this never fails. */
@@ -55,8 +65,18 @@ public final class NodeFiles {
         };
         LootParser loot = new LootParser(itemExists);
         LootGroupLibrary groups = new LootGroupLoader(loot, counted).load(dataFolder.resolve(LootGroupLoader.FOLDER));
-        RandomTableRegistry random = new RandomTableLoader(new RandomTableParser(loot, skillExists), counted)
-                .load(dataFolder.resolve(RandomTableParser.FOLDER), groups);
-        return new Loaded(groups, random, count.get());
+
+        RandomTableParser randomParser = new RandomTableParser(loot, skillExists);
+        FileRegistry<RandomTable> random = new YamlFolder(RandomTableParser.FOLDER, "random table", counted)
+                .parseEach(dataFolder.resolve(RandomTableParser.FOLDER), (id, root) -> randomParser.parse(id, root, groups));
+
+        FarmResourceParser resourceParser = new FarmResourceParser(loot, itemExists);
+        FileRegistry<FarmResource> resources = new YamlFolder(FarmResourceParser.FOLDER, "farm resource", counted)
+                .parseEach(dataFolder.resolve(FarmResourceParser.FOLDER), (id, root) -> resourceParser.parse(id, root, groups));
+
+        FarmTypeParser typeParser = new FarmTypeParser(skillExists, counted);
+        FileRegistry<FarmType> types = new YamlFolder(FarmTypeParser.FOLDER, "farm type", counted)
+                .parseEach(dataFolder.resolve(FarmTypeParser.FOLDER), (id, root) -> typeParser.parse(id, root, resources));
+        return new Loaded(groups, random, resources, types, count.get());
     }
 }

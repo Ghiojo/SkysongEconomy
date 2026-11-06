@@ -1,5 +1,6 @@
 # Settings shared by every node. They are read on start-up; /se node reload only reloads the
-# loot groups (nodes/groups) and random tables (nodes/random).
+# loot groups (nodes/groups), random tables (nodes/random), farm resources (nodes/farm/resources)
+# and farm types (nodes/farm/types).
 #
 # owner-business-types: the business types that can own nodes. Their owner and workers gather
 # there for Harvest Tokens. Names come from businesses/types.yml.
@@ -7,7 +8,7 @@ owner-business-types:
   - gathering
 
 # tier-skill-levels: the skill level a character needs to gather at each tier, checked in the
-# skill named by the random table (or, later, the farm type). Level names come from SkysongStats.
+# skill named by the random table or the farm type. Level names come from SkysongStats.
 # Tiers left out keep these defaults.
 tier-skill-levels:
   1: unskilled

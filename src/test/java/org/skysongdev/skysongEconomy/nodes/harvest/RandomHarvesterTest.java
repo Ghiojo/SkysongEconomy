@@ -14,6 +14,7 @@ import org.skysongdev.skysongEconomy.business.type.BusinessTypeRegistry;
 import org.skysongdev.skysongEconomy.character.CharacterRef;
 import org.skysongdev.skysongEconomy.character.DowntimeWallet;
 import org.skysongdev.skysongEconomy.character.SkillLevels;
+import org.skysongdev.skysongEconomy.config.FileRegistry;
 import org.skysongdev.skysongEconomy.loot.LootEntry;
 import org.skysongdev.skysongEconomy.loot.LootOutput;
 import org.skysongdev.skysongEconomy.loot.LootRoller;
@@ -27,7 +28,6 @@ import org.skysongdev.skysongEconomy.nodes.NodeService;
 import org.skysongdev.skysongEconomy.nodes.NodeSettings;
 import org.skysongdev.skysongEconomy.nodes.NodeTables;
 import org.skysongdev.skysongEconomy.nodes.random.RandomTable;
-import org.skysongdev.skysongEconomy.nodes.random.RandomTableRegistry;
 import org.skysongdev.skysongEconomy.nodes.random.RandomTier;
 import org.skysongdev.skysongEconomy.tokens.GatheringTokens;
 import org.skysongdev.skysongEconomy.tokens.TokenRepository;
@@ -100,7 +100,7 @@ class RandomHarvesterTest {
         BusinessTypeRegistry types = new BusinessTypeRegistry(List.of(new BusinessType("gathering", "Gathering", Set.of("mining"), false)));
         BusinessTiers tiers = new BusinessTiers(IntStream.rangeClosed(1, 5).mapToObj(tier -> new TierSettings(tier, tier)).toList());
         businesses = new BusinessService(types, tiers, new InMemoryBusinessRepository(), Clock.systemUTC());
-        NodeTables tables = new NodeTables(new RandomTableRegistry(List.of(mine())));
+        NodeTables tables = new NodeTables(new FileRegistry<>(List.of(mine())), FileRegistry.empty(), FileRegistry.empty());
         nodes = new NodeService(tables, SETTINGS, businesses, new InMemoryNodeRepository());
         DowntimeWallet downtimeWallet = new DowntimeWallet() {
             @Override
@@ -250,7 +250,7 @@ class RandomHarvesterTest {
 
     @Test
     void farmNodesAndNodesWhoseTableDidntLoadHaveNoTable() {
-        Node farm = nodes.create("field", NodeKind.FARM, "crop", BUSINESS_BLOCK);
+        Node farm = Node.create("field", NodeKind.FARM, "crop", null);
 
         assertEquals("node.harvest.unavailable", refusal(() -> harvester.harvest(farm, miner, 1)));
         assertEquals("node.harvest.unavailable", refusal(() -> harvester.table(Node.create("lost", NodeKind.RANDOM, "gone", null))));
