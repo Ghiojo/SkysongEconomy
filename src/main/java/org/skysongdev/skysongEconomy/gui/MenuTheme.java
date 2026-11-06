@@ -35,13 +35,13 @@ public final class MenuTheme {
     public MenuTheme(MenuIcons icons, Messenger messenger, MessageCatalog messages, Logger logger) {
         this.messenger = messenger;
         this.messages = messages;
-        this.border = material(icons.border(), logger);
-        this.previousPage = material(icons.previousPage(), logger);
-        this.nextPage = material(icons.nextPage(), logger);
-        this.back = material(icons.back(), logger);
-        this.close = material(icons.close(), logger);
-        this.confirm = material(icons.confirm(), logger);
-        this.cancel = material(icons.cancel(), logger);
+        this.border = material(icons.border(), MenuIcons.FILE, logger);
+        this.previousPage = material(icons.previousPage(), MenuIcons.FILE, logger);
+        this.nextPage = material(icons.nextPage(), MenuIcons.FILE, logger);
+        this.back = material(icons.back(), MenuIcons.FILE, logger);
+        this.close = material(icons.close(), MenuIcons.FILE, logger);
+        this.confirm = material(icons.confirm(), MenuIcons.FILE, logger);
+        this.cancel = material(icons.cancel(), MenuIcons.FILE, logger);
     }
 
     /**
@@ -104,10 +104,14 @@ public final class MenuTheme {
         return text.decorationIfAbsent(TextDecoration.ITALIC, TextDecoration.State.FALSE);
     }
 
-    private static Material material(String name, Logger logger) {
+    /**
+     * @param file the config file that names it, for the warning
+     * @return the item with that Minecraft name; stone, with a warning, when there is none
+     */
+    public static Material material(String name, String file, Logger logger) {
         Material material = Material.matchMaterial(name);
         if (material == null || !material.isItem()) {
-            logger.warning(MenuIcons.FILE + ": '" + name + "' is not an item, using STONE");
+            logger.warning(file + ": '" + name + "' is not an item, using STONE");
             return Material.STONE;
         }
         return material;

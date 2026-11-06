@@ -13,10 +13,15 @@ import org.skysongdev.skysongEconomy.data.database.ConnectionProvider;
 import org.skysongdev.skysongEconomy.data.database.DatabaseSettings;
 import org.skysongdev.skysongEconomy.data.database.SqlNodeRepository;
 import org.skysongdev.skysongEconomy.data.database.StorageException;
+import org.skysongdev.skysongEconomy.events.BukkitNodeHarvestEvents;
+import org.skysongdev.skysongEconomy.gui.node.NodeMenus;
 import org.skysongdev.skysongEconomy.integration.skysongstats.SkysongStatsAdapter;
+import org.skysongdev.skysongEconomy.items.ItemHandOver;
 import org.skysongdev.skysongEconomy.listeners.FloatingNames;
+import org.skysongdev.skysongEconomy.listeners.NodeInteractListener;
 import org.skysongdev.skysongEconomy.listeners.NodeNameplates;
 import org.skysongdev.skysongEconomy.listeners.ProtectedBlockListener;
+import org.skysongdev.skysongEconomy.loot.LootRoller;
 import org.skysongdev.skysongEconomy.messaging.Messenger;
 import org.skysongdev.skysongEconomy.money.Wallet;
 import org.skysongdev.skysongEconomy.nodes.NodeBlockGuard;
@@ -25,7 +30,9 @@ import org.skysongdev.skysongEconomy.nodes.NodeService;
 import org.skysongdev.skysongEconomy.nodes.NodeSettings;
 import org.skysongdev.skysongEconomy.nodes.NodeSettingsParser;
 import org.skysongdev.skysongEconomy.nodes.NodeTables;
+import org.skysongdev.skysongEconomy.nodes.harvest.RandomHarvester;
 
+import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -35,7 +42,7 @@ import java.util.logging.Logger;
 
 /**
  * Builds the nodes system and connects it to the server: settings, loot groups and random tables,
- * storage, block protection, nameplates and the {@code /se node} commands. Nodes need businesses, so the system stays off
+ * storage, block protection, nameplates, the gather menu and the {@code /se node} commands. Nodes need businesses, so the system stays off
  * when businesses are off or {@code nodes/settings.yml} can't be read.
  */
 public final class NodeFeature implements AutoCloseable {
@@ -59,7 +66,7 @@ public final class NodeFeature implements AutoCloseable {
      * @param database     the database to keep nodes in; the feature opens its own connection
      * @param businesses   the running business system, empty when businesses are disabled
      * @param skysongStats skills and skill levels, which tables name
-     * @param wallet       how money amounts are written
+     * @param wallet       money, for public costs and how amounts are written
      * @param trade        items, which loot names, and the price database, for {@code /se node odds}
      */
     public static NodeFeature start(JavaPlugin plugin, YamlFiles configFiles, DatabaseSettings database,
@@ -109,6 +116,14 @@ public final class NodeFeature implements AutoCloseable {
             logger.log(Level.SEVERE, "Nodes could not be loaded from the database", e);
         }
         events.registerEvents(new ProtectedBlockListener(List.of(new NodeBlockGuard(nodes)), messenger), plugin);
+
+        RandomHarvester harvester = new RandomHarvester(new RandomHarvester.Dependencies(tables, settings,
+                system.businesses(), system.tokens(), skysongStats, wallet, skysongStats, new BukkitNodeHarvestEvents(events)),
+                new LootRoller(new SecureRandom()));
+        NodeMenus menus = new NodeMenus(new NodeMenus.Dependencies(nodes, harvester, system.businesses(), skysongStats,
+                system.tokens(), skysongStats, skysongStats, wallet, new ItemHandOver(trade.items())),
+                system.menus().theme(), messenger, settings.menuIcons(), logger);
+        events.registerEvents(new NodeInteractListener(nodes, menus), plugin);
 
         OddsSources odds = new OddsSources(tables, settings, skysongStats, skysongStats, trade.prices(),
                 trade.priceSettings(), wallet);

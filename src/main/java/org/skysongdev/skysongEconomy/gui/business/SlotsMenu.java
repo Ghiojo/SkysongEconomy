@@ -4,13 +4,13 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.ItemStack;
 import org.skysongdev.skysongEconomy.business.Business;
 import org.skysongdev.skysongEconomy.business.BusinessException;
 import org.skysongdev.skysongEconomy.character.CharacterRef;
 import org.skysongdev.skysongEconomy.gui.BorderedMenu;
 import org.skysongdev.skysongEconomy.gui.MenuButton;
 import org.skysongdev.skysongEconomy.gui.layout.BorderedLayout;
+import org.skysongdev.skysongEconomy.items.ItemHandOver;
 import org.skysongdev.skysongEconomy.items.SkysongItemFactory;
 import org.skysongdev.skysongEconomy.messaging.Messenger;
 import org.skysongdev.skysongEconomy.trade.Durations;
@@ -25,7 +25,6 @@ import java.time.Clock;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -116,21 +115,10 @@ final class SlotsMenu extends BorderedMenu {
     }
 
     /**
-     * Builds every stack first, so a missing item file stops the hand-over before anything is given.
-     *
      * @return whether some items didn't fit and were dropped at the player's feet
      * @throws IllegalArgumentException when an item has no file
      */
     private boolean give(Player player, List<ItemAmount> items) {
-        List<ItemStack> stacks = new ArrayList<>();
-        for (ItemAmount item : items) {
-            int maxStack = Math.max(1, screens.items().create(item.materialId(), 1).getMaxStackSize());
-            for (int left = item.amount(); left > 0; left -= maxStack) {
-                stacks.add(screens.items().create(item.materialId(), Math.min(left, maxStack)));
-            }
-        }
-        Map<Integer, ItemStack> leftover = player.getInventory().addItem(stacks.toArray(ItemStack[]::new));
-        leftover.values().forEach(stack -> player.getWorld().dropItemNaturally(player.getLocation(), stack));
-        return !leftover.isEmpty();
+        return new ItemHandOver(screens.items()).give(player, items);
     }
 }

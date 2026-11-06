@@ -5,6 +5,7 @@ import org.skysongdev.skysongEconomy.config.ConfigSection;
 import org.skysongdev.skysongEconomy.loot.LootGroupLibrary;
 import org.skysongdev.skysongEconomy.loot.LootParser;
 import org.skysongdev.skysongEconomy.nodes.TierKeys;
+import org.skysongdev.skysongEconomy.nodes.harvest.HarvestCost;
 
 import java.math.BigDecimal;
 import java.util.Locale;
@@ -86,13 +87,13 @@ public final class RandomTableParser {
         if (cost < 0) {
             throw section.error("cost", "can't be negative");
         }
-        Optional<PublicCost> publicCost = section.contains("public-cost")
+        Optional<HarvestCost> publicCost = section.contains("public-cost")
                 ? Optional.of(publicCost(section.section("public-cost")))
                 : Optional.empty();
         return new RandomTier(number, cost, publicCost, loot.parseOutput(section, groups));
     }
 
-    private static PublicCost publicCost(ConfigSection section) {
+    private static HarvestCost publicCost(ConfigSection section) {
         for (String key : section.keys()) {
             if (!PUBLIC_COST_KEYS.contains(key)) {
                 throw section.error(key, "isn't a cost: use downtime, harvest-tokens or money");
@@ -110,6 +111,6 @@ public final class RandomTableParser {
         if (money < 0) {
             throw section.error("money", "can't be negative");
         }
-        return new PublicCost(downtime, tokens, BigDecimal.valueOf(money));
+        return new HarvestCost(downtime, tokens, BigDecimal.valueOf(money));
     }
 }

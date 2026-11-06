@@ -2,6 +2,7 @@ package org.skysongdev.skysongEconomy.nodes.random;
 
 import org.skysongdev.skysongEconomy.loot.LootOutput;
 import org.skysongdev.skysongEconomy.nodes.Node;
+import org.skysongdev.skysongEconomy.nodes.harvest.HarvestCost;
 
 import java.util.Objects;
 import java.util.Optional;
@@ -15,7 +16,7 @@ import java.util.Optional;
  *                   public nodes
  * @param output     what one harvest gives
  */
-public record RandomTier(int tier, int cost, Optional<PublicCost> publicCost, LootOutput output) {
+public record RandomTier(int tier, int cost, Optional<HarvestCost> publicCost, LootOutput output) {
     public RandomTier {
         if (tier < Node.MIN_TIER || tier > Node.MAX_TIER) {
             throw new IllegalArgumentException("tier must be between " + Node.MIN_TIER + " and " + Node.MAX_TIER + ": " + tier);

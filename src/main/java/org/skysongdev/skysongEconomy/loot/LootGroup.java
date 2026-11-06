@@ -3,6 +3,7 @@ package org.skysongdev.skysongEconomy.loot;
 import java.util.List;
 import java.util.Objects;
 import java.util.random.RandomGenerator;
+import java.util.regex.Pattern;
 
 /**
  * A list of weighted entries to roll on. Weights are whole numbers, never percentages: each
@@ -13,12 +14,20 @@ import java.util.random.RandomGenerator;
  *           inline inside another one; used in messages only
  */
 public record LootGroup(String id, List<WeightedEntry> entries) {
+    /** What a group file's name looks like; an inline group's path never does. */
+    private static final Pattern NAMED = Pattern.compile("[a-z0-9_-]+");
+
     public LootGroup {
         Objects.requireNonNull(id, "id");
         entries = List.copyOf(entries);
         if (entries.isEmpty()) {
             throw new IllegalArgumentException("The group " + id + " needs at least one entry");
         }
+    }
+
+    /** @return whether this group is a group file, rather than a list written inline inside another file */
+    public boolean isNamed() {
+        return NAMED.matcher(id).matches();
     }
 
     /** @return the sum of every entry's weight */

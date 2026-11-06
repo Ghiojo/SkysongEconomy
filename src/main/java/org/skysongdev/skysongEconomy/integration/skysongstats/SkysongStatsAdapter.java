@@ -91,6 +91,11 @@ public final class SkysongStatsAdapter implements CharacterDirectory, DowntimeWa
     }
 
     @Override
+    public Optional<String> levelOf(CharacterRef character, String skillId) {
+        return api.skills().level(toId(character), skillId).map(SkillLevel::id);
+    }
+
+    @Override
     public String levelName(String levelId) {
         return api.skills().levels().stream()
                 .filter(level -> level.id().equals(levelId))

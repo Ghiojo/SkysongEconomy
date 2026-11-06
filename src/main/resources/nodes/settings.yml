@@ -16,6 +16,15 @@ tier-skill-levels:
   4: journeyman
   5: expert
 
+# menu: the items the node menu shows, as Minecraft item names.
+#   info         the node's details at the top
+#   tier         a tier you can gather at
+#   locked-tier  a tier you can't, such as one above your skill level
+menu:
+  info: BOOK
+  tier: IRON_PICKAXE
+  locked-tier: GRAY_DYE
+
 # nameplate: the node's name and tier floating above its block, such as "Mine, Tier 3". Its text
 # is node.nameplate in messages.yml, or node.nameplate-unavailable while the node's table didn't
 # load. The options work like the business nameplate's in businesses/block.yml:

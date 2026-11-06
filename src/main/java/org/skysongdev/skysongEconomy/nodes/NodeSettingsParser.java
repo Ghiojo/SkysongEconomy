@@ -22,6 +22,10 @@ import java.util.function.Predicate;
  *   3: competent
  *   4: journeyman
  *   5: expert
+ * menu:                       # item names; left out keep these defaults
+ *   info: BOOK
+ *   tier: IRON_PICKAXE
+ *   locked-tier: GRAY_DYE
  * nameplate:
  *   enabled: true
  *   height: 0.4
@@ -65,7 +69,11 @@ public final class NodeSettingsParser {
                         + "', which isn't a business type, so it is ignored").getMessage());
             }
         }
-        return new NodeSettings(types, tierLevels(root.section(TIER_LEVELS)), new NameplateSettingsParser().parse(root));
+        ConfigSection menu = root.section("menu");
+        NodeMenuIcons defaults = NodeMenuIcons.DEFAULTS;
+        NodeMenuIcons icons = new NodeMenuIcons(menu.string("info", defaults.info()), menu.string("tier", defaults.tier()),
+                menu.string("locked-tier", defaults.lockedTier()));
+        return new NodeSettings(types, tierLevels(root.section(TIER_LEVELS)), new NameplateSettingsParser().parse(root), icons);
     }
 
     private Map<Integer, String> tierLevels(ConfigSection section) {
