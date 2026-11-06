@@ -8,6 +8,7 @@ import org.skysongdev.skysongEconomy.nodes.NodeException;
 import org.skysongdev.skysongEconomy.nodes.NodeOwner;
 import org.skysongdev.skysongEconomy.nodes.NodeSettings;
 import org.skysongdev.skysongEconomy.nodes.NodeTables;
+import org.skysongdev.skysongEconomy.nodes.boost.Booster;
 import org.skysongdev.skysongEconomy.nodes.random.RandomTable;
 import org.skysongdev.skysongEconomy.nodes.random.RandomTier;
 import org.skysongdev.skysongEconomy.trade.ItemAmount;
@@ -15,6 +16,7 @@ import org.skysongdev.skysongEconomy.trade.ItemAmount;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * Gathers at random nodes. A harvest is instant: it checks who may gather, the skill level the
@@ -100,15 +102,31 @@ public final class RandomHarvester {
     }
 
     /**
-     * Gathers once: checks, pays, rolls and fires the harvest event.
+     * @return what boosters must name to work here: the table's {@code type}
+     * @throws NodeException {@code node.harvest.no-table} when the node's table isn't loaded
+     */
+    public String boosterType(Node node) {
+        return table(node).type();
+    }
+
+    /** Gathers once without a booster; see {@link #harvest(Node, CharacterRef, int, Optional)}. */
+    public Harvest harvest(Node node, CharacterRef character, int tierNumber) {
+        return harvest(node, character, tierNumber, Optional.empty());
+    }
+
+    /**
+     * Gathers once: checks, pays, rolls and fires the harvest event. Using up the booster is
+     * left to the caller, which holds the item.
      *
      * @param tierNumber the tier the player picked
+     * @param booster    changes the amounts and rolls of this harvest
      * @return what was paid and rolled, for the caller to hand over
-     * @throws NodeException when the node, the tier, the character's access, level or money refuse it;
-     *                       nothing is charged then
+     * @throws NodeException when the node, the tier, the booster, the character's access, level or
+     *                       money refuse it; nothing is charged then
      */
-    public Harvest harvest(Node node, CharacterRef character, int tierNumber) {
+    public Harvest harvest(Node node, CharacterRef character, int tierNumber, Optional<Booster> booster) {
         RandomTable table = table(node);
+        Booster.requireWorksOn(booster, table.type());
         RandomTier tier = table.tier(tierNumber).filter(found -> found.tier() <= node.tier())
                 .orElseThrow(() -> new NodeException("node.harvest.no-tier", Map.of("tier", String.valueOf(tierNumber))));
         requireAccess(node, character);
@@ -118,7 +136,7 @@ public final class RandomHarvester {
         }
         HarvestCost cost = cost(node, tier);
         deps.payer().pay(character, cost);
-        List<ItemAmount> items = roller.roll(tier.output());
+        List<ItemAmount> items = roller.roll(tier.output(), Booster.effectOf(booster));
         Harvest harvest = new Harvest(node, character, tier.tier(), cost, items);
         deps.events().harvested(harvest);
         return harvest;

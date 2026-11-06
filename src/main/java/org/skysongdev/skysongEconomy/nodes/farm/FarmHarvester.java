@@ -6,6 +6,7 @@ import org.skysongdev.skysongEconomy.loot.LootRoller;
 import org.skysongdev.skysongEconomy.nodes.Node;
 import org.skysongdev.skysongEconomy.nodes.NodeException;
 import org.skysongdev.skysongEconomy.nodes.NodeSettings;
+import org.skysongdev.skysongEconomy.nodes.boost.Booster;
 import org.skysongdev.skysongEconomy.nodes.harvest.Harvest;
 import org.skysongdev.skysongEconomy.nodes.harvest.HarvestCost;
 import org.skysongdev.skysongEconomy.nodes.harvest.HarvestPayer;
@@ -16,6 +17,7 @@ import org.skysongdev.skysongEconomy.trade.ItemAmount;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * Harvests farm nodes. The owning business's owner and workers pick any tier the planted
@@ -92,15 +94,31 @@ public final class FarmHarvester {
     }
 
     /**
-     * Harvests once: checks, pays, rolls and fires the harvest event.
+     * @return what boosters must name to work here: the farm type's id, such as {@code crop}
+     * @throws NodeException when the node's farm type isn't loaded
+     */
+    public String boosterType(Node node) {
+        return deps.plots().type(node).id();
+    }
+
+    /** Harvests once without a booster; see {@link #harvest(Node, CharacterRef, int, Optional)}. */
+    public Harvest harvest(Node node, CharacterRef character, int tierNumber) {
+        return harvest(node, character, tierNumber, Optional.empty());
+    }
+
+    /**
+     * Harvests once: checks, pays, rolls and fires the harvest event. Using up the booster is
+     * left to the caller, which holds the item.
      *
      * @param tierNumber the tier the player picked
+     * @param booster    changes the amounts and rolls of this harvest
      * @return what was paid and rolled, for the caller to hand over
-     * @throws NodeException when the node, what is planted, the tier, the character's access,
-     *                       level or tokens refuse it; nothing is charged then
+     * @throws NodeException when the node, what is planted, the tier, the booster, the character's
+     *                       access, level or tokens refuse it; nothing is charged then
      */
-    public Harvest harvest(Node node, CharacterRef character, int tierNumber) {
+    public Harvest harvest(Node node, CharacterRef character, int tierNumber, Optional<Booster> booster) {
         FarmType type = deps.plots().type(node);
+        Booster.requireWorksOn(booster, type.id());
         requireAccess(node, character);
         FarmResource resource = growing(node);
         FarmTier tier = resource.tier(tierNumber).filter(found -> found.tier() <= node.tier())
@@ -111,7 +129,7 @@ public final class FarmHarvester {
         }
         HarvestCost cost = HarvestCost.tokens(tier.cost());
         deps.payer().pay(character, cost);
-        List<ItemAmount> items = roller.roll(tier.output());
+        List<ItemAmount> items = roller.roll(tier.output(), Booster.effectOf(booster));
         Harvest harvest = new Harvest(node, character, tier.tier(), cost, items);
         deps.events().harvested(harvest);
         return harvest;

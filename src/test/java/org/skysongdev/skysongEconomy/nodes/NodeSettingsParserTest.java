@@ -83,8 +83,8 @@ class NodeSettingsParserTest {
     @Test
     void menuIconsDefaultAndCanBeChanged() {
         assertEquals(NodeMenuIcons.DEFAULTS, parse("").menuIcons());
-        assertEquals(new NodeMenuIcons("BOOK", "DIAMOND_PICKAXE", "GRAY_DYE", "FARMLAND", "SHEARS"),
-                parse("menu:\n  tier: DIAMOND_PICKAXE\n  empty-plot: FARMLAND").menuIcons());
+        assertEquals(new NodeMenuIcons("BOOK", "DIAMOND_PICKAXE", "GRAY_DYE", "FARMLAND", "SHEARS", "GLOWSTONE_DUST"),
+                parse("menu:\n  tier: DIAMOND_PICKAXE\n  empty-plot: FARMLAND\n  booster: GLOWSTONE_DUST").menuIcons());
     }
 
     @Test

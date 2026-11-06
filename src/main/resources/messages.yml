@@ -576,6 +576,16 @@ node:
     taken-out-dropped: "<green>You took the primer out. <yellow>Your inventory was full, so some of it dropped at your feet."
     returned: "<green>A primer you planted was given back to you."
     returned-dropped: "<green>A primer you planted was given back to you. <yellow>Your inventory was full, so some of it dropped at your feet."
+  booster:
+    slot-name: "<light_purple>Booster slot"
+    slot-empty: "<gray>Put a booster here: it boosts each harvest you click."
+    slot-take-back: "<gray>Click it with an empty hand to take it back."
+    not-a-booster: "<red>That item isn't a booster."
+    broken: "<red>That booster's effect can't be read. Tell staff; the console names the item."
+    wrong-type: "<red>That booster is for <yellow><type></yellow> nodes. This node takes <yellow><needed></yellow> boosters."
+    no-charges: "<red>That booster has no charges left."
+    slot-full: "<red>The slot already holds a booster. Take it back out first."
+    used-up: "<yellow>Your booster is used up."
   reloaded: "<green>Reloaded <groups> loot group(s), <tables> random table(s), <resources> farm resource(s) and <types> farm type(s)."
   reload-warnings: "<yellow><count> problem(s) were found and skipped. The console names each file and key."
   block:

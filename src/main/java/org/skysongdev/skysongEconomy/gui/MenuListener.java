@@ -58,7 +58,7 @@ public final class MenuListener implements Listener {
         if (isEmpty(stack)) {
             return;
         }
-        for (int slot : menu.inputSlots()) {
+        for (int slot : menu.shiftClickSlots(stack)) {
             ItemStack left = menu.offer(slot, player, stack);
             if (left != stack) {
                 event.getClickedInventory().setItem(event.getSlot(), left);
