@@ -197,7 +197,11 @@ The farm menu shows the node, one button per tier of what is planted, a **planti
   (both of a pair, say), it is planted. The exact item stacks are saved (`items/StoredItems`, Paper's own
   serialised format), so the very same items come back later. Anything left in the slot goes back when the menu
   closes, the player quits, or the server stops.
-- **Tenders** are the owning business's owner and anyone in an access group with `tend-farms`.
+- **Tenders** are the owning business's owner, anyone in an access group with `tend-farms`, and staff with
+  `skysongeconomy.nodes.tend-bypass` (`FarmPlots.BYPASS_PERMISSION`), who tend every farm node. Server-owned
+  businesses have no owner character, so staff tend their farms through this permission. The bypass is checked on
+  the online player (`NodeFeature` passes `FarmPlots` a `Predicate<UUID>`); it doesn't make an unowned farm
+  plantable, and taking out still costs the removal downtime.
 - **Taking out** costs `farm.primer-removal-downtime` (1 by default, 0 makes it free) and gives the exact items back.
 - **Harvesting** is for the owner and workers, like a random node: pick a tier (up to the node's tier and among the
   resource's tiers), need the level in the farm type's skill, pay the tier's Harvest Tokens.

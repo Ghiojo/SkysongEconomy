@@ -124,6 +124,7 @@ All are declared in `src/main/resources/plugin.yml`.
 | `skysongeconomy.modifiers` | op | `/se modifier list` |
 | `skysongeconomy.modifiers.edit` | op | `/se modifier add`, `set`, `remove` |
 | `skysongeconomy.nodes` | op | Every `/se node` command, and breaking node blocks |
+| `skysongeconomy.nodes.tend-bypass` | op | Plant and take out primers at every farm node, whatever its owner and groups allow |
 | `skysongeconomy.*` | op | All of the above |
 
 Players use most features through menus, not commands: right-click a business block or a node. Those menus check

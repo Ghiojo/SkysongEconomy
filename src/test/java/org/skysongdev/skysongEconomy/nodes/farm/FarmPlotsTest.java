@@ -50,6 +50,36 @@ class FarmPlotsTest {
     }
 
     @Test
+    void staffWithTheBypassPermissionTendEveryFarm() {
+        world.bypassing.add(world.stranger.player());
+
+        assertTrue(plots.canTend(world.field, world.stranger));
+        plots.plant(world.field, world.stranger, world.resource("wheat"), FarmWorld.SEEDS);
+        assertEquals(world.stranger, plots.planting(world.field).orElseThrow().planter());
+        world.downtime.put(world.stranger.player(), 1);
+        assertEquals(FarmWorld.SEEDS, plots.takeOut(world.field, world.stranger), "taking out still costs downtime");
+    }
+
+    @Test
+    void theBypassTendsServerOwnedFarmsWhichNobodyElseCan() {
+        world.businesses.createServerOwned("npc_farm", "gathering", new BlockPosition("world", 9, 64, 9));
+        Node farm = world.nodes.create("npc_field", NodeKind.FARM, "crop", new BlockPosition("world", 8, 64, 8));
+        world.nodes.setOwner(farm, "npc_farm");
+
+        assertFalse(plots.canTend(farm, world.stranger));
+        world.bypassing.add(world.stranger.player());
+        assertTrue(plots.canTend(farm, world.stranger));
+    }
+
+    @Test
+    void theBypassDoesNotMakeAnUnownedFarmPlantable() {
+        world.bypassing.add(world.owner.player());
+        Node loose = world.nodes.create("loose", NodeKind.FARM, "crop", new BlockPosition("world", 7, 64, 7));
+
+        assertEquals("node.harvest.unowned", refusal(() -> plots.plant(loose, world.owner, world.resource("wheat"), FarmWorld.SEEDS)));
+    }
+
+    @Test
     void refusesAFullPlotAndResourcesOfOtherTypes() {
         assertEquals("node.farm.wrong-primer",
                 refusal(() -> plots.plant(world.field, world.owner, world.resource("sheep"), FarmWorld.SHEEP)));
