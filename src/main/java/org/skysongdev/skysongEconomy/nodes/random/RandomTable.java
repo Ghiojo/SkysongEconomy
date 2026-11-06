@@ -1,5 +1,7 @@
 package org.skysongdev.skysongEconomy.nodes.random;
 
+import org.skysongdev.skysongEconomy.config.FileEntry;
+
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -17,7 +19,8 @@ import java.util.TreeMap;
  * @param skill the SkysongStats skill each tier's level is checked in
  * @param tiers the tiers the file lists, by tier number; at least one
  */
-public record RandomTable(String id, String name, String type, String skill, Map<Integer, RandomTier> tiers) {
+public record RandomTable(String id, String name, String type, String skill, Map<Integer, RandomTier> tiers)
+        implements FileEntry {
     public RandomTable {
         Objects.requireNonNull(id, "id");
         Objects.requireNonNull(name, "name");

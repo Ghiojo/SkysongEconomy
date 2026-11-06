@@ -462,7 +462,7 @@ node:
   unknown-kind: "<red><yellow><kind></yellow> isn't a node kind. Use random or farm."
   unknown-source:
     random: "<red>There is no random node table called <yellow><source></yellow>. Check nodes/random and the console, then /se node reload."
-    farm: "<red>There is no farm type called <yellow><source></yellow>."
+    farm: "<red>There is no farm type called <yellow><source></yellow>. Check nodes/farm/types and the console, then /se node reload."
   block-taken: "<red>That block is already used by <yellow><holder></yellow>."
   invalid-tier: "<red>A node tier must be from <min> to <max>."
   invalid-name: "<red>A node name must be 1 to <max> characters."
@@ -544,7 +544,7 @@ node:
     got-nothing: "<gray>You gathered nothing this time."
     dropped: "<yellow>Your inventory was full, so some items dropped at your feet."
     item-missing: "<red>Something you gathered has no item file any more. Tell staff; the console names the node."
-  reloaded: "<green>Reloaded <groups> loot group(s) and <tables> random table(s)."
+  reloaded: "<green>Reloaded <groups> loot group(s), <tables> random table(s), <resources> farm resource(s) and <types> farm type(s)."
   reload-warnings: "<yellow><count> problem(s) were found and skipped. The console names each file and key."
   block:
     protected: "<red>This block is the node <yellow><node></yellow> and can't be broken."

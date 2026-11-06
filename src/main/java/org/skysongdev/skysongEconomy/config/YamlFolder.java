@@ -5,10 +5,12 @@ import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -66,5 +68,25 @@ public final class YamlFolder {
             }
         }
         return files;
+    }
+
+    /**
+     * Reads the folder and parses each file. A file that can't be read, or that {@code parser}
+     * refuses, is skipped with a warning naming it, so the others still load.
+     *
+     * @param parser turns a file's id and root section into one entry, throwing
+     *               {@link ConfigException} when something in the file is missing or wrong
+     * @return what parsed, in file name order
+     */
+    public <T extends FileEntry> FileRegistry<T> parseEach(Path folder, BiFunction<String, ConfigSection, T> parser) {
+        List<T> parsed = new ArrayList<>();
+        read(folder).forEach((id, root) -> {
+            try {
+                parsed.add(parser.apply(id, root));
+            } catch (ConfigException e) {
+                warnings.accept("Skipped the " + what + " '" + id + "': " + e.getMessage());
+            }
+        });
+        return new FileRegistry<>(parsed);
     }
 }

@@ -19,6 +19,7 @@ import org.skysongdev.skysongEconomy.integration.skysongstats.SkysongStatsAdapte
 import org.skysongdev.skysongEconomy.items.ItemHandOver;
 import org.skysongdev.skysongEconomy.listeners.FloatingNames;
 import org.skysongdev.skysongEconomy.listeners.NodeInteractListener;
+import org.skysongdev.skysongEconomy.listeners.NodeItemTags;
 import org.skysongdev.skysongEconomy.listeners.NodeNameplates;
 import org.skysongdev.skysongEconomy.listeners.ProtectedBlockListener;
 import org.skysongdev.skysongEconomy.loot.LootRoller;
@@ -41,9 +42,10 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * Builds the nodes system and connects it to the server: settings, loot groups and random tables,
- * storage, block protection, nameplates, the gather menu and the {@code /se node} commands. Nodes need businesses, so the system stays off
- * when businesses are off or {@code nodes/settings.yml} can't be read.
+ * Builds the nodes system and connects it to the server: settings, the node files (loot groups,
+ * random tables, farm resources and farm types), storage, block protection, nameplates, the
+ * gather menu, the node item tags and the {@code /se node} commands. Nodes need businesses, so the
+ * system stays off when businesses are off or {@code nodes/settings.yml} can't be read.
  */
 public final class NodeFeature implements AutoCloseable {
     private final List<SubCommand> commands;
@@ -98,7 +100,7 @@ public final class NodeFeature implements AutoCloseable {
                 logger::warning);
         NodeFiles.Loaded loaded = files.load();
         logLoaded(logger, loaded);
-        NodeTables tables = new NodeTables(loaded.random());
+        NodeTables tables = NodeTables.of(loaded);
         NodeService nodes = new NodeService(tables, settings, system.businesses(),
                 new AsyncNodeRepository(new SqlNodeRepository(connections), writer));
         system.businesses().addListener(nodes);
@@ -115,6 +117,7 @@ public final class NodeFeature implements AutoCloseable {
         } catch (StorageException e) {
             logger.log(Level.SEVERE, "Nodes could not be loaded from the database", e);
         }
+        events.registerEvents(new NodeItemTags(plugin, logger), plugin);
         events.registerEvents(new ProtectedBlockListener(List.of(new NodeBlockGuard(nodes)), messenger), plugin);
 
         RandomHarvester harvester = new RandomHarvester(new RandomHarvester.Dependencies(tables, settings,
@@ -130,7 +133,7 @@ public final class NodeFeature implements AutoCloseable {
         Supplier<NodeFiles.Loaded> reload = () -> {
             NodeFiles.Loaded reloaded = files.load();
             logLoaded(logger, reloaded);
-            tables.replace(reloaded.random());
+            tables.replace(reloaded);
             nodes.refresh();
             return reloaded;
         };
@@ -139,8 +142,9 @@ public final class NodeFeature implements AutoCloseable {
     }
 
     private static void logLoaded(Logger logger, NodeFiles.Loaded loaded) {
-        logger.info("Loaded " + loaded.groups().ids().size() + " loot group(s) and " + loaded.random().size()
-                + " random node table(s)");
+        logger.info("Loaded " + loaded.groups().ids().size() + " loot group(s), " + loaded.random().size()
+                + " random node table(s), " + loaded.farmResources().size() + " farm resource(s) and "
+                + loaded.farmTypes().size() + " farm type(s)");
     }
 
     private static NodeFeature disabled(Logger logger) {

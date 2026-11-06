@@ -12,7 +12,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.TreeMap;
 import java.util.function.Predicate;
 
 /**
@@ -63,30 +62,13 @@ public final class RandomTableParser {
         if (!skillExists.test(skill)) {
             throw root.error("skill", "'" + skill + "' isn't a skill in SkysongStats");
         }
-        ConfigSection tierSection = root.section("tiers");
-        if (tierSection.keys().isEmpty()) {
-            throw root.error("tiers", "must list at least one tier, from 1 to 5");
-        }
-        Map<Integer, RandomTier> tiers = new TreeMap<>();
-        for (String key : tierSection.keys()) {
-            int number = TierKeys.parse(tierSection, key);
-            if (tiers.containsKey(number)) {
-                throw tierSection.error(key, "lists tier " + number + " twice");
-            }
-            tiers.put(number, tier(number, tierSection.section(key), groups));
-        }
+        Map<Integer, RandomTier> tiers = TierKeys.readTiers(root, (number, section) -> tier(number, section, groups));
         return new RandomTable(id, root.string("name", id), root.string("type", id).strip().toLowerCase(Locale.ROOT),
                 skill, tiers);
     }
 
     private RandomTier tier(int number, ConfigSection section, LootGroupLibrary groups) {
-        if (!section.contains("cost")) {
-            throw section.error("cost", "is required: the Harvest Tokens one harvest costs");
-        }
-        int cost = section.integer("cost", 0);
-        if (cost < 0) {
-            throw section.error("cost", "can't be negative");
-        }
+        int cost = TierKeys.cost(section);
         Optional<HarvestCost> publicCost = section.contains("public-cost")
                 ? Optional.of(publicCost(section.section("public-cost")))
                 : Optional.empty();
