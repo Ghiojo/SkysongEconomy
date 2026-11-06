@@ -7,6 +7,7 @@ import org.skysongdev.skysongEconomy.config.YamlFiles;
 import org.skysongdev.skysongEconomy.loot.LootGroup;
 import org.skysongdev.skysongEconomy.loot.LootGroupLibrary;
 import org.skysongdev.skysongEconomy.loot.LootParser;
+import org.skysongdev.skysongEconomy.nodes.harvest.HarvestCost;
 
 import java.io.StringReader;
 import java.math.BigDecimal;
@@ -65,8 +66,8 @@ class RandomTableParserTest {
         assertEquals("mining", table.type());
         assertEquals("mining", table.skill());
         assertEquals(List.of(1, 3, 4), List.copyOf(table.tiers().keySet()));
-        assertEquals(Optional.of(new PublicCost(1, 0, BigDecimal.ZERO)), table.tier(1).orElseThrow().publicCost());
-        assertEquals(Optional.of(new PublicCost(1, 2, new BigDecimal("5.5"))), table.tier(3).orElseThrow().publicCost());
+        assertEquals(Optional.of(new HarvestCost(1, 0, BigDecimal.ZERO)), table.tier(1).orElseThrow().publicCost());
+        assertEquals(Optional.of(new HarvestCost(1, 2, new BigDecimal("5.5"))), table.tier(3).orElseThrow().publicCost());
         assertEquals(Optional.empty(), table.tier(4).orElseThrow().publicCost(), "no public-cost: business nodes only");
         assertEquals(5, table.tier(4).orElseThrow().cost());
         LootGroup group = table.tier(1).orElseThrow().output().rolls().get(0).group();

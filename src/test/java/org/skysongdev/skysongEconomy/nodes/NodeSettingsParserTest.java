@@ -79,6 +79,13 @@ class NodeSettingsParserTest {
     }
 
     @Test
+    void menuIconsDefaultAndCanBeChanged() {
+        assertEquals(NodeMenuIcons.DEFAULTS, parse("").menuIcons());
+        assertEquals(new NodeMenuIcons("BOOK", "DIAMOND_PICKAXE", "GRAY_DYE"),
+                parse("menu:\n  tier: DIAMOND_PICKAXE").menuIcons());
+    }
+
+    @Test
     void nameplatesCanBeTurnedOff() {
         assertFalse(parse("nameplate:\n  enabled: false").nameplate().enabled());
     }

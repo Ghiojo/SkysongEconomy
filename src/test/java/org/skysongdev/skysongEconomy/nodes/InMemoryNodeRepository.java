@@ -6,8 +6,8 @@ import java.util.List;
 import java.util.Map;
 
 /** Keeps nodes in a map, so tests can see what was saved. */
-final class InMemoryNodeRepository implements NodeRepository {
-    final Map<String, NodeSnapshot> saved = new LinkedHashMap<>();
+public final class InMemoryNodeRepository implements NodeRepository {
+    public final Map<String, NodeSnapshot> saved = new LinkedHashMap<>();
 
     @Override
     public List<NodeSnapshot> loadAll() {

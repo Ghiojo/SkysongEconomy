@@ -13,8 +13,10 @@ import java.util.Set;
  * @param ownerBusinessTypes the business types that may own nodes
  * @param tierLevels         the skill level gathering at each tier needs, for tiers 1 to 5
  * @param nameplate          how the floating name above node blocks looks
+ * @param menuIcons          the items the node menu shows
  */
-public record NodeSettings(Set<String> ownerBusinessTypes, Map<Integer, String> tierLevels, NameplateSettings nameplate) {
+public record NodeSettings(Set<String> ownerBusinessTypes, Map<Integer, String> tierLevels, NameplateSettings nameplate,
+                           NodeMenuIcons menuIcons) {
     /** The levels used for tiers that {@code nodes/settings.yml} doesn't list, tier 1 first. */
     public static final List<String> DEFAULT_TIER_LEVELS = List.of("unskilled", "novice", "competent", "journeyman", "expert");
 
@@ -27,6 +29,7 @@ public record NodeSettings(Set<String> ownerBusinessTypes, Map<Integer, String> 
             }
         }
         Objects.requireNonNull(nameplate, "nameplate");
+        Objects.requireNonNull(menuIcons, "menuIcons");
     }
 
     /** @return the skill level gathering at {@code tier} needs */

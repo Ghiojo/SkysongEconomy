@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Random;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -49,6 +50,14 @@ class LootGroupTest {
     void refusesEmptyGroupsAndWeightsBelowOne() {
         assertThrows(IllegalArgumentException.class, () -> new LootGroup("empty", List.of()));
         assertThrows(IllegalArgumentException.class, () -> new WeightedEntry(COPPER, 0));
+    }
+
+    @Test
+    void onlyGroupFilesAreNamedNotListsWrittenInline() {
+        WeightedEntry coal = new WeightedEntry(new LootEntry.Item("coal", IntRange.exactly(1)), 1);
+
+        assertTrue(new LootGroup("unskilled-ores", List.of(coal)).isNamed());
+        assertFalse(new LootGroup("nodes/random/mine.yml: tiers.1.rolls[0]", List.of(coal)).isNamed());
     }
 
     /** Always rolls the same ticket. */

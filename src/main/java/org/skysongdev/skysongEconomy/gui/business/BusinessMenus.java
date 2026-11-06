@@ -60,7 +60,8 @@ public final class BusinessMenus {
                 player.hasPermission(STAFF_PERMISSION));
     }
 
-    MenuTheme theme() {
+    /** @return the shared menu look, which other features' menus reuse */
+    public MenuTheme theme() {
         return theme;
     }
 
