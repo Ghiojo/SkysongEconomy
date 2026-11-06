@@ -1,6 +1,5 @@
 package org.skysongdev.skysongEconomy.commands.business;
 
-import org.bukkit.block.Block;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.Nullable;
@@ -11,6 +10,7 @@ import org.skysongdev.skysongEconomy.business.BusinessService;
 import org.skysongdev.skysongEconomy.character.CharacterDirectory;
 import org.skysongdev.skysongEconomy.character.CharacterRef;
 import org.skysongdev.skysongEconomy.commands.CharacterArguments;
+import org.skysongdev.skysongEconomy.commands.TargetBlocks;
 import org.skysongdev.skysongEconomy.messaging.Messenger;
 
 import java.util.ArrayList;
@@ -34,8 +34,6 @@ final class BusinessCommandSupport {
      */
     static final String SERVER_OWNER = "#server";
 
-    private static final int TARGET_RANGE = 5;
-
     final BusinessService businesses;
     final CharacterDirectory characters;
     final Messenger messenger;
@@ -52,18 +50,9 @@ final class BusinessCommandSupport {
         return characterArgs.requirePlayer(sender);
     }
 
-    /** @return the block the player is looking at, within reach */
+    /** @see TargetBlocks#target */
     Optional<BlockPosition> targetBlock(Player player) {
-        Block block = player.getTargetBlockExact(TARGET_RANGE);
-        if (block == null || block.getType().isAir()) {
-            messenger.send(player, "command.look-at-block");
-            return Optional.empty();
-        }
-        return Optional.of(positionOf(block));
-    }
-
-    static BlockPosition positionOf(Block block) {
-        return new BlockPosition(block.getWorld().getName(), block.getX(), block.getY(), block.getZ());
+        return TargetBlocks.target(player, messenger);
     }
 
     /** @see CharacterArguments#character */

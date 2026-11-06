@@ -4,6 +4,7 @@ import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.skysongdev.skysongEconomy.bootstrap.BusinessFeature;
+import org.skysongdev.skysongEconomy.bootstrap.NodeFeature;
 import org.skysongdev.skysongEconomy.bootstrap.TradeInputs;
 import org.skysongdev.skysongEconomy.commands.SkysongEconomyCommand;
 import org.skysongdev.skysongEconomy.config.ConfigException;
@@ -53,6 +54,7 @@ public final class SkysongEconomy extends JavaPlugin {
     private SkysongItemFactory importItems;
     private SkysongStatsAdapter skysongStats;
     private BusinessFeature businessFeature;
+    private NodeFeature nodeFeature;
 
     @Override
     public void onEnable() {
@@ -76,12 +78,17 @@ public final class SkysongEconomy extends JavaPlugin {
         businessFeature = BusinessFeature.start(this, paths, configFiles, databaseSettings(), skysongStats,
                 new GringottsWallet(), new TradeInputs(importItems, prices, priceSettings, goodTypes, materialIds),
                 messenger, messages);
+        nodeFeature = NodeFeature.start(this, configFiles, databaseSettings(), businessFeature.system(), messenger);
 
         registerCommands(messenger, materialIds);
     }
 
     @Override
     public void onDisable() {
+        // Nodes listen to businesses, so they close first.
+        if (nodeFeature != null) {
+            nodeFeature.close();
+        }
         if (businessFeature != null) {
             businessFeature.close();
         }
@@ -149,6 +156,7 @@ public final class SkysongEconomy extends JavaPlugin {
         SkysongEconomyCommand executor = new SkysongEconomyCommand(prices, priceSettings, goodTypes, materialIds, messenger,
                 getLogger());
         businessFeature.commands().forEach(executor::register);
+        nodeFeature.commands().forEach(executor::register);
         command.setExecutor(executor);
     }
 
@@ -180,5 +188,10 @@ public final class SkysongEconomy extends JavaPlugin {
     /** The business system; its parts are empty when its config couldn't be read. */
     public BusinessFeature getBusinessFeature() {
         return businessFeature;
+    }
+
+    /** The nodes system; its parts are empty when its config couldn't be read. */
+    public NodeFeature getNodeFeature() {
+        return nodeFeature;
     }
 }

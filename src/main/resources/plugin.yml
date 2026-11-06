@@ -55,6 +55,9 @@ permissions:
   skysongeconomy.modifiers.edit:
     description: Allows /se modifier add, set and remove
     default: op
+  skysongeconomy.nodes:
+    description: Allows the /se node commands, to set up gathering nodes, and breaking node blocks
+    default: op
   skysongeconomy.*:
     description: Gives access to all SkysongEconomy features
     default: op
@@ -71,3 +74,4 @@ permissions:
       skysongeconomy.tokens.admin: true
       skysongeconomy.modifiers: true
       skysongeconomy.modifiers.edit: true
+      skysongeconomy.nodes: true

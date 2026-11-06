@@ -1,0 +1,21 @@
+# Settings shared by every node.
+#
+# owner-business-types: the business types that can own nodes. Their owner and workers gather
+# there for Harvest Tokens. Names come from businesses/types.yml.
+owner-business-types:
+  - gathering
+
+# nameplate: the node's name and tier floating above its block, such as "Mine, Tier 3". Its text
+# is node.nameplate in messages.yml. The options work like the business nameplate's in
+# businesses/block.yml:
+#   enabled        false hides every node nameplate
+#   height         how far above the top of the block, in blocks
+#   view-distance  how far away players can see it, in blocks
+#   shadow         text shadow
+#   background     the default dark box behind the text
+nameplate:
+  enabled: true
+  height: 0.4
+  view-distance: 16
+  shadow: true
+  background: false

@@ -450,6 +450,48 @@ business:
     protected: "<red>This block belongs to <yellow><business></yellow> and can't be broken."
     unplaced: "<yellow>You broke the block of <business>. It is kept without a block: use /se business move <id> to place it again."
 
+node:
+  nameplate: "<white><node>, Tier <tier>"
+  owner-public: "everyone"
+  owner-unowned: "nobody"
+  not-found: "<red>There is no node with the id <yellow><id></yellow>."
+  not-looking-at-node: "<red>That block isn't a node."
+  invalid-id: "<red><yellow><id></yellow> isn't a valid node id. Use lower-case letters, digits, - and _."
+  id-taken: "<red>A node with the id <yellow><id></yellow> already exists."
+  unknown-kind: "<red><yellow><kind></yellow> isn't a node kind. Use random or farm."
+  unknown-source:
+    random: "<red>There is no random node table called <yellow><source></yellow>."
+    farm: "<red>There is no farm type called <yellow><source></yellow>."
+  block-taken: "<red>That block already belongs to <yellow><holder></yellow>."
+  invalid-tier: "<red>A node tier must be from <min> to <max>."
+  invalid-name: "<red>A node name must be 1 to <max> characters."
+  unknown-business: "<red>There is no business with the id <yellow><business></yellow>."
+  owner-wrong-type: "<red><yellow><business></yellow> can't own nodes. Only these business types can: <types>."
+  farm-not-public: "<red>Farm nodes can't be public. Give it to a business instead."
+  created:
+    random: "<green>Created the node <yellow><node></yellow> (<id>). It is tier 1 and public."
+    farm: "<green>Created the farm node <yellow><node></yellow> (<id>). It is tier 1 and has no owner yet: use /se node setowner <id> <business>."
+  remove-confirm: "<yellow>This deletes the node <node> for good. Run <white>/se node remove <id> confirm</white> to go ahead."
+  removed: "<green>Deleted the node <yellow><node></yellow>."
+  moved: "<green><yellow><node></yellow> is now on this block."
+  tier-set: "<green><yellow><node></yellow> is now tier <tier>."
+  owner-set: "<green><yellow><node></yellow> now belongs to <owner>."
+  table-set:
+    random: "<green><yellow><node></yellow> now rolls on the table <source>."
+    farm: "<green><yellow><node></yellow> is now a <source> farm."
+  renamed: "<green>The node is now called <yellow><node></yellow>."
+  info: |-
+    <gold><node> <dark_gray>(<id>)
+    <gray>Kind: <white><kind></white>, table: <white><source></white>, tier: <white><tier></white>
+    <gray>Owner: <white><owner></white>
+    <gray>Block: <white><position></white>
+  info-no-block: "none, use /se node move"
+  list-header: "<gold>Nodes (<count>):"
+  list-entry: "<gray>- <white><node></white> <dark_gray>(<id>, <kind>, tier <tier>, <owner>)"
+  block:
+    protected: "<red>This block is the node <yellow><node></yellow> and can't be broken."
+    unplaced: "<yellow>You broke the block of the node <node>. It is kept without a block: use /se node move <id> to place it again."
+
 tokens:
   balance-own: "<gold>You have <white><tokens></white> Gathering Token(s)."
   balance: "<gold><character> has <white><tokens></white> Gathering Token(s)."

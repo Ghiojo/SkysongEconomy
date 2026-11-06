@@ -1,6 +1,5 @@
 package org.skysongdev.skysongEconomy.listeners;
 
-import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.block.Block;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -12,43 +11,38 @@ import org.bukkit.event.block.BlockPistonExtendEvent;
 import org.bukkit.event.block.BlockPistonRetractEvent;
 import org.bukkit.event.entity.EntityChangeBlockEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
+import org.skysongdev.skysongEconomy.blocks.BlockGuard;
+import org.skysongdev.skysongEconomy.blocks.GuardedBlock;
 import org.skysongdev.skysongEconomy.business.BlockPosition;
-import org.skysongdev.skysongEconomy.business.Business;
-import org.skysongdev.skysongEconomy.business.BusinessService;
 import org.skysongdev.skysongEconomy.messaging.Messenger;
 
 import java.util.List;
 import java.util.Optional;
 
 /**
- * Keeps business blocks in place. Players can't break them, and neither can explosions, fire,
- * pistons or mobs. Staff with {@code skysongeconomy.business.break} can: the business then
- * keeps all its data without a block until it is moved.
+ * Keeps guarded blocks, such as business and node blocks, in place. Players can't break them,
+ * and neither can explosions, fire, pistons or mobs. Staff with the block's break permission
+ * can: its feature then keeps all its data without a block until it is moved.
  */
-public final class BusinessBlockListener implements Listener {
-    /** Lets staff break business blocks. */
-    public static final String BREAK_PERMISSION = "skysongeconomy.business.break";
-
-    private final BusinessService businesses;
+public final class ProtectedBlockListener implements Listener {
+    private final List<BlockGuard> guards;
     private final Messenger messenger;
 
-    public BusinessBlockListener(BusinessService businesses, Messenger messenger) {
-        this.businesses = businesses;
+    public ProtectedBlockListener(List<BlockGuard> guards, Messenger messenger) {
+        this.guards = List.copyOf(guards);
         this.messenger = messenger;
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onBreak(BlockBreakEvent event) {
-        businessAt(event.getBlock()).ifPresent(business -> {
-            if (!event.getPlayer().hasPermission(BREAK_PERMISSION)) {
+        guarded(event.getBlock()).ifPresent(block -> {
+            if (!event.getPlayer().hasPermission(block.breakPermission())) {
                 event.setCancelled(true);
-                messenger.send(event.getPlayer(), "business.block.protected",
-                        Placeholder.unparsed("business", business.displayName()));
+                messenger.send(event.getPlayer(), block.protectedMessage(), Messenger.unparsed(block.placeholders()));
                 return;
             }
-            businesses.unplace(business);
-            messenger.send(event.getPlayer(), "business.block.unplaced",
-                    Placeholder.unparsed("business", business.displayName()), Placeholder.unparsed("id", business.id()));
+            block.unplace().run();
+            messenger.send(event.getPlayer(), block.unplacedMessage(), Messenger.unparsed(block.placeholders()));
         });
     }
 
@@ -64,21 +58,21 @@ public final class BusinessBlockListener implements Listener {
 
     @EventHandler(ignoreCancelled = true)
     public void onBurn(BlockBurnEvent event) {
-        if (businessAt(event.getBlock()).isPresent()) {
+        if (guarded(event.getBlock()).isPresent()) {
             event.setCancelled(true);
         }
     }
 
     @EventHandler(ignoreCancelled = true)
     public void onPistonExtend(BlockPistonExtendEvent event) {
-        if (event.getBlocks().stream().anyMatch(block -> businessAt(block).isPresent())) {
+        if (event.getBlocks().stream().anyMatch(block -> guarded(block).isPresent())) {
             event.setCancelled(true);
         }
     }
 
     @EventHandler(ignoreCancelled = true)
     public void onPistonRetract(BlockPistonRetractEvent event) {
-        if (event.getBlocks().stream().anyMatch(block -> businessAt(block).isPresent())) {
+        if (event.getBlocks().stream().anyMatch(block -> guarded(block).isPresent())) {
             event.setCancelled(true);
         }
     }
@@ -86,16 +80,23 @@ public final class BusinessBlockListener implements Listener {
     /** Endermen, withers, falling blocks and the like. */
     @EventHandler(ignoreCancelled = true)
     public void onEntityChangeBlock(EntityChangeBlockEvent event) {
-        if (businessAt(event.getBlock()).isPresent()) {
+        if (guarded(event.getBlock()).isPresent()) {
             event.setCancelled(true);
         }
     }
 
     private void protect(List<Block> exploded) {
-        exploded.removeIf(block -> businessAt(block).isPresent());
+        exploded.removeIf(block -> guarded(block).isPresent());
     }
 
-    private Optional<Business> businessAt(Block block) {
-        return businesses.at(new BlockPosition(block.getWorld().getName(), block.getX(), block.getY(), block.getZ()));
+    private Optional<GuardedBlock> guarded(Block block) {
+        BlockPosition position = new BlockPosition(block.getWorld().getName(), block.getX(), block.getY(), block.getZ());
+        for (BlockGuard guard : guards) {
+            Optional<GuardedBlock> held = guard.at(position);
+            if (held.isPresent()) {
+                return held;
+            }
+        }
+        return Optional.empty();
     }
 }
