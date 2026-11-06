@@ -21,7 +21,7 @@ final class SetNodeTier extends NodeSubCommand {
         Node node = support.nodes.require(args[0]);
         support.nodes.setTier(node, parseTier(args[1]));
         support.messenger.send(sender, "node.tier-set",
-                unparsed("node", support.nodes.name(node)), unparsed("tier", String.valueOf(node.tier())));
+                support.nodeName(node), unparsed("tier", String.valueOf(node.tier())));
     }
 
     private static int parseTier(String text) {

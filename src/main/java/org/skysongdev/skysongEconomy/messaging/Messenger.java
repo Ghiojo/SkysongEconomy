@@ -67,6 +67,13 @@ public final class Messenger {
                 .toArray(TagResolver[]::new);
     }
 
+    /** @return one parsed placeholder per entry; only for MiniMessage that staff wrote, never for player-typed text */
+    public static TagResolver[] parsed(Map<String, String> values) {
+        return values.entrySet().stream()
+                .map(entry -> Placeholder.parsed(entry.getKey(), entry.getValue()))
+                .toArray(TagResolver[]::new);
+    }
+
     public void info(CommandSender recipient, String message, TagResolver... placeholders) {
         sendText(recipient, "<gray>" + message, placeholders);
     }

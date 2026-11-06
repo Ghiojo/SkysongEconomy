@@ -23,8 +23,8 @@ public final class NodeBlockGuard implements BlockGuard {
 
     @Override
     public Optional<GuardedBlock> at(BlockPosition position) {
-        return nodes.at(position).map(node -> new GuardedBlock(nodes.name(node), BREAK_PERMISSION,
+        return nodes.at(position).map(node -> new GuardedBlock(node.id(), BREAK_PERMISSION,
                 "node.block.protected", "node.block.unplaced",
-                Map.of("node", nodes.name(node), "id", node.id()), () -> nodes.unplace(node)));
+                Map.of("id", node.id()), Map.of("node", nodes.name(node)), () -> nodes.unplace(node)));
     }
 }

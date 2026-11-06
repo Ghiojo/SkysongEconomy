@@ -6,8 +6,6 @@ import org.skysongdev.skysongEconomy.nodes.Node;
 import java.util.Arrays;
 import java.util.List;
 
-import static net.kyori.adventure.text.minimessage.tag.resolver.Placeholder.unparsed;
-
 /**
  * /se node rename &lt;id&gt; &lt;name...|#reset&gt;: staff give a node its own name, or go back to its
  * table's or type's name with {@code #reset}.
@@ -24,7 +22,7 @@ final class RenameNode extends NodeSubCommand {
         Node node = support.nodes.require(args[0]);
         String name = String.join(" ", Arrays.copyOfRange(args, 1, args.length));
         support.nodes.rename(node, name.equalsIgnoreCase(RESET) ? null : name);
-        support.messenger.send(sender, "node.renamed", unparsed("node", support.nodes.name(node)));
+        support.messenger.send(sender, "node.renamed", support.nodeName(node));
     }
 
     @Override

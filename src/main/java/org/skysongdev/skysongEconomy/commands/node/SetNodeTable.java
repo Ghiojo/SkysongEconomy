@@ -21,7 +21,7 @@ final class SetNodeTable extends NodeSubCommand {
         Node node = support.nodes.require(args[0]);
         support.nodes.setSource(node, args[1]);
         support.messenger.send(sender, "node.table-set." + node.kind().key(),
-                unparsed("node", support.nodes.name(node)), unparsed("source", node.source()));
+                support.nodeName(node), unparsed("source", node.source()));
     }
 
     @Override

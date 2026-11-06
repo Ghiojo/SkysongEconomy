@@ -1,13 +1,24 @@
-# Settings shared by every node.
+# Settings shared by every node. They are read on start-up; /se node reload only reloads the
+# loot groups (nodes/groups) and random tables (nodes/random).
 #
 # owner-business-types: the business types that can own nodes. Their owner and workers gather
 # there for Harvest Tokens. Names come from businesses/types.yml.
 owner-business-types:
   - gathering
 
+# tier-skill-levels: the skill level a character needs to gather at each tier, checked in the
+# skill named by the random table (or, later, the farm type). Level names come from SkysongStats.
+# Tiers left out keep these defaults.
+tier-skill-levels:
+  1: unskilled
+  2: novice
+  3: competent
+  4: journeyman
+  5: expert
+
 # nameplate: the node's name and tier floating above its block, such as "Mine, Tier 3". Its text
-# is node.nameplate in messages.yml. The options work like the business nameplate's in
-# businesses/block.yml:
+# is node.nameplate in messages.yml, or node.nameplate-unavailable while the node's table didn't
+# load. The options work like the business nameplate's in businesses/block.yml:
 #   enabled        false hides every node nameplate
 #   height         how far above the top of the block, in blocks
 #   view-distance  how far away players can see it, in blocks
