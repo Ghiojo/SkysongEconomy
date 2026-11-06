@@ -142,7 +142,23 @@ public final class DatabaseSchema {
                     + "owner_business VARCHAR(64) NULL, "
                     + "display_name VARCHAR(255) NULL, "
                     + "world VARCHAR(255) NULL, "
-                    + "x INT NULL, y INT NULL, z INT NULL) ENGINE=InnoDB");
+                    + "x INT NULL, y INT NULL, z INT NULL) ENGINE=InnoDB",
+            // What is planted in each farm node: the exact primer items, so the same ones come back.
+            "CREATE TABLE IF NOT EXISTS node_plantings ("
+                    + "node_id VARCHAR(64) PRIMARY KEY NOT NULL, "
+                    + "resource_id VARCHAR(64) NOT NULL, "
+                    + "farm_type VARCHAR(64) NOT NULL, "
+                    + "business_id VARCHAR(64) NOT NULL, "
+                    + "player_uuid CHAR(36) NOT NULL, "
+                    + "profile VARCHAR(64) NOT NULL, "
+                    + "items MEDIUMBLOB NOT NULL, "
+                    + "FOREIGN KEY (node_id) REFERENCES nodes(id) ON DELETE CASCADE) ENGINE=InnoDB",
+            // Primers waiting to go back to a planter who was offline.
+            "CREATE TABLE IF NOT EXISTS node_primer_returns ("
+                    + "id CHAR(36) PRIMARY KEY NOT NULL, "
+                    + "player_uuid CHAR(36) NOT NULL, "
+                    + "items MEDIUMBLOB NOT NULL, "
+                    + "INDEX (player_uuid)) ENGINE=InnoDB");
 
     private DatabaseSchema() {
     }

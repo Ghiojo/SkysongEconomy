@@ -1,7 +1,7 @@
 /**
- * Farm resources and farm types: one file per resource in {@code nodes/farm/resources/}, each
- * with its primer and the tiers it offers, and one file per type in {@code nodes/farm/types/},
- * bundling the resources a farm node of that type accepts. No server classes, so it is unit
- * tested.
+ * Farm nodes: their resource and type files, what is planted where, and harvesting them. Each
+ * file in {@code nodes/farm/resources/} is one resource with its primer and the tiers it offers;
+ * each file in {@code nodes/farm/types/} bundles the resources a farm node of that type takes.
+ * No server classes, so it is unit tested.
  */
 package org.skysongdev.skysongEconomy.nodes.farm;

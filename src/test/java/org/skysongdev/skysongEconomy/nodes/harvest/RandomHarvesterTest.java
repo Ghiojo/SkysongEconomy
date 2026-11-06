@@ -54,7 +54,7 @@ class RandomHarvesterTest {
     private static final List<String> LEVELS = List.of("unskilled", "novice", "competent", "journeyman", "expert");
     private static final NodeSettings SETTINGS = new NodeSettings(Set.of("gathering"),
             Map.of(1, "unskilled", 2, "novice", 3, "competent", 4, "journeyman", 5, "expert"),
-            new NameplateSettings(true, 0.4, 16, true, false), NodeMenuIcons.DEFAULTS);
+            new NameplateSettings(true, 0.4, 16, true, false), NodeMenuIcons.DEFAULTS, 1);
     private static final BlockPosition BLOCK = new BlockPosition("world", 1, 64, 1);
     private static final BlockPosition BUSINESS_BLOCK = new BlockPosition("world", 5, 64, 5);
 
@@ -129,8 +129,8 @@ class RandomHarvesterTest {
                 return skillId.equals("mining") ? Optional.of(miningLevels.getOrDefault(character, "unskilled")) : Optional.empty();
             }
         };
-        harvester = new RandomHarvester(new RandomHarvester.Dependencies(tables, SETTINGS, businesses, tokens,
-                downtimeWallet, wallet, levels, heard::add), new LootRoller(new Random(1)));
+        harvester = new RandomHarvester(new RandomHarvester.Dependencies(tables, SETTINGS, new NodeAccess(businesses),
+                new HarvestPayer(tokens, downtimeWallet, wallet), levels, heard::add), new LootRoller(new Random(1)));
     }
 
     private Node businessNode(int tier) {

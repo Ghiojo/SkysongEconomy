@@ -36,7 +36,7 @@ class NodeServiceTest {
             IntStream.rangeClosed(1, 5).mapToObj(tier -> new TierSettings(tier, tier)).toList());
     private static final NodeSettings SETTINGS = new NodeSettings(Set.of("gathering"),
             Map.of(1, "unskilled", 2, "novice", 3, "competent", 4, "journeyman", 5, "expert"),
-            new NameplateSettings(true, 0.4, 16, true, false), NodeMenuIcons.DEFAULTS);
+            new NameplateSettings(true, 0.4, 16, true, false), NodeMenuIcons.DEFAULTS, 1);
     /** The random table "mine" and the farm type "crop" exist. */
     private static final NodeSources SOURCES = (kind, id) -> Optional.ofNullable(switch (kind) {
         case RANDOM -> id.equals("mine") ? "Mine" : null;

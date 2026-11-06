@@ -10,7 +10,9 @@ public enum Permission {
     /** Order imports (Economy and Logistics). */
     ORDER_IMPORTS,
     /** Sell exports (Economy and Logistics). */
-    SELL_EXPORTS;
+    SELL_EXPORTS,
+    /** Plant primers in the business's farm nodes and take them out. Nobody but the owner has it by default. */
+    TEND_FARMS;
 
     /** @return the name used in config and commands, e.g. {@code order-imports} */
     public String key() {

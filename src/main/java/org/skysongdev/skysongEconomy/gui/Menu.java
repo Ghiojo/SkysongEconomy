@@ -13,7 +13,8 @@ import java.util.Map;
 
 /**
  * A chest menu made of {@link MenuButton}s. Subclasses only say what goes in which slot;
- * {@link MenuListener} stops players from taking or placing items and runs the clicked button.
+ * {@link MenuListener} stops players from taking or placing items and runs the clicked button,
+ * or {@link #clickedOwnInventory} for a click on the player's own inventory.
  * <p>
  * Each opening gets its own menu object, so a menu can keep state such as its page.
  */
@@ -67,6 +68,21 @@ public abstract class Menu implements InventoryHolder {
         if (button != null && button.onClick() != null) {
             button.onClick().accept(new MenuClick(player, type));
         }
+    }
+
+    /**
+     * A click on the player's own inventory below the menu. Nothing moves either way; a menu
+     * that takes items, such as a farm node's planting slot, overrides this to read the clicked
+     * stack from {@code click.player().getInventory()}.
+     *
+     * @param slot the clicked slot of the player's inventory
+     */
+    protected void clickedOwnInventory(MenuClick click, int slot) {
+    }
+
+    /** Passes a click on the player's own inventory to {@link #clickedOwnInventory}. */
+    final void clickOwn(int slot, Player player, ClickType type) {
+        clickedOwnInventory(new MenuClick(player, type), slot);
     }
 
     @Override

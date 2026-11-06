@@ -2,21 +2,12 @@ package org.skysongdev.skysongEconomy.gui.node;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
-import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
-import org.skysongdev.skysongEconomy.business.Business;
 import org.skysongdev.skysongEconomy.character.CharacterRef;
 import org.skysongdev.skysongEconomy.gui.Menu;
 import org.skysongdev.skysongEconomy.gui.MenuButton;
-import org.skysongdev.skysongEconomy.loot.ChanceItem;
-import org.skysongdev.skysongEconomy.loot.GroupRolls;
-import org.skysongdev.skysongEconomy.loot.LootEntry;
-import org.skysongdev.skysongEconomy.loot.LootOutput;
-import org.skysongdev.skysongEconomy.loot.WeightedEntry;
-import org.skysongdev.skysongEconomy.messaging.NumberText;
 import org.skysongdev.skysongEconomy.messaging.RefusedException;
 import org.skysongdev.skysongEconomy.nodes.Node;
-import org.skysongdev.skysongEconomy.nodes.NodeOwner;
 import org.skysongdev.skysongEconomy.nodes.harvest.HarvestCost;
 import org.skysongdev.skysongEconomy.nodes.harvest.RandomHarvester;
 import org.skysongdev.skysongEconomy.nodes.random.RandomTable;
@@ -80,7 +71,7 @@ final class NodeGatherMenu extends Menu {
 
     private ItemStack info(Node node) {
         List<Component> lore = new ArrayList<>();
-        lore.add(line("node.gather.info.owner", component("owner", owner(node))));
+        lore.add(line("node.gather.info.owner", component("owner", menus.text().owner(node))));
         lore.add(line("node.gather.info.tokens",
                 unparsed("tokens", String.valueOf(menus.deps().tokens().balance(character)))));
         lore.add(line("node.gather.info.hint"));
@@ -88,86 +79,23 @@ final class NodeGatherMenu extends Menu {
                 parsed("node", menus.deps().nodes().name(node)), unparsed("tier", String.valueOf(node.tier()))), lore);
     }
 
-    private Component owner(Node node) {
-        return switch (node.owner()) {
-            case NodeOwner.Public ignored -> menus.messenger().render("node.owner-public");
-            case NodeOwner.Unowned ignored -> menus.messenger().render("node.owner-unowned");
-            case NodeOwner.Business business -> Component.text(menus.deps().businesses().find(business.businessId())
-                    .map(Business::displayName).orElse(business.businessId()));
-        };
-    }
-
     private MenuButton tierButton(Node node, RandomTable table, RandomTier tier) {
         RandomHarvester harvester = menus.deps().harvester();
-        TagResolver tierNumber = unparsed("tier", String.valueOf(tier.tier()));
-        String level = harvester.requiredLevel(tier);
-        List<Component> lore = new ArrayList<>();
-        Optional<String> locked = Optional.empty();
+        Optional<HarvestCost> cost;
         try {
-            HarvestCost cost = harvester.cost(node, tier);
-            lore.add(line("node.gather.tier.cost",
-                    component("cost", HarvestCostText.describe(menus.messenger(), menus.deps().wallet(), cost))));
+            cost = Optional.of(harvester.cost(node, tier));
         } catch (RefusedException businessOnly) {
-            locked = Optional.of("node.gather.tier.business-only");
+            cost = Optional.empty();
         }
-        lore.add(line("node.gather.tier.needs", parsed("level", menus.deps().levels().levelName(level)),
-                parsed("skill", menus.deps().skills().displayName(table.skill()))));
-        if (locked.isEmpty() && !menus.deps().levels().reaches(character, table.skill(), level)) {
-            locked = Optional.of("node.gather.tier.too-low");
-        }
-        lore.addAll(outputLines(tier.output()));
-        if (locked.isPresent()) {
-            lore.add(line(locked.get()));
-            return MenuButton.display(menus.theme().item(menus.icons().lockedTier(),
-                    menus.messenger().render("node.gather.tier.name-locked", tierNumber), lore));
-        }
-        lore.add(line("node.gather.tier.click"));
-        Material icon = menus.icons().tier();
-        return MenuButton.of(menus.theme().item(icon, menus.messenger().render("node.gather.tier.name", tierNumber), lore),
-                click -> {
+        return menus.text().tierButton(character, tier.tier(), cost, harvester.requiredLevel(tier), table.skill(),
+                tier.output(), click -> {
                     menus.harvest(click.player(), nodeId, tier.tier());
                     // The token balance and the player's level may have changed.
                     redraw();
                 });
     }
 
-    /** @return what the tier gives: guaranteed items, chance items, then each roll's entries and their odds */
-    private List<Component> outputLines(LootOutput output) {
-        List<Component> lines = new ArrayList<>();
-        for (LootEntry.Item item : output.guaranteed()) {
-            lines.add(line("node.gather.tier.guaranteed", itemName(item), unparsed("amount", item.amount().toString())));
-        }
-        for (ChanceItem chance : output.chances()) {
-            lines.add(line("node.gather.tier.chance", itemName(chance.item()),
-                    unparsed("amount", chance.item().amount().toString()),
-                    unparsed("chance", NumberText.percent(chance.percent() / 100))));
-        }
-        for (GroupRolls rolls : output.rolls()) {
-            lines.add(line("node.gather.tier.rolls", unparsed("times", rolls.count().toString())));
-            for (WeightedEntry entry : rolls.group().entries()) {
-                lines.add(line("node.gather.tier.roll-entry", component("entry", entryName(entry.entry())),
-                        unparsed("chance", NumberText.percent(rolls.group().chance(entry)))));
-            }
-        }
-        return lines;
-    }
-
-    private Component entryName(LootEntry entry) {
-        return switch (entry) {
-            case LootEntry.Item item -> menus.messenger().render("node.gather.tier.entry-item", itemName(item),
-                    unparsed("amount", item.amount().toString()));
-            case LootEntry.Group group -> group.group().isNamed()
-                    ? menus.messenger().render("node.gather.tier.entry-group", unparsed("group", group.group().id()))
-                    : menus.messenger().render("node.gather.tier.entry-mixed");
-            case LootEntry.Nothing ignored -> menus.messenger().render("node.gather.tier.entry-nothing");
-        };
-    }
-
-    private TagResolver itemName(LootEntry.Item item) {
-        return component("item", menus.deps().handOver().name(item.materialId()));
-    }
-
     private Component line(String key, TagResolver... placeholders) {
-        return menus.messenger().render(key, placeholders);
+        return menus.text().line(key, placeholders);
     }
 }

@@ -39,6 +39,8 @@ class NodeSettingsParserTest {
             assertEquals(16, settings.nameplate().viewDistance());
             assertEquals("unskilled", settings.levelFor(1));
             assertEquals("expert", settings.levelFor(5));
+            assertEquals(1, settings.primerRemovalDowntime());
+            assertEquals(NodeMenuIcons.DEFAULTS, settings.menuIcons());
         }
         assertEquals(List.of(), warnings);
     }
@@ -81,8 +83,15 @@ class NodeSettingsParserTest {
     @Test
     void menuIconsDefaultAndCanBeChanged() {
         assertEquals(NodeMenuIcons.DEFAULTS, parse("").menuIcons());
-        assertEquals(new NodeMenuIcons("BOOK", "DIAMOND_PICKAXE", "GRAY_DYE"),
-                parse("menu:\n  tier: DIAMOND_PICKAXE").menuIcons());
+        assertEquals(new NodeMenuIcons("BOOK", "DIAMOND_PICKAXE", "GRAY_DYE", "FARMLAND", "SHEARS"),
+                parse("menu:\n  tier: DIAMOND_PICKAXE\n  empty-plot: FARMLAND").menuIcons());
+    }
+
+    @Test
+    void primerRemovalCostsOneDowntimeUnlessChanged() {
+        assertEquals(1, parse("").primerRemovalDowntime());
+        assertEquals(0, parse("farm:\n  primer-removal-downtime: 0").primerRemovalDowntime());
+        assertThrows(ConfigException.class, () -> parse("farm:\n  primer-removal-downtime: -1"));
     }
 
     @Test
