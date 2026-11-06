@@ -6,7 +6,6 @@ import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.skysongdev.skysongEconomy.character.CharacterRef;
-import org.skysongdev.skysongEconomy.gui.Menu;
 import org.skysongdev.skysongEconomy.gui.MenuButton;
 import org.skysongdev.skysongEconomy.items.ItemStackBytes;
 import org.skysongdev.skysongEconomy.messaging.RefusedException;
@@ -28,45 +27,22 @@ import static net.kyori.adventure.text.minimessage.tag.resolver.Placeholder.pars
 import static net.kyori.adventure.text.minimessage.tag.resolver.Placeholder.unparsed;
 
 /**
- * The menu of a farm node: its details on top, one button per tier of what is planted, and the
- * planting slot below. Tenders put a primer in the slot to plant it, for free: once the slot
- * holds the whole primer (both of a pair, say) it is planted, and anything not planted goes back
- * when the menu closes. The button beside the slot takes the primer out. Each click on a tier is
- * one instant harvest, and the menu stays open.
+ * The menu of a farm node: its details on top, one button per tier of what is planted, the
+ * planting slot and the booster slot below. Tenders put a primer in the planting slot to plant
+ * it, for free: once the slot holds the whole primer (both of a pair, say) it is planted, and
+ * anything not planted goes back when the menu closes. The button beside the slot takes the
+ * primer out. Each click on a tier is one instant harvest, and the menu stays open.
  */
-final class FarmMenu extends Menu {
-    private static final int SIZE = 27;
-    private static final int INFO = 4;
-    /** Tier N goes in slot FIRST_TIER + N - 1, as in the random node menu. */
-    private static final int FIRST_TIER = 11;
+final class FarmMenu extends HarvestMenu {
     private static final int PLOT = 20;
-    private static final int CLOSE = 22;
     private static final int TAKE_OUT = 24;
 
-    private final NodeMenus menus;
-    private final String nodeId;
-    private final CharacterRef character;
-
     FarmMenu(NodeMenus menus, String nodeId, CharacterRef character) {
-        super(SIZE, menus.messenger().render("node.gather.title",
-                parsed("node", menus.deps().nodes().find(nodeId).map(menus.deps().nodes()::name).orElse(nodeId))));
-        this.menus = menus;
-        this.nodeId = nodeId;
-        this.character = character;
+        super(menus, nodeId, character);
     }
 
     @Override
-    protected void draw() {
-        MenuButton border = menus.theme().border();
-        for (int slot = 0; slot < SIZE; slot++) {
-            set(slot, border);
-        }
-        set(CLOSE, menus.theme().close());
-        Optional<Node> found = menus.deps().nodes().find(nodeId);
-        if (found.isEmpty()) {
-            return;
-        }
-        Node node = found.get();
+    protected void drawNode(Node node) {
         FarmPlots plots = menus.deps().farms().plots();
         FarmType type;
         try {
@@ -83,25 +59,24 @@ final class FarmMenu extends Menu {
         }
         FarmHarvester harvester = menus.deps().farms().harvester();
         for (FarmTier tier : harvester.offered(node)) {
-            set(FIRST_TIER + tier.tier() - 1, menus.text().tierButton(character, tier.tier(),
-                    Optional.of(HarvestCost.tokens(tier.cost())), harvester.requiredLevel(tier), type.skill(),
-                    tier.output(), click -> {
-                        menus.harvest(click.player(), nodeId, tier.tier());
-                        redraw();
-                    }));
+            set(FIRST_TIER + tier.tier() - 1, tierButton(tier.tier(), Optional.of(HarvestCost.tokens(tier.cost())),
+                    harvester.requiredLevel(tier), type.skill(), tier.output()));
         }
     }
 
-    /** The planting slot takes primers while nothing is planted. */
+    /** The planting slot takes primers while nothing is planted, beside the booster slot. */
     @Override
     protected boolean isInputSlot(int slot) {
-        return slot == PLOT && menus.deps().nodes().find(nodeId)
+        return super.isInputSlot(slot) || slot == PLOT && menus.deps().nodes().find(nodeId)
                 .filter(node -> menus.deps().farms().plots().planting(node).isEmpty()).isPresent();
     }
 
     /** Takes what the primer still lacks, of one kind of item only. */
     @Override
     protected int accepts(Player player, int slot, ItemStack offered, List<ItemStack> held) {
+        if (slot != PLOT) {
+            return super.accepts(player, slot, offered, held);
+        }
         if (!held.isEmpty() && !held.getFirst().isSimilar(offered)) {
             menus.messenger().send(player, "node.farm.one-primer");
             return 0;
@@ -114,6 +89,9 @@ final class FarmMenu extends Menu {
     /** Plants as soon as the slot holds the whole primer, such as both of a pair. */
     @Override
     protected void received(Player player, int slot) {
+        if (slot != PLOT) {
+            return;
+        }
         List<ItemStack> held = held(slot);
         Optional<FarmResource> resource = menus.primerFor(player, nodeId, held.getFirst());
         if (resource.isEmpty()) {

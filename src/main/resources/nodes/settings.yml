@@ -23,12 +23,14 @@ tier-skill-levels:
 #   locked-tier  a tier you can't, such as one above your skill level
 #   empty-plot   a farm node's planting slot while nothing is planted
 #   take-out     the button that takes a farm node's primer out
+#   booster      the booster slot while it is empty
 menu:
   info: BOOK
   tier: IRON_PICKAXE
   locked-tier: GRAY_DYE
   empty-plot: DIRT
   take-out: SHEARS
+  booster: BLAZE_POWDER
 
 # farm: farm node settings.
 #   primer-removal-downtime  the downtime taking a primer out costs (it is given back). Planting

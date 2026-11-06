@@ -20,6 +20,13 @@ public final class NodeItemTags implements Listener {
      * {@code sheep}, and it takes priority over the resource's {@code primer.item}.
      */
     public static final String PRIMER = "node_primer";
+    /**
+     * Makes an item a booster for one kind of node. Its text value is a random table's
+     * {@code type}, such as {@code mining}, or a farm type's id, such as {@code crop}.
+     */
+    public static final String BOOSTER_TYPE = "node_booster_type";
+    /** What a booster changes, such as {@code min+1; max+25%; rolls+1}. */
+    public static final String BOOSTER_EFFECT = "node_booster_effect";
 
     private final Plugin plugin;
     private final Logger logger;
@@ -31,9 +38,14 @@ public final class NodeItemTags implements Listener {
 
     @EventHandler
     public void onRegister(SkysongItemsRegisterEvent event) {
-        if (!event.registerTag(plugin, PRIMER, TagType.STRING)) {
-            logger.warning("SkysongItems refused the " + PRIMER + " tag (its console says why), so only a farm"
-                    + " resource's primer.item can be planted");
+        register(event, PRIMER, "only a farm resource's primer.item can be planted");
+        register(event, BOOSTER_TYPE, "no item works as a booster");
+        register(event, BOOSTER_EFFECT, "no item works as a booster");
+    }
+
+    private void register(SkysongItemsRegisterEvent event, String tag, String consequence) {
+        if (!event.registerTag(plugin, tag, TagType.STRING)) {
+            logger.warning("SkysongItems refused the " + tag + " tag (its console says why), so " + consequence);
         }
     }
 }

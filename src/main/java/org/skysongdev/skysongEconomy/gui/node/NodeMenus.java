@@ -11,6 +11,7 @@ import org.skysongdev.skysongEconomy.character.CharacterRef;
 import org.skysongdev.skysongEconomy.character.SkillCatalog;
 import org.skysongdev.skysongEconomy.character.SkillLevels;
 import org.skysongdev.skysongEconomy.gui.MenuTheme;
+import org.skysongdev.skysongEconomy.items.BoosterItems;
 import org.skysongdev.skysongEconomy.items.ItemHandOver;
 import org.skysongdev.skysongEconomy.items.ItemStackBytes;
 import org.skysongdev.skysongEconomy.items.PrimerItems;
@@ -19,10 +20,12 @@ import org.skysongdev.skysongEconomy.messaging.Messenger;
 import org.skysongdev.skysongEconomy.messaging.RefusedException;
 import org.skysongdev.skysongEconomy.money.Wallet;
 import org.skysongdev.skysongEconomy.nodes.Node;
+import org.skysongdev.skysongEconomy.nodes.NodeException;
 import org.skysongdev.skysongEconomy.nodes.NodeKind;
 import org.skysongdev.skysongEconomy.nodes.NodeMenuIcons;
 import org.skysongdev.skysongEconomy.nodes.NodeService;
 import org.skysongdev.skysongEconomy.nodes.NodeSettingsParser;
+import org.skysongdev.skysongEconomy.nodes.boost.Booster;
 import org.skysongdev.skysongEconomy.nodes.farm.FarmHarvester;
 import org.skysongdev.skysongEconomy.nodes.farm.FarmPlots;
 import org.skysongdev.skysongEconomy.nodes.farm.FarmResource;
@@ -44,8 +47,8 @@ import static net.kyori.adventure.text.minimessage.tag.resolver.Placeholder.pars
 import static net.kyori.adventure.text.minimessage.tag.resolver.Placeholder.unparsed;
 
 /**
- * Opens node menus and runs what is clicked in them: harvests at random and farm nodes, and
- * planting and taking out primers at farm nodes. Right-clicking a node only opens its menu;
+ * Opens node menus and runs what is clicked in them: harvests at random and farm nodes, with or
+ * without a booster, and planting and taking out primers at farm nodes. Right-clicking a node only opens its menu;
  * nothing is given until the player clicks a tier.
  */
 public final class NodeMenus {
@@ -62,10 +65,11 @@ public final class NodeMenus {
      * @param levels     skill level names and characters' levels
      * @param wallet     how money is written
      * @param handOver   gives the harvested items
+     * @param boosters   reads and uses up booster items
      */
     public record Dependencies(NodeService nodes, RandomHarvester harvester, Farms farms, BusinessService businesses,
                                CharacterDirectory characters, GatheringTokens tokens, SkillCatalog skills,
-                               SkillLevels levels, Wallet wallet, ItemHandOver handOver) {
+                               SkillLevels levels, Wallet wallet, ItemHandOver handOver, BoosterItems boosters) {
         public Dependencies {
             Objects.requireNonNull(nodes, "nodes");
             Objects.requireNonNull(harvester, "harvester");
@@ -77,6 +81,7 @@ public final class NodeMenus {
             Objects.requireNonNull(levels, "levels");
             Objects.requireNonNull(wallet, "wallet");
             Objects.requireNonNull(handOver, "handOver");
+            Objects.requireNonNull(boosters, "boosters");
         }
     }
 
@@ -96,7 +101,8 @@ public final class NodeMenus {
     }
 
     /** The menu items, resolved from {@code nodes/settings.yml}. */
-    record Icons(Material info, Material tier, Material lockedTier, Material emptyPlot, Material takeOut) {
+    record Icons(Material info, Material tier, Material lockedTier, Material emptyPlot, Material takeOut,
+                 Material booster) {
     }
 
     private final Dependencies deps;
@@ -115,7 +121,8 @@ public final class NodeMenus {
                 MenuTheme.material(icons.tier(), NodeSettingsParser.FILE, logger),
                 MenuTheme.material(icons.lockedTier(), NodeSettingsParser.FILE, logger),
                 MenuTheme.material(icons.emptyPlot(), NodeSettingsParser.FILE, logger),
-                MenuTheme.material(icons.takeOut(), NodeSettingsParser.FILE, logger));
+                MenuTheme.material(icons.takeOut(), NodeSettingsParser.FILE, logger),
+                MenuTheme.material(icons.booster(), NodeSettingsParser.FILE, logger));
         this.text = new NodeMenuText(this);
     }
 
@@ -152,11 +159,54 @@ public final class NodeMenus {
     /**
      * Gathers once at the tier the player clicked, gives the items and lists them in chat.
      * Everything is checked again, since the menu may have stayed open while things changed.
+     *
+     * @param boosterItem the booster held in the menu, if any; using it up is left to the caller
+     * @return whether it was harvested; when not, the player was told why
      */
-    void harvest(Player player, String nodeId, int tier) {
-        act(player, nodeId, (node, character) -> give(player, node.kind() == NodeKind.FARM
-                ? deps.farms().harvester().harvest(node, character, tier)
-                : deps.harvester().harvest(node, character, tier)));
+    boolean harvest(Player player, String nodeId, int tier, Optional<ItemStack> boosterItem) {
+        return attempt(player, nodeId, (node, character) -> {
+            Optional<Booster> booster = boosterItem.map(this::readBooster);
+            give(player, node.kind() == NodeKind.FARM
+                    ? deps.farms().harvester().harvest(node, character, tier, booster)
+                    : deps.harvester().harvest(node, character, tier, booster));
+            return true;
+        }).isPresent();
+    }
+
+    /**
+     * @return the booster a stack put in the booster slot is; empty, with the reason told to the
+     *         player, when it isn't one or doesn't work on this node
+     */
+    Optional<Booster> boosterFor(Player player, String nodeId, ItemStack offered) {
+        return attempt(player, nodeId, (node, character) -> {
+            Booster booster = readBooster(offered);
+            Booster.requireWorksOn(Optional.of(booster), node.kind() == NodeKind.FARM
+                    ? deps.farms().harvester().boosterType(node)
+                    : deps.harvester().boosterType(node));
+            return booster;
+        });
+    }
+
+    /**
+     * Uses a booster for one harvest, telling the player when it is used up.
+     *
+     * @return what is left of it; empty when nothing is
+     */
+    Optional<ItemStack> useBooster(Player player, ItemStack booster) {
+        Optional<ItemStack> left = deps.boosters().useOnce(player, booster);
+        if (left.isEmpty()) {
+            messenger.send(player, "node.booster.used-up");
+        }
+        return left;
+    }
+
+    /** @return whether the item is tagged as a booster, working or not */
+    boolean isBooster(ItemStack item) {
+        return deps.boosters().isBooster(item);
+    }
+
+    private Booster readBooster(ItemStack item) {
+        return deps.boosters().read(item).orElseThrow(() -> new NodeException("node.booster.not-a-booster"));
     }
 
     /**

@@ -20,6 +20,7 @@ import org.skysongdev.skysongEconomy.data.database.StorageException;
 import org.skysongdev.skysongEconomy.events.BukkitNodeHarvestEvents;
 import org.skysongdev.skysongEconomy.gui.node.NodeMenus;
 import org.skysongdev.skysongEconomy.integration.skysongstats.SkysongStatsAdapter;
+import org.skysongdev.skysongEconomy.items.BoosterItems;
 import org.skysongdev.skysongEconomy.items.InventoryPrimerDelivery;
 import org.skysongdev.skysongEconomy.items.ItemHandOver;
 import org.skysongdev.skysongEconomy.items.PrimerItems;
@@ -159,7 +160,8 @@ public final class NodeFeature implements AutoCloseable {
         NodeMenus.Farms farms = new NodeMenus.Farms(plots, farmHarvester,
                 new PrimerItems(SkysongItemsApi.get().tags(), trade.materialIds()));
         NodeMenus menus = new NodeMenus(new NodeMenus.Dependencies(nodes, harvester, farms, system.businesses(),
-                skysongStats, system.tokens(), skysongStats, skysongStats, wallet, handOver),
+                skysongStats, system.tokens(), skysongStats, skysongStats, wallet, handOver,
+                new BoosterItems(SkysongItemsApi.get().tags(), SkysongItemsApi.get().charges(), trade.materialIds(), logger)),
                 system.menus().theme(), messenger, settings.menuIcons(), logger);
         events.registerEvents(new NodeInteractListener(nodes, menus), plugin);
 

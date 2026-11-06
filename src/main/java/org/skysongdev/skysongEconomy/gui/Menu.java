@@ -117,6 +117,19 @@ public abstract class Menu implements InventoryHolder {
         held.remove(slot);
     }
 
+    /**
+     * Replaces what an input slot holds, such as a booster with one charge fewer.
+     *
+     * @param stacks what it holds now; empty empties it without giving anything back
+     */
+    protected final void setHeld(int slot, List<ItemStack> stacks) {
+        if (stacks.isEmpty()) {
+            held.remove(slot);
+        } else {
+            held.put(slot, new ArrayList<>(stacks.stream().map(ItemStack::clone).toList()));
+        }
+    }
+
     /** Puts part of {@code offered} in the slot. @return what is left of it, or null when nothing is */
     final @Nullable ItemStack offer(int slot, Player player, ItemStack offered) {
         if (!isInputSlot(slot)) {
@@ -154,8 +167,8 @@ public abstract class Menu implements InventoryHolder {
         give(player, stacks);
     }
 
-    /** @return the input slots, lowest first, for a shift-click from the player's inventory */
-    final List<Integer> inputSlots() {
+    /** @return the input slots, lowest first */
+    protected final List<Integer> inputSlots() {
         List<Integer> slots = new ArrayList<>();
         for (int slot = 0; slot < size; slot++) {
             if (isInputSlot(slot)) {
@@ -163,6 +176,14 @@ public abstract class Menu implements InventoryHolder {
             }
         }
         return slots;
+    }
+
+    /**
+     * @return the input slots a stack shift-clicked from the player's inventory is offered to, in
+     *         order, until one takes some; all of them, lowest first, by default
+     */
+    protected List<Integer> shiftClickSlots(ItemStack stack) {
+        return inputSlots();
     }
 
     private static void give(Player player, List<ItemStack> stacks) {

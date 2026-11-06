@@ -74,7 +74,7 @@ public final class NodeSettingsParser {
         NodeMenuIcons defaults = NodeMenuIcons.DEFAULTS;
         NodeMenuIcons icons = new NodeMenuIcons(menu.string("info", defaults.info()), menu.string("tier", defaults.tier()),
                 menu.string("locked-tier", defaults.lockedTier()), menu.string("empty-plot", defaults.emptyPlot()),
-                menu.string("take-out", defaults.takeOut()));
+                menu.string("take-out", defaults.takeOut()), menu.string("booster", defaults.booster()));
         return new NodeSettings(types, tierLevels(root.section(TIER_LEVELS)), new NameplateSettingsParser().parse(root), icons,
                 primerRemovalDowntime(root.section("farm")));
     }
