@@ -548,12 +548,12 @@ node:
     empty-name: "Empty"
     info:
       planted: "<gray>Planted: <white><resource>"
-      hint-plant: "<gray>Click a primer in your inventory to plant it."
+      hint-plant: "<gray>Put a primer in the slot below to plant it."
       hint-empty: "<gray>Nothing is planted. The owner plants here."
     plot:
       empty-name: "<gray>Empty plot"
       empty: "<gray>Nothing is planted yet."
-      empty-tender: "<yellow>Click a primer in your inventory to plant it, for free."
+      empty-tender: "<yellow>Put a primer here to plant it, for free."
       planted-name: "<green><resource>"
       planted: "<gray>Growing. Click a tier above to harvest."
     take-out:
@@ -568,7 +568,8 @@ node:
     not-a-primer: "<red>That item isn't a primer this plot takes."
     unknown-primer: "<red>That item is a primer for <yellow><primer></yellow>, which isn't a farm resource. Tell staff."
     wrong-primer: "<red><yellow><resource></yellow> can't be planted in a <yellow><type></yellow> plot."
-    not-enough: "<red>Planting <resource> takes <amount> of that item."
+    needs-more: "<yellow>Put <amount> more in to plant <resource>. Closing the menu gives these back."
+    one-primer: "<red>The slot already holds a different item. Take it back out first."
     planted: "<green>You planted <resource>."
     no-downtime: "<red>Taking the primer out costs <cost> downtime and your preferred pool doesn't have that much. See /downtime preference."
     taken-out: "<green>You took the primer out."
