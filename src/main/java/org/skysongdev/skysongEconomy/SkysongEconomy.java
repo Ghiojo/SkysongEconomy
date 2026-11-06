@@ -20,6 +20,7 @@ import org.skysongdev.skysongEconomy.data.database.DatabaseSettings;
 import org.skysongdev.skysongEconomy.data.database.GoodTypeRepository;
 import org.skysongdev.skysongEconomy.data.database.PriceLedgerRepository;
 import org.skysongdev.skysongEconomy.data.database.StorageException;
+import org.skysongdev.skysongEconomy.gui.MenuListener;
 import org.skysongdev.skysongEconomy.integration.gringotts.GringottsWallet;
 import org.skysongdev.skysongEconomy.integration.skysongstats.SkysongStatsAdapter;
 import org.skysongdev.skysongEconomy.items.FileSkysongItemFactory;
@@ -88,6 +89,8 @@ public final class SkysongEconomy extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        // Gives back anything players put in open menus, such as a primer in a planting slot.
+        MenuListener.closeAll(getServer());
         // Nodes listen to businesses, so they close first.
         if (nodeFeature != null) {
             nodeFeature.close();

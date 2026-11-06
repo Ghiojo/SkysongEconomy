@@ -3,16 +3,17 @@ package org.skysongdev.skysongEconomy.gui.node;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import org.bukkit.Material;
+import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.skysongdev.skysongEconomy.character.CharacterRef;
 import org.skysongdev.skysongEconomy.gui.Menu;
 import org.skysongdev.skysongEconomy.gui.MenuButton;
-import org.skysongdev.skysongEconomy.gui.MenuClick;
 import org.skysongdev.skysongEconomy.items.ItemStackBytes;
 import org.skysongdev.skysongEconomy.messaging.RefusedException;
 import org.skysongdev.skysongEconomy.nodes.Node;
 import org.skysongdev.skysongEconomy.nodes.farm.FarmHarvester;
 import org.skysongdev.skysongEconomy.nodes.farm.FarmPlots;
+import org.skysongdev.skysongEconomy.nodes.farm.FarmResource;
 import org.skysongdev.skysongEconomy.nodes.farm.FarmTier;
 import org.skysongdev.skysongEconomy.nodes.farm.FarmType;
 import org.skysongdev.skysongEconomy.nodes.farm.Planting;
@@ -28,9 +29,10 @@ import static net.kyori.adventure.text.minimessage.tag.resolver.Placeholder.unpa
 
 /**
  * The menu of a farm node: its details on top, one button per tier of what is planted, and the
- * planting slot below. Tenders plant by clicking a primer in their own inventory while the menu
- * is open, so no item ever sits in the menu, and take it out with the button beside the slot.
- * Each click on a tier is one instant harvest, and the menu stays open.
+ * planting slot below. Tenders put a primer in the slot to plant it, for free: once the slot
+ * holds the whole primer (both of a pair, say) it is planted, and anything not planted goes back
+ * when the menu closes. The button beside the slot takes the primer out. Each click on a tier is
+ * one instant harvest, and the menu stays open.
  */
 final class FarmMenu extends Menu {
     private static final int SIZE = 27;
@@ -90,11 +92,44 @@ final class FarmMenu extends Menu {
         }
     }
 
-    /** Planting: a click on a primer in the player's own inventory. */
+    /** The planting slot takes primers while nothing is planted. */
     @Override
-    protected void clickedOwnInventory(MenuClick click, int slot) {
-        menus.plant(click.player(), nodeId, slot);
-        redraw();
+    protected boolean isInputSlot(int slot) {
+        return slot == PLOT && menus.deps().nodes().find(nodeId)
+                .filter(node -> menus.deps().farms().plots().planting(node).isEmpty()).isPresent();
+    }
+
+    /** Takes what the primer still lacks, of one kind of item only. */
+    @Override
+    protected int accepts(Player player, int slot, ItemStack offered, List<ItemStack> held) {
+        if (!held.isEmpty() && !held.getFirst().isSimilar(offered)) {
+            menus.messenger().send(player, "node.farm.one-primer");
+            return 0;
+        }
+        Optional<FarmResource> resource = menus.primerFor(player, nodeId, offered);
+        int needed = resource.map(found -> found.primer().amount() - amount(held)).orElse(0);
+        return Math.max(0, Math.min(needed, offered.getAmount()));
+    }
+
+    /** Plants as soon as the slot holds the whole primer, such as both of a pair. */
+    @Override
+    protected void received(Player player, int slot) {
+        List<ItemStack> held = held(slot);
+        Optional<FarmResource> resource = menus.primerFor(player, nodeId, held.getFirst());
+        if (resource.isEmpty()) {
+            return;
+        }
+        int needed = resource.get().primer().amount();
+        if (amount(held) < needed) {
+            menus.messenger().send(player, "node.farm.needs-more", unparsed("amount", String.valueOf(needed - amount(held))),
+                    parsed("resource", resource.get().name()));
+        } else if (menus.plant(player, nodeId, resource.get(), held)) {
+            useHeld(slot);
+        }
+    }
+
+    private static int amount(List<ItemStack> stacks) {
+        return stacks.stream().mapToInt(ItemStack::getAmount).sum();
     }
 
     private ItemStack info(Node node, Optional<Planting> planting, boolean tender) {

@@ -14,7 +14,6 @@ import org.skysongdev.skysongEconomy.gui.MenuTheme;
 import org.skysongdev.skysongEconomy.items.ItemHandOver;
 import org.skysongdev.skysongEconomy.items.ItemStackBytes;
 import org.skysongdev.skysongEconomy.items.PrimerItems;
-import org.skysongdev.skysongEconomy.items.StackTaking;
 import org.skysongdev.skysongEconomy.items.StoredItems;
 import org.skysongdev.skysongEconomy.messaging.Messenger;
 import org.skysongdev.skysongEconomy.messaging.RefusedException;
@@ -36,6 +35,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -160,28 +160,28 @@ public final class NodeMenus {
     }
 
     /**
-     * Plants the stack the player clicked in their inventory, taking as many similar stacks as
-     * the resource's primer needs. Nothing leaves the inventory unless planting succeeds.
+     * @return the farm resource a stack put in the planting slot plants; empty, with the reason
+     *         told to the player, when it isn't a primer this node takes or they may not plant
      */
-    void plant(Player player, String nodeId, int inventorySlot) {
-        ItemStack clicked = player.getInventory().getItem(inventorySlot);
-        if (clicked == null || clicked.getType().isAir()) {
-            return;
-        }
-        act(player, nodeId, (node, character) -> {
-            Farms farms = deps.farms();
-            FarmResource resource = farms.plots().resourceFor(node, farms.primers().primerTag(clicked),
-                    farms.primers().materialId(clicked));
-            StackTaking taking = StackTaking.plan(player.getInventory(), inventorySlot, resource.primer().amount());
-            if (taking.isEmpty()) {
-                messenger.send(player, "node.farm.not-enough", unparsed("amount", String.valueOf(resource.primer().amount())),
-                        parsed("resource", resource.name()));
-                return;
-            }
-            farms.plots().plant(node, character, resource, ItemStackBytes.store(taking.stacks()));
-            taking.takeFrom(player.getInventory());
-            messenger.send(player, "node.farm.planted", parsed("resource", resource.name()));
+    Optional<FarmResource> primerFor(Player player, String nodeId, ItemStack offered) {
+        Farms farms = deps.farms();
+        return attempt(player, nodeId, (node, character) -> {
+            farms.plots().requireTender(node, character);
+            return farms.plots().resourceFor(node, farms.primers().primerTag(offered), farms.primers().materialId(offered));
         });
+    }
+
+    /**
+     * Plants the stacks held in the planting slot, which make up the resource's whole primer.
+     *
+     * @return whether it was planted; when not, the player was told why and keeps the stacks
+     */
+    boolean plant(Player player, String nodeId, FarmResource resource, List<ItemStack> stacks) {
+        return attempt(player, nodeId, (node, character) -> {
+            deps.farms().plots().plant(node, character, resource, ItemStackBytes.store(stacks));
+            messenger.send(player, "node.farm.planted", parsed("resource", resource.name()));
+            return true;
+        }).isPresent();
     }
 
     /** Takes the primer out, charging the removal downtime, and gives the exact items back. */
@@ -195,17 +195,30 @@ public final class NodeMenus {
 
     /** Runs a menu action on the node and the player's character, telling them why when it's refused. */
     private void act(Player player, String nodeId, BiConsumer<Node, CharacterRef> action) {
+        attempt(player, nodeId, (node, character) -> {
+            action.accept(node, character);
+            return true;
+        });
+    }
+
+    /**
+     * Like {@link #act}, for an action with a result.
+     *
+     * @return its result; empty when the node or character is gone or the action was refused
+     */
+    private <T> Optional<T> attempt(Player player, String nodeId, BiFunction<Node, CharacterRef, T> action) {
         Optional<Node> node = deps.nodes().find(nodeId);
         Optional<CharacterRef> character = deps.characters().active(player.getUniqueId());
         if (node.isEmpty() || character.isEmpty()) {
             player.closeInventory();
             messenger.send(player, node.isEmpty() ? "node.harvest.gone" : "command.you-have-no-character");
-            return;
+            return Optional.empty();
         }
         try {
-            action.accept(node.get(), character.get());
+            return Optional.of(action.apply(node.get(), character.get()));
         } catch (RefusedException refusal) {
             messenger.send(player, refusal);
+            return Optional.empty();
         }
     }
 
