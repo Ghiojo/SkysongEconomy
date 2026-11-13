@@ -43,6 +43,7 @@ Times are stored as epoch milliseconds (`BIGINT`), money as `DECIMAL(19, 4)`, ch
 | `nodes` | Every node | `SqlNodeRepository` | `id` (PK), `kind` (`random`/`farm`), `source` (table or type id), `tier`, `owner_kind` (public/unowned/business), `owner_business`, `display_name`, block position |
 | `node_plantings` | What is planted in each farm node | `SqlPlantingRepository` | `node_id` (PK, FK to nodes), `resource_id`, `farm_type`, `business_id`, planter, `items` (serialised stacks, `MEDIUMBLOB`) |
 | `node_primer_returns` | Primers waiting for an offline planter | `SqlPrimerReturnRepository` | `id`, `player_uuid`, `items` |
+| `business_npc_applied` | What the plugin changed on each business NPC's SkysongStats sheet, to undo exactly that | `SqlNpcAppliedRepository` | (`npc_uuid`, `kind`, `target`): `kind` `stat` with `modifier_id` and `amount`, or `kind` `proficiency` with `tier_before` and `tier_applied`. Rows go with the `business_npcs` row |
 | `business_npcs` | Which SkysongNPCs belong to which business | `SqlBusinessNpcRepository` | `npc_uuid` (PK, the SkysongNPCs id), `business_id` (FK, rows go with the business), `source` (the slot it fills, e.g. `skill:martial`), `created_at` |
 
 ## Editing data by hand

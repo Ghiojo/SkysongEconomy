@@ -5,6 +5,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -84,6 +85,9 @@ public interface NpcSheetGateway {
 
     /** @return whether that source gave the NPC the ability and still holds it */
     boolean holdsAbility(UUID npc, String ability, String source);
+
+    /** @return the abilities that source gave the NPC and still holds; abilities the NPC chose are not among them */
+    Set<String> abilitiesHeldBy(UUID npc, String source);
 
     /**
      * Gives the NPC an ability on behalf of the source. Two sources may hold the same ability;

@@ -1,5 +1,8 @@
 package org.skysongdev.skysongEconomy.business.npc;
 
+import org.skysongdev.skysongEconomy.business.npc.benefit.BenefitParser;
+import org.skysongdev.skysongEconomy.business.npc.benefit.BenefitSources;
+import org.skysongdev.skysongEconomy.business.npc.benefit.Progression;
 import org.skysongdev.skysongEconomy.business.scale.AmountParser;
 import org.skysongdev.skysongEconomy.business.scale.SkillSections;
 import org.skysongdev.skysongEconomy.character.SkillCatalog;
@@ -17,6 +20,8 @@ import java.util.function.Consumer;
  *   martial:
  *     slots: "{level}"                    # a number, a formula, or a table
  *     template: business_guard            # a SkysongNPCs template
+ *     progression:                        # optional: what each NPC receives, see BenefitParser
+ *       stat-points: {amount: "3 + {level}"}
  *   economical:
  *     slots: {by: level, 1: 1, 3: 2, 5: 3}
  *     template: business_clerk
@@ -29,10 +34,16 @@ public final class NpcSettingsParser {
     public static final String FILE = "businesses/npcs.yml";
 
     private final SkillCatalog skills;
+    private final BenefitParser benefits;
     private final Consumer<String> warnings;
 
-    public NpcSettingsParser(SkillCatalog skills, Consumer<String> warnings) {
+    /**
+     * @param benefits reads each skill's {@code progression}
+     * @param warnings told about skills that are skipped, as console lines
+     */
+    public NpcSettingsParser(SkillCatalog skills, BenefitParser benefits, Consumer<String> warnings) {
         this.skills = skills;
+        this.benefits = benefits;
         this.warnings = warnings;
     }
 
@@ -55,6 +66,11 @@ public final class NpcSettingsParser {
         if (template.isEmpty()) {
             throw section.error("template", "must name a SkysongNPCs template");
         }
-        return new NpcSkillSettings(AmountParser.require(section, "slots"), template);
+        if (!BenefitSources.fits(SlotSource.skill(skillId))) {
+            throw section.error("template", "belongs to a skill whose id is too long for SkysongNPCs to track what it gives");
+        }
+        Progression progression = section.contains("progression")
+                ? benefits.progression(section.section("progression")) : Progression.NONE;
+        return new NpcSkillSettings(AmountParser.require(section, "slots"), template, progression);
     }
 }

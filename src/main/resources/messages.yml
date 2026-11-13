@@ -401,6 +401,17 @@ business:
     list-none: "<gray><business> has no NPC slots."
     list-group: "<gray><source>: <white><used>/<max></white> slot(s) filled"
     list-npc: "<gray>  <number>. <white><npc></white> <dark_gray>(<status><dark_gray>)"
+    progress:
+      more: "<green><npc> of <business> received more from the business. Open it at the business's NPCs to make its choices."
+      reset: "<yellow><npc> of <business> is owed less than before. What the business gave it was given back: assign it again at the business's NPCs."
+      picks: "<green><npc> of <business> can now train its proficiencies further. Its proficiency picks were given back: pick again at the business's NPCs."
+      updated: "<gray><npc> of <business> was updated by the business."
+    sync:
+      none: "<gray>Every NPC of <business> already has what it is owed."
+      header: "<gold>Brought the NPCs of <business> in line:"
+      line: "<gray>- <white><npc></white>: +<points> point(s), +<picks> pick(s), +<choices> ability choice(s), <granted> ability(ies) given, <revoked> taken, <sheet> sheet change(s)<reset>"
+      reset: " <yellow>(everything given back to assign again)"
+      picks-reset: " <yellow>(picks given back to pick again)"
     status:
       setup: "<yellow>waiting for its setup"
       choices: "<yellow>has choices to make"
@@ -470,6 +481,17 @@ business:
           - "<gray>and picks it has been given."
           - ""
           - "<yellow>Click to open"
+      given:
+        name: "<gold>From the business"
+        nothing: "<gray>Nothing yet."
+        unknown: "<gray>Its skill is no longer set up for NPCs."
+        points: "<gray>Stat points: <white><amount></white>"
+        picks: "<gray><skill><gray> picks: <white><amount></white> (<tier>)"
+        picks-promote: "<gray><skill><gray> picks: <white><amount></white> (<tier>, up to <cap> for <cost> more pick(s))"
+        stat: "<gray><stat>: <white>+<amount></white>"
+        proficiency: "<gray><proficiency>: <white><tier></white>"
+        ability: "<gray>Ability: <white><ability></white>"
+        ability-choices: "<gray>Abilities to choose: <white><amount></white> of <options>"
       teleport:
         name: "<light_purple>Bring it here"
         lore:

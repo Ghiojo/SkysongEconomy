@@ -53,6 +53,7 @@ child may add a stricter one.
 | `settier <id> <tier>` | staff | 1 to 5; lowering removes the newest hires, picks and NPCs that no longer fit |
 | `setowner <id> <player\|#server> [profile]` | staff | Gives the business to a character or to the server |
 | `clearpick <id> <number>` | staff | Frees one skill pick, numbered from 1 (oldest); names the NPCs removed with their slots |
+| `npcsync <id>` | staff | Brings every NPC of the business in line with what it is owed now and lists what changed. It happens by itself when a business changes; use it after changing an NPC by hand in SkysongNPCs. Only with SkysongNPCs |
 | `dismissnpc <id> <npc>` | staff | Removes one of the business's NPCs for good and frees its slot; `<npc>` is its number in `npcs`, or its id. Only with SkysongNPCs |
 | `list` | staff | Every business |
 | `move <id>` | owner or staff | Moves it to the looked-at block (also places a broken one) |

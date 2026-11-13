@@ -21,7 +21,7 @@ Code map:
 | One activity at a time | `business/activity/ActivityLock`, `listeners/ActivityTimer` |
 | Tokens | `tokens/*`, `integration/placeholderapi/TokenExpansion` |
 | Block and nameplate | `business/BusinessBlockGuard`, `listeners/ProtectedBlockListener`, `listeners/BusinessNameplates`, `listeners/FloatingNames` (`businesses/block.yml`) |
-| Business NPCs | `business/npc/*` (`businesses/npcs.yml`), `integration/skysongnpcs/*`, `events/BusinessNpcCreateEvent`, `BusinessNpcRemoveEvent` |
+| Business NPCs | `business/npc/*` and `business/npc/benefit/*` (`businesses/npcs.yml`), `integration/skysongnpcs/*`, `events/BusinessNpcCreateEvent`, `BusinessNpcRemoveEvent` |
 | Menus | `gui/business/*`, opened by `listeners/BusinessInteractListener` |
 | Commands | `commands/business/*`, `commands/tokens/*` |
 | Wiring | `bootstrap/BusinessFeature` |
@@ -56,6 +56,7 @@ tier 1 business named after its id, with no workers and no picks.
 | Access groups | `/se business group <id> ...` | Owner or staff |
 | Vault | `/se business vault <id> [collect]` | Owner or staff |
 | NPC slots and NPCs | `/se business npcs <id>` | Owner or staff |
+| Bring NPCs in line | `/se business npcsync <id>` | Staff |
 | Info | `/se business info <id>` | Anyone with `skysongeconomy.business` |
 
 "Staff" means `skysongeconomy.business.admin`. "Owner" means the sender's **active** character owns the business.
@@ -306,8 +307,42 @@ until you add one.
 - **Removed elsewhere.** An NPC removed or released in SkysongNPCs itself (`/npc remove`, `/snpc release`) frees
   its slot (`integration/skysongnpcs/NpcRemovalListener`).
 
-What NPCs are given as the business grows (stat points, picks, abilities) and who may do what with them come in
-later changes.
+### What an NPC receives
+
+A skill's optional `progression` in `npcs.yml` says what each of its NPCs receives, and every amount can follow the
+skill's level or the business's tier (see the [configuration reference](09-configuration-reference.md)):
+
+| Key | The NPC gets | Where it lives |
+| --- | --- | --- |
+| `stat-points` | points the owner assigns | SkysongNPCs point grant |
+| `stats` | baked stat bonuses | a modifier on its SkysongStats sheet |
+| `proficiency-picks` | picks the owner makes, with promotion where `max-tier` and `promote-cost` allow | SkysongNPCs pick grant |
+| `proficiencies` | fixed proficiencies, raised to at least that tier | its SkysongStats sheet |
+| `abilities` | fixed abilities | SkysongNPCs ability grant |
+| `ability-picks` | abilities the owner chooses from a list | SkysongNPCs ability choice |
+
+`business/npc/benefit/NpcProgression` keeps every NPC in line with this, through `NpcReconciler`, which compares
+what the NPC is owed with what it was given and applies only the difference. It runs when an NPC is created, when
+the business changes (tier, skill picks), on start (so an edited file applies), after a respec in SkysongNPCs, and
+on `/se business npcsync <id>`.
+
+- **The business grows:** every NPC of the skill gets the difference at once; choices already made stay. The
+  owner, if online on the owning character, is told.
+- **The business shrinks** (`settier` down, `clearpick`): what the business gave the NPC is given back (assigned
+  points, picked and promoted proficiencies, chosen abilities), what is no longer owed is taken away, and the owner
+  assigns the rest again. Baked stats, fixed proficiencies and fixed abilities no longer owed are removed.
+- **The promotion cap changes** (adept opens at level 4, or closes): SkysongNPCs can't change a grant's promotion,
+  so only the proficiency picks are given back and granted anew. Stat points and abilities stay.
+- Everything is given under a source (`economy:skill:<skill>`, and `economy:skill:<skill>:picks` for the picks),
+  so what a template or staff gave the NPC is never touched. A proficiency someone else raised further is not
+  lowered, and a modifier staff added is not removed.
+- An NPC whose skill left the file is left exactly as it is.
+- A copy of a business NPC (`/npc copy`) is not a business NPC: the points, picks, choices and abilities the
+  business gave are taken back from the copy. Baked stats and fixed proficiencies stay on the copy's sheet.
+
+`NpcDetailsMenu` shows a "From the business" item listing what the NPC is owed right now.
+
+Who may do what with the NPCs comes in a later change.
 
 ## Deleting a business
 

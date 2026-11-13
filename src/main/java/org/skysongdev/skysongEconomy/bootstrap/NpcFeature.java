@@ -12,20 +12,26 @@ import org.skysongdev.skysongEconomy.business.npc.NpcSheetGateway;
 import org.skysongdev.skysongEconomy.business.npc.BusinessNpcs;
 import org.skysongdev.skysongEconomy.business.npc.NpcSettings;
 import org.skysongdev.skysongEconomy.business.npc.NpcSettingsParser;
+import org.skysongdev.skysongEconomy.business.npc.benefit.BenefitParser;
+import org.skysongdev.skysongEconomy.business.npc.benefit.NpcProgression;
 import org.skysongdev.skysongEconomy.config.ConfigException;
 import org.skysongdev.skysongEconomy.config.YamlFiles;
 import org.skysongdev.skysongEconomy.data.database.AsyncBusinessNpcRepository;
+import org.skysongdev.skysongEconomy.data.database.AsyncNpcAppliedRepository;
 import org.skysongdev.skysongEconomy.data.database.BackgroundWriter;
 import org.skysongdev.skysongEconomy.data.database.ConnectionProvider;
 import org.skysongdev.skysongEconomy.data.database.DatabaseSettings;
 import org.skysongdev.skysongEconomy.data.database.SqlBusinessNpcRepository;
+import org.skysongdev.skysongEconomy.data.database.SqlNpcAppliedRepository;
 import org.skysongdev.skysongEconomy.data.database.StorageException;
 import org.skysongdev.skysongEconomy.events.BukkitBusinessNpcEvents;
 import org.skysongdev.skysongEconomy.gui.business.NpcsEntry;
 import org.skysongdev.skysongEconomy.integration.skysongnpcs.BusinessGroupProvider;
 import org.skysongdev.skysongEconomy.integration.skysongnpcs.NpcRemovalListener;
+import org.skysongdev.skysongEconomy.integration.skysongnpcs.NpcSheetListener;
 import org.skysongdev.skysongEconomy.integration.skysongnpcs.SkysongNpcsAdapter;
 import org.skysongdev.skysongEconomy.integration.skysongstats.SkysongStatsAdapter;
+import org.skysongdev.skysongEconomy.listeners.NpcProgressionMessages;
 import org.skysongdev.skysongEconomy.messaging.Messenger;
 import org.skysongdev.skysongstats.api.SkysongStatsApi;
 
@@ -49,15 +55,15 @@ public final class NpcFeature implements AutoCloseable {
     public static final String SKYSONG_NPCS = "SkysongNPCs";
 
     private final @Nullable Gateways gateways;
-    private final @Nullable BusinessNpcs businessNpcs;
+    private final @Nullable Slots slots;
     /** Closed in reverse order on shutdown. */
     private final List<AutoCloseable> resources;
     private final Logger logger;
 
-    private NpcFeature(@Nullable Gateways gateways, @Nullable BusinessNpcs businessNpcs, List<AutoCloseable> resources,
+    private NpcFeature(@Nullable Gateways gateways, @Nullable Slots slots, List<AutoCloseable> resources,
                        Logger logger) {
         this.gateways = gateways;
-        this.businessNpcs = businessNpcs;
+        this.slots = slots;
         this.resources = List.copyOf(resources);
         this.logger = logger;
     }
@@ -70,6 +76,15 @@ public final class NpcFeature implements AutoCloseable {
      * @param access who may do what with a business's NPCs
      */
     public record Gateways(NpcGateway npcs, NpcSheetGateway sheets, NpcAccessGateway access) {
+    }
+
+    /**
+     * The running NPC slots.
+     *
+     * @param npcs        which NPCs each business has
+     * @param progression what each of them is owed
+     */
+    private record Slots(BusinessNpcs npcs, NpcProgression progression) {
     }
 
     /**
@@ -106,26 +121,27 @@ public final class NpcFeature implements AutoCloseable {
         }
         Gateways gateways = new Gateways(adapter, adapter, adapter);
         List<AutoCloseable> resources = new ArrayList<>();
-        BusinessNpcs businessNpcs = startSlots(plugin, configFiles, database, system, gateways, skysongStats, messenger,
-                resources);
-        return new NpcFeature(gateways, businessNpcs, resources, logger);
+        Slots slots = startSlots(plugin, configFiles, database, system, gateways, skysongStats, messenger, resources);
+        return new NpcFeature(gateways, slots, resources, logger);
     }
 
     /**
-     * Gives businesses their NPC slots. A {@code businesses/npcs.yml} that can't be read leaves
-     * every NPC as it is and turns the slots off until it is fixed.
+     * Gives businesses their NPC slots and their NPCs what they are owed. A
+     * {@code businesses/npcs.yml} that can't be read leaves every NPC as it is and turns both off
+     * until it is fixed.
      *
      * @param resources collects what must be closed on shutdown
      * @return the running slots, {@code null} when the file can't be read
      */
-    private static @Nullable BusinessNpcs startSlots(JavaPlugin plugin, YamlFiles configFiles, DatabaseSettings database,
-                                                     BusinessSystem system, Gateways gateways,
-                                                     SkysongStatsAdapter skysongStats, Messenger messenger,
-                                                     List<AutoCloseable> resources) {
+    private static @Nullable Slots startSlots(JavaPlugin plugin, YamlFiles configFiles, DatabaseSettings database,
+                                      BusinessSystem system, Gateways gateways, SkysongStatsAdapter skysongStats,
+                                      Messenger messenger, List<AutoCloseable> resources) {
         Logger logger = plugin.getLogger();
         NpcSettings settings;
+        BenefitParser benefits = new BenefitParser(skysongStats, gateways.sheets());
         try {
-            settings = new NpcSettingsParser(skysongStats, logger::warning).parse(configFiles.load(NpcSettingsParser.FILE));
+            settings = new NpcSettingsParser(skysongStats, benefits, logger::warning)
+                    .parse(configFiles.load(NpcSettingsParser.FILE));
         } catch (ConfigException e) {
             logger.severe("Business NPC slots are off until this is fixed: " + e.getMessage());
             return null;
@@ -145,13 +161,26 @@ public final class NpcFeature implements AutoCloseable {
         } catch (StorageException e) {
             logger.log(Level.SEVERE, "Business NPCs could not be loaded from the database", e);
         }
-        // After loading, so businesses that change from now on keep their NPCs in line.
+        NpcProgression progression = new NpcProgression(settings,
+                new NpcProgression.Dependencies(system.businesses(), businessNpcs, gateways.sheets()), benefits.tiers(),
+                new AsyncNpcAppliedRepository(new SqlNpcAppliedRepository(connections), writer),
+                new NpcProgressionMessages(gateways.npcs(), skysongStats, messenger), logger::warning);
+        try {
+            logger.info("Brought " + progression.loadAll() + " business NPC(s) in line with " + NpcSettingsParser.FILE);
+        } catch (StorageException e) {
+            logger.log(Level.SEVERE, "What was changed on business NPCs' sheets could not be loaded from the database", e);
+        }
+        // After loading, so businesses that change from now on keep their NPCs in line: first the
+        // slots, then what the NPCs that are left are owed.
+        businessNpcs.addListener(progression);
         system.businesses().addListener(businessNpcs);
+        system.businesses().addListener(progression);
         events.registerEvents(new NpcRemovalListener(businessNpcs), plugin);
-        system.menus().addEntry(new NpcsEntry(system.menus(), businessNpcs, gateways.npcs(), gateways.sheets(), settings,
-                skysongStats, messenger));
-        system.command().enableNpcs(businessNpcs, gateways.npcs(), gateways.sheets(), skysongStats);
-        return businessNpcs;
+        events.registerEvents(new NpcSheetListener(progression), plugin);
+        system.menus().addEntry(new NpcsEntry(system.menus(), businessNpcs, progression,
+                new NpcsEntry.Gateways(gateways.npcs(), gateways.sheets()), settings, skysongStats, messenger));
+        system.command().enableNpcs(businessNpcs, gateways.npcs(), gateways.sheets(), skysongStats, progression);
+        return new Slots(businessNpcs, progression);
     }
 
     private static NpcFeature off(Logger logger) {
@@ -168,7 +197,12 @@ public final class NpcFeature implements AutoCloseable {
      *         are disabled or {@code businesses/npcs.yml} can't be read
      */
     public Optional<BusinessNpcs> businessNpcs() {
-        return Optional.ofNullable(businessNpcs);
+        return Optional.ofNullable(slots).map(Slots::npcs);
+    }
+
+    /** @return what each business NPC is owed and the means to bring it in line; empty whenever {@link #businessNpcs()} is */
+    public Optional<NpcProgression> progression() {
+        return Optional.ofNullable(slots).map(Slots::progression);
     }
 
     /** Waits for pending saves, then closes the database connection. */

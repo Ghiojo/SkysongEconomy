@@ -124,6 +124,24 @@ Only read when SkysongNPCs is installed. See [Business NPCs](05-businesses.md#bu
 | `skills.<skill>.slots` | How many NPCs a business can have for this skill: an [amount](#amounts-by-level-and-tier), so a number, a formula with `{level}` and `{tier}`, or a table |
 | `skills.<skill>.template` | The SkysongNPCs template new NPCs are made from. It is checked when an NPC is created, not on load |
 
+| `skills.<skill>.progression` | Optional: what each NPC of the skill receives, a benefit block (below) that may also have `at` |
+
+A **benefit block** (`business/npc/benefit/BenefitParser`). Every key is optional, and every stat, skill,
+proficiency, tier and ability id is checked on load:
+
+| Key | Meaning |
+| --- | --- |
+| `stat-points.amount` | Points the owner assigns, an amount |
+| `stat-points.eligible` | The stats they may go on; left out, the NPC's usual stats |
+| `stats.<stat>` | A baked bonus to that stat, an amount |
+| `proficiency-picks` | One block or a list of blocks with `skill`, `amount`, `max-tier`, `promote-cost` |
+| `proficiency-picks[].max-tier` | A tier (the tier a pick gives; `proficient` when left out), or a table `{by: level, 1: proficient, 4: adept}`: picks give the table's lowest tier and may be promoted up to the tier reached |
+| `proficiency-picks[].promote-cost` | Picks one promotion step costs; left out, nothing is promoted |
+| `proficiencies.<proficiency>` | The tier that proficiency is raised to at least |
+| `abilities` | Fixed ability ids from SkysongNPCs' `abilities.yml` |
+| `ability-picks.amount`, `ability-picks.from` | How many abilities the owner chooses, and the list to choose from |
+| `at` | Progressions only: `{by: level\|tier, <step>: <benefit block>}`. Every step reached adds to the ones below; a proficiency keeps its highest tier |
+
 `<skill>` is a SkysongStats skill id; an unknown one is warned about and ignored. The bundled file has
 `skills: {}`, so no business has NPC slots until you add a skill.
 

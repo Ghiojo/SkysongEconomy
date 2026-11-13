@@ -13,6 +13,7 @@ import org.skysongdev.skysongEconomy.business.access.AccessService;
 import org.skysongdev.skysongEconomy.business.access.InMemoryAccessRepository;
 import org.skysongdev.skysongEconomy.business.access.Permission;
 import org.skysongdev.skysongEconomy.business.npc.BusinessNpcEvents.RemovalCause;
+import org.skysongdev.skysongEconomy.business.npc.benefit.BenefitParser;
 import org.skysongdev.skysongEconomy.business.tier.BusinessTiers;
 import org.skysongdev.skysongEconomy.business.tier.TierSettings;
 import org.skysongdev.skysongEconomy.business.type.BusinessType;
@@ -111,7 +112,7 @@ class BusinessNpcsTest {
     }
 
     private BusinessNpcs service(String config) {
-        NpcSettings settings = new NpcSettingsParser(SKILLS, warnings::add)
+        NpcSettings settings = new NpcSettingsParser(SKILLS, new BenefitParser(SKILLS, new FakeSkysongNpcs()), warnings::add)
                 .parse(YamlFiles.parse(NpcSettingsParser.FILE, new StringReader(config)));
         return new BusinessNpcs(settings, new BusinessNpcs.Dependencies(businesses, access, skysongNpcs), repository,
                 new BusinessNpcEvents() {

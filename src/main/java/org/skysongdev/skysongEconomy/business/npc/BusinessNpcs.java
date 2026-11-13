@@ -47,7 +47,8 @@ public final class BusinessNpcs implements BusinessChangeListener {
     private final AccessService access;
     private final NpcGateway gateway;
     private final BusinessNpcRepository repository;
-    private final BusinessNpcEvents events;
+    /** Told about created and removed NPCs, in the order they were added. */
+    private final List<BusinessNpcEvents> listeners = new ArrayList<>();
     private final Clock clock;
     private final Consumer<String> warnings;
     /** Every business NPC by NPC id, in the order they were created. */
@@ -75,7 +76,7 @@ public final class BusinessNpcs implements BusinessChangeListener {
         this.access = dependencies.access();
         this.gateway = dependencies.gateway();
         this.repository = repository;
-        this.events = events;
+        this.listeners.add(events);
         this.clock = clock;
         this.warnings = warnings;
     }
@@ -111,6 +112,15 @@ public final class BusinessNpcs implements BusinessChangeListener {
         }
         lostSlots.clear();
         return byNpc.size();
+    }
+
+    /** Adds something to tell about every NPC a business creates or loses, after the ones added before. */
+    public void addListener(BusinessNpcEvents listener) {
+        listeners.add(listener);
+    }
+
+    private void announceRemoved(Business business, BusinessNpc npc, RemovalCause cause) {
+        listeners.forEach(listener -> listener.removed(business, npc, cause));
     }
 
     /** @return every NPC of the business, oldest first */
@@ -178,7 +188,7 @@ public final class BusinessNpcs implements BusinessChangeListener {
         BusinessNpc npc = new BusinessNpc(creation.npc().orElseThrow(), business.id(), source, clock.instant());
         byNpc.put(npc.npc(), npc);
         repository.save(npc);
-        events.created(business, npc);
+        listeners.forEach(listener -> listener.created(business, npc));
         return npc;
     }
 
@@ -243,7 +253,7 @@ public final class BusinessNpcs implements BusinessChangeListener {
         byNpc.remove(npc);
         repository.delete(npc);
         businesses.find(found.businessId())
-                .ifPresent(business -> events.removed(business, found, RemovalCause.REMOVED_ELSEWHERE));
+                .ifPresent(business -> announceRemoved(business, found, RemovalCause.REMOVED_ELSEWHERE));
     }
 
     /** A changed business may have fewer slots or another owner. */
@@ -261,7 +271,7 @@ public final class BusinessNpcs implements BusinessChangeListener {
         lostSlots.remove(business.id());
         for (BusinessNpc npc : of(business)) {
             byNpc.remove(npc.npc());
-            events.removed(business, npc, RemovalCause.BUSINESS_DELETED);
+            announceRemoved(business, npc, RemovalCause.BUSINESS_DELETED);
             gateway.remove(npc.npc());
         }
     }
@@ -271,7 +281,7 @@ public final class BusinessNpcs implements BusinessChangeListener {
         // Forgotten first: SkysongNPCs announces the removal, and by then it is no longer ours.
         byNpc.remove(npc.npc());
         repository.delete(npc.npc());
-        events.removed(business, npc, cause);
+        announceRemoved(business, npc, cause);
         gateway.remove(npc.npc());
         return lost;
     }
