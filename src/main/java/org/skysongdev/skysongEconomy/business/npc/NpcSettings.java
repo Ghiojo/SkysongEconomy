@@ -1,6 +1,8 @@
 package org.skysongdev.skysongEconomy.business.npc;
 
 import org.skysongdev.skysongEconomy.business.Business;
+import org.skysongdev.skysongEconomy.business.npc.benefit.Entitlement;
+import org.skysongdev.skysongEconomy.business.npc.benefit.TierOrder;
 import org.skysongdev.skysongEconomy.business.scale.BusinessScale;
 import org.skysongdev.skysongEconomy.business.scale.SkillSections;
 
@@ -58,6 +60,19 @@ public record NpcSettings(SpawnAt spawnAt, int spawnRadius, SkillSections<NpcSki
         }
         Integer capacity = capacities(business).get(source);
         return OptionalInt.of(capacity == null ? 0 : capacity);
+    }
+
+    /**
+     * @param tiers the proficiency tiers, to tell when picks may promote
+     * @return what the source's own progression owes each of its NPCs at this business right
+     *         now; empty when the file no longer lists the source, so its NPCs are left as they are
+     */
+    public Optional<Entitlement> entitlement(Business business, SlotSource source, TierOrder tiers) {
+        if (!source.isSkill()) {
+            return Optional.empty();
+        }
+        return skills.of(source.id())
+                .map(settings -> settings.progression().at(BusinessScale.of(business, source.id()), tiers));
     }
 
     /** @return the SkysongNPCs template the source's NPCs are created from, empty when the source gives no NPCs */

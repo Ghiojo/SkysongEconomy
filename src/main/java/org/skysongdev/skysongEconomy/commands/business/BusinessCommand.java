@@ -5,6 +5,7 @@ import org.skysongdev.skysongEconomy.business.access.AccessService;
 import org.skysongdev.skysongEconomy.business.npc.BusinessNpcs;
 import org.skysongdev.skysongEconomy.business.npc.NpcGateway;
 import org.skysongdev.skysongEconomy.business.npc.NpcSheetGateway;
+import org.skysongdev.skysongEconomy.business.npc.benefit.NpcProgression;
 import org.skysongdev.skysongEconomy.business.type.BusinessTypeRegistry;
 import org.skysongdev.skysongEconomy.business.vault.BusinessVaults;
 import org.skysongdev.skysongEconomy.character.CharacterDirectory;
@@ -40,19 +41,22 @@ public final class BusinessCommand extends CommandGroup {
     }
 
     /**
-     * Adds what business NPCs bring: {@code npcs} and {@code dismissnpc}, and telling staff which
-     * NPCs were removed when {@code settier} or {@code clearpick} took their slots. Call it once,
+     * Adds what business NPCs bring: {@code npcs}, {@code dismissnpc} and {@code npcsync}, and
+     * telling staff which NPCs were removed when {@code settier} or {@code clearpick} took their slots. Call it once,
      * when SkysongNPCs is installed.
      *
      * @param npcs    the NPCs each business has
      * @param gateway SkysongNPCs, for names
      * @param sheets  what each NPC still has to choose
      * @param skills  skill names
+     * @param progression what each NPC is owed, for {@code npcsync}
      */
-    public void enableNpcs(BusinessNpcs npcs, NpcGateway gateway, NpcSheetGateway sheets, SkillCatalog skills) {
+    public void enableNpcs(BusinessNpcs npcs, NpcGateway gateway, NpcSheetGateway sheets, SkillCatalog skills,
+                           NpcProgression progression) {
         NpcCommandText text = new NpcCommandText(npcs, gateway, sheets, skills, support.messenger);
         register(new ListBusinessNpcs(support, text));
         register(new DismissNpc(support, text));
+        register(new SyncBusinessNpcs(support, text, progression));
         support.addChangeReport(text);
     }
 }

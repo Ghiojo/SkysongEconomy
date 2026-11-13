@@ -14,12 +14,14 @@ import java.util.function.Consumer;
 /**
  * What a viewer can do with one of a business's NPCs. Everyone can open the NPC's own
  * SkysongNPCs menu, which shows them only what their access allows. Whoever acts as the owner
- * can also open its setup and choices, and bring it to them.
+ * can also open its setup and choices, and bring it to them. Below that, what the business gives
+ * the NPC at its current level and tier.
  */
 final class NpcDetailsMenu extends BorderedMenu {
     private static final int OPEN = BorderedLayout.slot(2, 2);
     private static final int CHOICES = BorderedLayout.slot(2, 4);
     private static final int TELEPORT = BorderedLayout.slot(2, 6);
+    private static final int GIVEN = BorderedLayout.slot(3, 4);
 
     private final NpcScreens screens;
     private final BusinessMenuContext context;
@@ -45,6 +47,8 @@ final class NpcDetailsMenu extends BorderedMenu {
             set(TELEPORT, MenuButton.of(theme.item(Material.ENDER_PEARL, "business.npcs.details.teleport.name",
                     "business.npcs.details.teleport.lore"), click -> act(click.player(), this::teleport)));
         }
+        set(GIVEN, MenuButton.display(theme.item(Material.WRITABLE_BOOK,
+                screens.messenger().render("business.npcs.details.given.name"), screens.given(business, npc))));
         set(BorderedLayout.BACK, theme.back(click -> screens.openList(click.player(), business)));
     }
 

@@ -1,6 +1,7 @@
 package org.skysongdev.skysongEconomy.business.npc;
 
 import org.junit.jupiter.api.Test;
+import org.skysongdev.skysongEconomy.business.npc.benefit.BenefitParser;
 import org.skysongdev.skysongEconomy.business.scale.BusinessScale;
 import org.skysongdev.skysongEconomy.character.SkillCatalog;
 import org.skysongdev.skysongEconomy.config.ConfigException;
@@ -27,7 +28,7 @@ class NpcSettingsParserTest {
     private final List<String> warnings = new ArrayList<>();
 
     private NpcSettings parse(String yaml) {
-        return new NpcSettingsParser(SKILLS, warnings::add)
+        return new NpcSettingsParser(SKILLS, new BenefitParser(SKILLS, new FakeSkysongNpcs()), warnings::add)
                 .parse(YamlFiles.parse(NpcSettingsParser.FILE, new StringReader(yaml)));
     }
 
@@ -62,7 +63,7 @@ class NpcSettingsParserTest {
     void theBundledFileIsValidAndGivesNobodyNpcs() throws IOException {
         try (Reader reader = new InputStreamReader(Objects.requireNonNull(
                 getClass().getResourceAsStream("/businesses/npcs.yml")), StandardCharsets.UTF_8)) {
-            NpcSettings settings = new NpcSettingsParser(SKILLS, warnings::add)
+            NpcSettings settings = new NpcSettingsParser(SKILLS, new BenefitParser(SKILLS, new FakeSkysongNpcs()), warnings::add)
                     .parse(YamlFiles.parse(NpcSettingsParser.FILE, reader));
 
             assertEquals(SpawnAt.PLAYER, settings.spawnAt());

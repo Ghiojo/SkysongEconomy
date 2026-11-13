@@ -7,6 +7,7 @@ import org.skysongdev.skysongEconomy.business.npc.BusinessNpcs;
 import org.skysongdev.skysongEconomy.business.npc.NpcGateway;
 import org.skysongdev.skysongEconomy.business.npc.NpcSettings;
 import org.skysongdev.skysongEconomy.business.npc.NpcSheetGateway;
+import org.skysongdev.skysongEconomy.business.npc.benefit.NpcProgression;
 import org.skysongdev.skysongEconomy.character.SkillCatalog;
 import org.skysongdev.skysongEconomy.gui.MenuButton;
 import org.skysongdev.skysongEconomy.messaging.Messenger;
@@ -20,9 +21,22 @@ import java.util.Optional;
 public final class NpcsEntry implements MainMenuEntry {
     private final NpcScreens screens;
 
-    public NpcsEntry(BusinessMenus menus, BusinessNpcs npcs, NpcGateway gateway, NpcSheetGateway sheets,
+    /**
+     * The ways into SkysongNPCs the menus use.
+     *
+     * @param npcs   names, menus and teleporting
+     * @param sheets what each NPC still has to choose
+     */
+    public record Gateways(NpcGateway npcs, NpcSheetGateway sheets) {
+    }
+
+    /**
+     * @param progression what the business owes each NPC, shown in the NPC's details
+     */
+    public NpcsEntry(BusinessMenus menus, BusinessNpcs npcs, NpcProgression progression, Gateways gateways,
                      NpcSettings settings, SkillCatalog skills, Messenger messenger) {
-        this.screens = new NpcScreens(menus, npcs, gateway, sheets, settings, skills, messenger);
+        this.screens = new NpcScreens(menus, npcs, progression, gateways.npcs(), gateways.sheets(), settings, skills,
+                messenger);
     }
 
     @Override

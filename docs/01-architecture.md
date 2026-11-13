@@ -77,6 +77,7 @@ nodes feature and other plugins use it to reach businesses.
 | `prices` | The price database and price expressions. |
 | `prices.modifier` | Percentage price modifiers. |
 | `business.npc` | What businesses need from SkysongNPCs, as interfaces (`NpcGateway`, `NpcSheetGateway`, `NpcAccessGateway`), the business group names SkysongNPCs sees (`BusinessGroupRef`, `BusinessGroupDirectory`), and the NPC slots: `NpcSettings` (`businesses/npcs.yml`), `BusinessNpcs` (which NPC fills which slot; creating, dismissing, lost slots, owner changes), `BusinessNpcRepository`, `BusinessNpcEvents`. No server classes. |
+| `business.npc.benefit` | What a business gives its NPCs: `Benefit` and `Progression` (config), `Entitlement` (the numbers at a level and tier), `NpcReconciler` (applies only the difference), `NpcProgression` (runs it when something changes), `NpcApplied` (what was changed on a sheet). No server classes. |
 | `tokens` | Gathering Tokens and their placeholder texts. |
 | `nodes` | `Node`, `NodeService`, node settings, the loaded node files (`NodeFiles`, `NodeTables`). |
 | `nodes.random` | Random tables (`nodes/random/*.yml`). |

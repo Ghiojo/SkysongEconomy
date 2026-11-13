@@ -18,6 +18,7 @@ import org.skysongdev.skysongEconomy.business.npc.PicksGiven;
 import org.skysongdev.skysongEconomy.business.npc.PointsGiven;
 import org.skysongdev.skysongEconomy.business.npc.SpawnPoint;
 import org.skysongdev.skysongEconomy.character.CharacterRef;
+import org.skysongdev.skysongnpcs.api.ability.NpcAbility;
 import org.skysongdev.skysongnpcs.api.SkysongNpcsApi;
 import org.skysongdev.skysongnpcs.api.access.AccessGrant;
 import org.skysongdev.skysongnpcs.api.access.AccessGroup;
@@ -226,6 +227,17 @@ public final class SkysongNpcsAdapter implements NpcGateway, NpcSheetGateway, Np
     @Override
     public boolean holdsAbility(UUID npc, String ability, String source) {
         return npcs.abilities().sources(npc, ability).contains(source);
+    }
+
+    @Override
+    public Set<String> abilitiesHeldBy(UUID npc, String source) {
+        Set<String> held = new LinkedHashSet<>();
+        for (NpcAbility ability : npcs.abilities().of(npc)) {
+            if (npcs.abilities().sources(npc, ability.id()).contains(source)) {
+                held.add(ability.id());
+            }
+        }
+        return held;
     }
 
     @Override

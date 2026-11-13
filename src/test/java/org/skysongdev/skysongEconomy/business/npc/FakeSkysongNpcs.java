@@ -329,6 +329,17 @@ public final class FakeSkysongNpcs implements NpcGateway, NpcSheetGateway, NpcAc
     }
 
     @Override
+    public Set<String> abilitiesHeldBy(UUID npc, String source) {
+        Set<String> held = new LinkedHashSet<>();
+        find(npc).ifPresent(found -> found.abilityHolders.forEach((ability, holders) -> {
+            if (holders.contains(source)) {
+                held.add(ability);
+            }
+        }));
+        return held;
+    }
+
+    @Override
     public boolean grantAbility(UUID npc, String ability, String source) {
         require(abilities.contains(ability), "no ability " + ability);
         require(!source.isBlank(), "blank source");

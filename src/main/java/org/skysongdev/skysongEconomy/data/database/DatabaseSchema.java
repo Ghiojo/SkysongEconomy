@@ -166,7 +166,19 @@ public final class DatabaseSchema {
                     + "source VARCHAR(128) NOT NULL, "
                     + "created_at BIGINT NOT NULL, "
                     + "INDEX (business_id), "
-                    + "FOREIGN KEY (business_id) REFERENCES businesses(id) ON DELETE CASCADE) ENGINE=InnoDB");
+                    + "FOREIGN KEY (business_id) REFERENCES businesses(id) ON DELETE CASCADE) ENGINE=InnoDB",
+            // What the plugin changed on each business NPC's SkysongStats sheet, to undo exactly that:
+            // kind 'stat' = a baked bonus (modifier_id, amount), kind 'proficiency' = a raised tier.
+            "CREATE TABLE IF NOT EXISTS business_npc_applied ("
+                    + "npc_uuid CHAR(36) NOT NULL, "
+                    + "kind VARCHAR(16) NOT NULL, "
+                    + "target VARCHAR(64) NOT NULL, "
+                    + "modifier_id VARCHAR(128) NULL, "
+                    + "amount INT NULL, "
+                    + "tier_before VARCHAR(64) NULL, "
+                    + "tier_applied VARCHAR(64) NULL, "
+                    + "PRIMARY KEY (npc_uuid, kind, target), "
+                    + "FOREIGN KEY (npc_uuid) REFERENCES business_npcs(npc_uuid) ON DELETE CASCADE) ENGINE=InnoDB");
 
     private DatabaseSchema() {
     }

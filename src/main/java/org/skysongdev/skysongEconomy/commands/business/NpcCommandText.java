@@ -10,6 +10,7 @@ import org.skysongdev.skysongEconomy.business.npc.NpcGateway;
 import org.skysongdev.skysongEconomy.business.npc.NpcSheetGateway;
 import org.skysongdev.skysongEconomy.business.npc.NpcStatus;
 import org.skysongdev.skysongEconomy.business.npc.SlotSource;
+import org.skysongdev.skysongEconomy.business.npc.benefit.Changes;
 import org.skysongdev.skysongEconomy.character.SkillCatalog;
 import org.skysongdev.skysongEconomy.messaging.Messenger;
 
@@ -44,6 +45,14 @@ record NpcCommandText(BusinessNpcs npcs, NpcGateway gateway, NpcSheetGateway she
     /** @return what the NPC is waiting for, as text */
     Component status(BusinessNpc npc) {
         return messenger.render(NpcStatus.of(gateway, sheets, npc.npc()).messageKey());
+    }
+
+    /** @return the note that says what was given back to choose again, empty when nothing was */
+    Component resetNote(Changes changes) {
+        if (changes.choicesReset()) {
+            return messenger.render("business.npcs.sync.reset");
+        }
+        return changes.picksReset() ? messenger.render("business.npcs.sync.picks-reset") : Component.empty();
     }
 
     /** Tells the sender which NPCs the business just lost with their slots, if any. */
