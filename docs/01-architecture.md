@@ -67,8 +67,10 @@ nodes feature and other plugins use it to reach businesses.
 | `business.shift` | Work a Shift and Retrieve Pay, `businesses/shifts.yml`. |
 | `business.training` | Train/Learn, `businesses/training.yml`. |
 | `business.display` | Nameplate settings from `businesses/block.yml`. |
+| `business.scale` | Values that follow a business's level and tier: `BusinessScale`, `Amount` (number, formula or table), `Steps` (a table by level or tier), `SkillSections` (the `skills:` map of a functionality's file). See [Amounts by level and tier](09-configuration-reference.md#amounts-by-level-and-tier). |
 | `trade` | Economy and Logistics: ledgers, bundles, slots, pricing, exports, ledger selection. |
 | `trade.delivery` | Ordered imports until they are collected. |
+| `expression` | `Formula`: arithmetic with placeholders, shared by price expressions and amounts. |
 | `prices` | The price database and price expressions. |
 | `prices.modifier` | Percentage price modifiers. |
 | `tokens` | Gathering Tokens and their placeholder texts. |

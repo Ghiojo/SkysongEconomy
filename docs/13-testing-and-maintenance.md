@@ -7,8 +7,8 @@
 | Area | Tests |
 | --- | --- |
 | Config | `ConfigSectionTest`, `FileRegistryTest`, every `*ParserTest` (types, tiers, access, shifts, training, nameplates, E&L, ledgers, node settings, random tables, farm resources and types) |
-| Businesses | `BusinessServiceTest`, `AccessServiceTest`, `AccessGroupTest`, `PermissionTest`, `BusinessVaultsTest`, `ShiftServiceTest`, `TrainingServiceTest`, `ActivityLockTest` |
-| Prices and trade | `PriceExpressionTest`, `PriceDatabaseTest`, `PriceSettingsTest`, `PriceModifiersTest`, `ModifierArgumentsTest`, `TradePricingTest`, `BundleTest`, `LedgerLoaderTest`, `LedgerSelectionsTest`, `DeliveryServiceTest`, `ExportServiceTest`, `ItemListCodecTest`, `DurationsTest`, `IntRangeTest` |
+| Businesses | `BusinessServiceTest`, `AccessServiceTest`, `AccessGroupTest`, `PermissionTest`, `BusinessVaultsTest`, `ShiftServiceTest`, `TrainingServiceTest`, `ActivityLockTest`, `BusinessScaleTest`, `AmountParserTest`, `StepsParserTest`, `SkillSectionsTest` |
+| Prices and trade | `FormulaTest`, `PriceExpressionTest`, `PriceDatabaseTest`, `PriceSettingsTest`, `PriceModifiersTest`, `ModifierArgumentsTest`, `TradePricingTest`, `BundleTest`, `LedgerLoaderTest`, `LedgerSelectionsTest`, `DeliveryServiceTest`, `ExportServiceTest`, `ItemListCodecTest`, `DurationsTest`, `IntRangeTest` |
 | Tokens | `GatheringTokensTest`, `TokenPlaceholdersTest` |
 | Loot and nodes | `LootParserTest`, `LootGroupTest`, `LootGroupLoaderTest`, `LootRollerTest`, `LootOddsTest`, `NodeTest`, `NodeServiceTest`, `NodeFilesTest`, `NodeTablesTest`, `RandomHarvesterTest`, `FarmPlotsTest`, `FarmHarvesterTest`, `PrimerReturnsTest` |
 | Other | `MessageCatalogTest`, `StoredItemsTest`, `SkillLevelsTest`, menu layout tests |
