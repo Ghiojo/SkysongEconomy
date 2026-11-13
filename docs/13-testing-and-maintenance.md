@@ -45,7 +45,6 @@ These are known and deliberate to leave for later, or worth fixing when you are 
   database until the business is deleted, so putting the file back selects it again.
 - **A failed background write** is logged at SEVERE and not retried; the in-memory state keeps the change, so it
   is lost on restart. Watch the console for "Failed to ...".
-- **Boosters** are on the `feature/node-boosters` branch, not on master yet.
 
 ## How-tos
 

@@ -4,8 +4,8 @@ This folder explains every part of the SkysongEconomy plugin: what each feature 
 configured, and how the code behind it is organised. It is written so that someone who has never seen the
 code can maintain and extend it.
 
-The documentation describes the code on `master` as of 2026-11-06 (after PR #37). Node boosters were still
-in review at that time (branch `feature/node-boosters`); see [Nodes](07-nodes.md#boosters-not-on-master-yet).
+The documentation describes the code on `master` as of 2026-11-13 (after PR #47), which includes node boosters,
+business NPCs and business modules.
 
 ## Reading order
 
@@ -21,9 +21,9 @@ If you are new to the code, read these in order:
 | --- | --- |
 | [Currency and money](03-currency-and-money.md) | Architite coins, Gringotts, how money is paid and taken |
 | [Prices](04-prices.md) | The price database (`/se ledger`), price expressions, good types (`/se good`), price modifiers (`/se modifier`) |
-| [Businesses](05-businesses.md) | Business types, tiers, owners (including `#server`), workers, skill picks, access groups, the vault, shifts, training, Gathering Tokens, the business menu |
+| [Businesses](05-businesses.md) | Business types, tiers, owners (including `#server`), workers, skill picks, access groups, the vault, shifts, training, Gathering Tokens, the business menu, business NPCs (slots, what an NPC receives, who may use them), modules and their effects |
 | [Economy and Logistics](06-economy-and-logistics.md) | Trade ledgers, imports and deliveries, exports, slots |
-| [Nodes](07-nodes.md) | Random nodes, farm nodes, loot groups, primers, harvest costs, `/se node` |
+| [Nodes](07-nodes.md) | Random nodes, farm nodes, loot groups, primers, harvest costs, boosters, `/se node` |
 
 ## Reference
 
@@ -48,4 +48,7 @@ If you are new to the code, read these in order:
 | Downtime | SkysongStats' activity resource. Spending it uses the pool the player picked with `/downtime preference`. |
 | Gathering Tokens / Harvest Tokens | The same balance: whole-number tokens per character, earned from Gathering shifts and spent at nodes. Code calls them Gathering Tokens; node texts call them Harvest Tokens. |
 | E&L | Economy and Logistics: imports and exports through trade ledgers. |
+| Business NPC | An NPC of the SkysongNPCs plugin that fills one of a business's NPC slots. A skill in `businesses/npcs.yml` or a module gives the slots. |
+| Module | A premade specialisation a business picks, one file in `modules/`. A skill in `businesses/modules.yml` gives the picks. |
+| Level (of a skill) | How many of its skill picks a business spent on that skill. Amounts in config can follow it, or the tier. |
 | Refusal | A player action the rules don't allow. The code throws a `RefusedException` naming the `messages.yml` key that explains why. |
