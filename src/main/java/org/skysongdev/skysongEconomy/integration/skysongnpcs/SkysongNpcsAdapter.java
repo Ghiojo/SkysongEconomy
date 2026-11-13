@@ -1,5 +1,6 @@
 package org.skysongdev.skysongEconomy.integration.skysongnpcs;
 
+import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -11,6 +12,7 @@ import org.skysongdev.skysongEconomy.business.npc.AbilityChoiceGiven;
 import org.skysongdev.skysongEconomy.business.npc.NpcAccessGateway;
 import org.skysongdev.skysongEconomy.business.npc.NpcCreation;
 import org.skysongdev.skysongEconomy.business.npc.NpcGateway;
+import org.skysongdev.skysongEconomy.business.npc.NpcPending;
 import org.skysongdev.skysongEconomy.business.npc.NpcSheetGateway;
 import org.skysongdev.skysongEconomy.business.npc.PicksGiven;
 import org.skysongdev.skysongEconomy.business.npc.PointsGiven;
@@ -133,11 +135,46 @@ public final class SkysongNpcsAdapter implements NpcGateway, NpcSheetGateway, Np
     }
 
     @Override
+    public boolean isOwnedBy(UUID npc, @Nullable CharacterRef owner) {
+        return npcs.npcs().get(npc).map(found -> found.owner().equals(toOwner(owner))).orElse(false);
+    }
+
+    @Override
     public boolean inSetup(UUID npc) {
         return npcs.choices().inSetup(npc);
     }
 
+    @Override
+    public Optional<String> name(UUID npc) {
+        // SkysongNPCs keeps names as MiniMessage text.
+        return exists(npc) ? Optional.of(MiniMessage.miniMessage().stripTags(npcs.appearance().name(npc))) : Optional.empty();
+    }
+
+    @Override
+    public boolean openMenu(UUID player, UUID npc) {
+        Player viewer = Bukkit.getPlayer(player);
+        return viewer != null && npcs.menu().open(viewer, npc);
+    }
+
+    @Override
+    public boolean openChoices(UUID player, UUID npc) {
+        Player viewer = Bukkit.getPlayer(player);
+        return viewer != null && npcs.choices().open(viewer, npc);
+    }
+
+    @Override
+    public boolean teleportTo(UUID npc, UUID player) {
+        Player target = Bukkit.getPlayer(player);
+        return target != null && npcs.movement().teleport(npc, target.getLocation());
+    }
+
     // NpcSheetGateway
+
+    @Override
+    public NpcPending pending(UUID npc) {
+        int abilityChoices = npcs.abilities().choices(npc).stream().mapToInt(choice -> choice.remaining()).sum();
+        return new NpcPending(npcs.choices().unspentPoints(npc), npcs.choices().unspentPicks(npc), abilityChoices);
+    }
 
     @Override
     public List<PointsGiven> points(UUID npc, String source) {

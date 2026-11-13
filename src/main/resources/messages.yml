@@ -379,6 +379,103 @@ business:
         - "<gray>you train here."
       lore-no-character:
         - "<gray>Play a character to train."
+  npcs:
+    no-such-source: "<red>This business has no NPC slots for <yellow><source></yellow>."
+    no-free-slot: "<red>Every NPC slot of that kind is filled."
+    not-of-business: "<red>That NPC doesn't belong to <yellow><business></yellow>."
+    no-such-npc: "<red>There is no NPC number <yellow><number></yellow>. <business> has <count> NPC(s): see <white>/se business npcs <id></white>."
+    no-block: "<red><business> has no block for the NPC to appear next to."
+    no-spot: "<red>There is no free spot for an NPC here, or you may not place one here. Try somewhere with more room."
+    nowhere: "<red>The NPC has nowhere to appear. Stand where you want it and try again."
+    unknown-template: "<red>The NPC template <yellow><template></yellow> doesn't exist. Tell staff: businesses/npcs.yml names it."
+    refused: "<red>The NPC could not be created."
+    not-allowed: "<red>Only the owner, or a group the owner allows, can create NPCs for this business."
+    created: "<green><business> has a new NPC. Open it to finish its setup."
+    dismissed: "<green>Dismissed <yellow><npc></yellow> of <business>. Its slot is free again."
+    lost-slots: "<yellow><business> has fewer NPC slots now, so these newest NPCs were removed: <npcs>"
+    gone: "<red>That NPC no longer exists."
+    teleported: "<green><npc> was brought to you."
+    not-teleported: "<red><npc> can't be brought to you right now. It may be stored away."
+    disabled: "<red>Business NPCs are off: the SkysongNPCs plugin is not installed."
+    list-header: "<gold>NPCs of <business>:"
+    list-none: "<gray><business> has no NPC slots."
+    list-group: "<gray><source>: <white><used>/<max></white> slot(s) filled"
+    list-npc: "<gray>  <number>. <white><npc></white> <dark_gray>(<status><dark_gray>)"
+    status:
+      setup: "<yellow>waiting for its setup"
+      choices: "<yellow>has choices to make"
+      ready: "<green>ready"
+    source:
+      skill: "<skill>"
+      other: "<source>"
+    button:
+      name: "<aqua>NPCs"
+      lore:
+        - "<gray>The NPCs that work for this business."
+        - "<gray>Slots filled: <white><used>/<max></white>"
+        - ""
+        - "<yellow>Click to view"
+    menu:
+      title: "<dark_gray>NPCs: <business>"
+      header:
+        name: "<aqua>NPCs"
+        lore:
+          - "<gray>Slots filled: <white><used>/<max></white>"
+          - "<gray>Each slot holds one NPC. An NPC stays"
+          - "<gray>with the business for good."
+      npc:
+        name: "<white><npc>"
+        lore:
+          - "<gray>From: <white><source></white>"
+          - "<gray>Status: <status>"
+          - ""
+          - "<yellow>Click to open"
+      free:
+        name: "<gray>Free slot"
+        lore:
+          - "<gray>From: <white><source></white>"
+          - "<gray>Only the owner, or a group the owner"
+          - "<gray>allows, can create an NPC."
+      free-create:
+        name: "<green>Free slot"
+        lore:
+          - "<gray>From: <white><source></white>"
+          - ""
+          - "<yellow>Click to create an NPC"
+    confirm:
+      title: "<dark_gray>Create this NPC?"
+      summary:
+        name: "<green>New NPC"
+        lore:
+          - "<gray>From: <white><source></white>"
+          - "<gray>It appears on a free spot <place>."
+          - ""
+          - "<red>An NPC can't be dismissed afterwards."
+      place-player: "in front of you"
+      place-business: "next to the business block"
+    details:
+      title: "<dark_gray>NPC: <npc>"
+      open:
+        name: "<aqua>Open its menu"
+        lore:
+          - "<gray>Shows what you may see and do"
+          - "<gray>with this NPC."
+          - ""
+          - "<yellow>Click to open"
+      choices:
+        name: "<gold>Setup and choices"
+        lore:
+          - "<gray>Status: <status>"
+          - "<gray>Finish its setup, or spend the points"
+          - "<gray>and picks it has been given."
+          - ""
+          - "<yellow>Click to open"
+      teleport:
+        name: "<light_purple>Bring it here"
+        lore:
+          - "<gray>Teleports the NPC to you."
+          - ""
+          - "<yellow>Click to bring it"
   picks:
     not-offered: "<red>A business of this type can't pick <yellow><skill></yellow>."
     none-free: "<red>Every skill pick is used. A tier <tier> business has <tier> pick(s)."

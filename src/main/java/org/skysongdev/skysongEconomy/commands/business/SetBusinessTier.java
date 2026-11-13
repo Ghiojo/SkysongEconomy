@@ -34,6 +34,7 @@ final class SetBusinessTier extends BusinessSubCommand {
             String skills = change.removedPicks().stream().map(SkillPick::skillId).collect(Collectors.joining(", "));
             support.messenger.send(sender, "business.tier-removed-picks", unparsed("skills", skills));
         }
+        support.reportChanges(sender, business);
     }
 
     private static int parseTier(String text) {

@@ -89,7 +89,7 @@ All five tiers must be listed.
 | `defaults.everyone.permissions` | Default permissions of the `everyone` group |
 | `defaults.everyone.training-price` | Default training price for everyone, also the starting price of new custom groups |
 
-Permissions: `train`, `order-imports`, `sell-exports`, `tend-farms`. Defaults apply live to businesses whose owner
+Permissions: `train`, `order-imports`, `sell-exports`, `tend-farms`, `manage-npcs`. Defaults apply live to businesses whose owner
 never changed their groups.
 
 ## `businesses/shifts.yml` (`business/shift/ShiftSettingsParser`)
@@ -112,6 +112,20 @@ Types and tiers left out pay nothing.
 | `downtime-cost` | Downtime spent to start one |
 | `rewards.<picks>.xp` | Skill XP for a skill picked that many times |
 | `rewards.<picks>.proficiency` | Proficiency points for it (Service types only, capped by the tier) |
+
+## `businesses/npcs.yml` (`business/npc/NpcSettingsParser`)
+
+Only read when SkysongNPCs is installed. See [Business NPCs](05-businesses.md#business-npcs).
+
+| Key | Meaning |
+| --- | --- |
+| `spawn-at` | Where a new NPC appears: `player` (a free spot in front of whoever creates it, the default) or `business` (a free spot next to the business block) |
+| `spawn-radius` | How many blocks around that place SkysongNPCs looks for a free spot. Default 3 |
+| `skills.<skill>.slots` | How many NPCs a business can have for this skill: an [amount](#amounts-by-level-and-tier), so a number, a formula with `{level}` and `{tier}`, or a table |
+| `skills.<skill>.template` | The SkysongNPCs template new NPCs are made from. It is checked when an NPC is created, not on load |
+
+`<skill>` is a SkysongStats skill id; an unknown one is warned about and ignored. The bundled file has
+`skills: {}`, so no business has NPC slots until you add a skill.
 
 ## `businesses/block.yml` (`business/display/NameplateSettingsParser`)
 

@@ -158,7 +158,15 @@ public final class DatabaseSchema {
                     + "id CHAR(36) PRIMARY KEY NOT NULL, "
                     + "player_uuid CHAR(36) NOT NULL, "
                     + "items MEDIUMBLOB NOT NULL, "
-                    + "INDEX (player_uuid)) ENGINE=InnoDB");
+                    + "INDEX (player_uuid)) ENGINE=InnoDB",
+            // The SkysongNPCs each business has. source is the slot it fills, such as skill:martial.
+            "CREATE TABLE IF NOT EXISTS business_npcs ("
+                    + "npc_uuid CHAR(36) PRIMARY KEY NOT NULL, "
+                    + "business_id VARCHAR(64) NOT NULL, "
+                    + "source VARCHAR(128) NOT NULL, "
+                    + "created_at BIGINT NOT NULL, "
+                    + "INDEX (business_id), "
+                    + "FOREIGN KEY (business_id) REFERENCES businesses(id) ON DELETE CASCADE) ENGINE=InnoDB");
 
     private DatabaseSchema() {
     }

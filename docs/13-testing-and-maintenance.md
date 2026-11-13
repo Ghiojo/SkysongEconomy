@@ -9,7 +9,7 @@
 | Config | `ConfigSectionTest`, `FileRegistryTest`, every `*ParserTest` (types, tiers, access, shifts, training, nameplates, E&L, ledgers, node settings, random tables, farm resources and types) |
 | Businesses | `BusinessServiceTest`, `AccessServiceTest`, `AccessGroupTest`, `PermissionTest`, `BusinessVaultsTest`, `ShiftServiceTest`, `TrainingServiceTest`, `ActivityLockTest`, `BusinessScaleTest`, `AmountParserTest`, `StepsParserTest`, `SkillSectionsTest` |
 | Prices and trade | `FormulaTest`, `PriceExpressionTest`, `PriceDatabaseTest`, `PriceSettingsTest`, `PriceModifiersTest`, `ModifierArgumentsTest`, `TradePricingTest`, `BundleTest`, `LedgerLoaderTest`, `LedgerSelectionsTest`, `DeliveryServiceTest`, `ExportServiceTest`, `ItemListCodecTest`, `DurationsTest`, `IntRangeTest` |
-| Business NPCs | `BusinessGroupRefTest`, `BusinessGroupDirectoryTest`, `FakeSkysongNpcsTest` (pins down how the fake behaves), `ApiVersionTest` |
+| Business NPCs | `BusinessNpcsTest` (slots, creating, dismissing, lost slots, owner changes, reloading), `NpcSettingsParserTest`, `SlotSourceTest`, `NpcStatusTest`, `BusinessGroupRefTest`, `BusinessGroupDirectoryTest`, `FakeSkysongNpcsTest` (pins down how the fake behaves), `ApiVersionTest` |
 | Tokens | `GatheringTokensTest`, `TokenPlaceholdersTest` |
 | Loot and nodes | `LootParserTest`, `LootGroupTest`, `LootGroupLoaderTest`, `LootRollerTest`, `LootOddsTest`, `NodeTest`, `NodeServiceTest`, `NodeFilesTest`, `NodeTablesTest`, `RandomHarvesterTest`, `FarmPlotsTest`, `FarmHarvesterTest`, `PrimerReturnsTest` |
 | Other | `MessageCatalogTest`, `StoredItemsTest`, `SkillLevelsTest`, menu layout tests |
@@ -23,8 +23,9 @@ listeners (block protection, nameplates, timers), the `Sql...` repositories and 
 integrations (Gringotts, SkysongStats, SkysongNPCs, SkysongItems, PlaceholderAPI, CMI). Those are checked on a test server with
 the smoke test checklist.
 
-The cloud environment these features were written in could not download Paper from repo.papermc.io, so server code
-there was compiled against stand-in classes. Build with `./gradlew build` on a normal machine before deploying.
+The cloud environment these features were written in can't download every dependency (PlaceholderAPI's
+repository is blocked there, and for a while Paper's was too), so build with `./gradlew build` on a normal machine
+before deploying.
 
 ## Known gaps
 

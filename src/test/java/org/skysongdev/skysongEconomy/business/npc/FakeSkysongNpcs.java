@@ -37,6 +37,10 @@ public final class FakeSkysongNpcs implements NpcGateway, NpcSheetGateway, NpcAc
     public boolean freeSpot = true;
     /** Every {@link #create} call that reached the spot search, in order. */
     public final List<SpawnPoint> spawnPoints = new ArrayList<>();
+    /** What was opened or teleported, in order, as {@code menu:1}, {@code choices:1} or {@code teleport:1} (the number of the NPC). */
+    public final List<String> opened = new ArrayList<>();
+    /** How often an NPC was given to another owner. */
+    public int ownerChanges;
 
     private final Map<UUID, Npc> npcs = new LinkedHashMap<>();
     private final Map<String, Map<String, Set<String>>> policies = new LinkedHashMap<>();
@@ -148,7 +152,14 @@ public final class FakeSkysongNpcs implements NpcGateway, NpcSheetGateway, NpcAc
             return false;
         }
         found.owner = owner;
+        ownerChanges++;
         return true;
+    }
+
+    @Override
+    public boolean isOwnedBy(UUID npc, @Nullable CharacterRef owner) {
+        Npc found = npcs.get(npc);
+        return found != null && Objects.equals(found.owner, owner);
     }
 
     @Override
@@ -157,7 +168,36 @@ public final class FakeSkysongNpcs implements NpcGateway, NpcSheetGateway, NpcAc
         return found != null && found.inSetup;
     }
 
+    @Override
+    public Optional<String> name(UUID npc) {
+        return find(npc).map(found -> found.template + " " + npc.getLeastSignificantBits());
+    }
+
+    @Override
+    public boolean openMenu(UUID player, UUID npc) {
+        return exists(npc) && opened.add("menu:" + npc.getLeastSignificantBits());
+    }
+
+    @Override
+    public boolean openChoices(UUID player, UUID npc) {
+        return exists(npc) && opened.add("choices:" + npc.getLeastSignificantBits());
+    }
+
+    @Override
+    public boolean teleportTo(UUID npc, UUID player) {
+        return exists(npc) && opened.add("teleport:" + npc.getLeastSignificantBits());
+    }
+
     // NpcSheetGateway
+
+    @Override
+    public NpcPending pending(UUID npc) {
+        return find(npc).map(found -> new NpcPending(
+                found.points.stream().mapToInt(grant -> grant.amount - grant.spent).sum(),
+                found.picks.stream().mapToInt(Picks::unspent).sum(),
+                found.choices.stream().mapToInt(choice -> choice.count - choice.chosen.size()).sum()))
+                .orElse(NpcPending.NONE);
+    }
 
     @Override
     public List<PointsGiven> points(UUID npc, String source) {

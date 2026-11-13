@@ -13,6 +13,7 @@ class PermissionTest {
         assertEquals("sell-exports", Permission.SELL_EXPORTS.key());
         assertEquals("train", Permission.TRAIN.key());
         assertEquals("tend-farms", Permission.TEND_FARMS.key());
+        assertEquals("manage-npcs", Permission.MANAGE_NPCS.key());
     }
 
     @Test

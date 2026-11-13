@@ -56,6 +56,7 @@ plugins/SkysongEconomy/
 │   ├── access.yml                  copied
 │   ├── shifts.yml                  copied
 │   ├── training.yml                copied
+│   ├── npcs.yml                    copied   business NPC slots (only read with SkysongNPCs installed)
 │   └── block.yml                   copied   business nameplate
 └── nodes/
     ├── settings.yml                copied
@@ -102,6 +103,8 @@ while the rest of the plugin runs:
   `access.yml`, `shifts.yml`, `training.yml` or `economy-and-logistics.yml` is broken. No `/se business`,
   `/se tokens` or `/se modifier` commands exist then, and nodes are off too.
 - "Nodes are disabled until this is fixed: ..." means `nodes/settings.yml` is broken.
+- "Business NPC slots are off until this is fixed: ..." means `businesses/npcs.yml` is broken. Existing NPCs
+  stay as they are; the NPCs button and the `npcs` and `dismissnpc` commands are missing until it is fixed.
 - Smaller files fall back instead of disabling anything: a broken `prices.yml` keeps 1 decimal, a broken
   `menus.yml` uses default icons, a broken `businesses/block.yml` turns business nameplates off, and a broken
   `messages.yml` uses the bundled texts.

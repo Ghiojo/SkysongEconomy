@@ -239,12 +239,13 @@ public final class BusinessFeature implements AutoCloseable {
         resources.add(new ActivityTimer(plugin, businesses, shifts, training, skysongStats, afkCheck(plugin), messenger)
                 .start()::cancel);
         registerPlaceholders(plugin, tokens, skysongStats);
+        BusinessCommand command = new BusinessCommand(businesses, settings.types(), access, vaults, skysongStats, messenger);
         List<SubCommand> commands = List.of(
-                new BusinessCommand(businesses, settings.types(), access, vaults, skysongStats, messenger),
+                command,
                 new TokensCommand(tokens, new CharacterArguments(skysongStats, messenger), messenger),
                 new ModifierCommand(modifiers, messenger, Clock.systemUTC()));
         BusinessSystem system = new BusinessSystem(businesses, settings.types(), access, vaults, tokens, activities,
-                shifts, training, settings.economyLogistics(), ledgers, ledgerSelections, modifiers, pricing, deliveries, exports, menus);
+                shifts, training, settings.economyLogistics(), ledgers, ledgerSelections, modifiers, pricing, deliveries, exports, menus, command);
         return new BusinessFeature(system, commands, resources, logger);
     }
 

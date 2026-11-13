@@ -1,0 +1,38 @@
+# Business NPCs: NPCs a business owns. They need the SkysongNPCs plugin; without it this file
+# is not used.
+#
+# A business has NPC slots for every skill listed under skills that it has picked. Each slot
+# holds one NPC, made from that skill's SkysongNPCs template. The NPC belongs to the business's
+# owner and follows the business when it changes hands. A skill can be listed here and in
+# economy-and-logistics.yml at the same time: both apply.
+#
+# The owner creates the NPCs from the business menu, and so can any access group with the
+# manage-npcs permission (see access.yml). Only staff can remove one, with
+# /se business dismissnpc. When a business has more NPCs than slots (a lower tier, a cleared
+# skill pick, a lower number here) its newest NPCs are removed.
+
+# Where a new NPC appears:
+#   player    a free spot in front of whoever creates it
+#   business  a free spot next to the business block
+spawn-at: player
+
+# How many blocks around that place SkysongNPCs looks for a free spot.
+spawn-radius: 3
+
+# One entry per skill: a SkysongStats skill id, as in types.yml.
+#   slots     how many NPCs the business can have for this skill. A number, a formula, or a
+#             table. In a formula {level} is how many picks the business has of this skill and
+#             {tier} is the business's tier. A table is written {by: level, 1: 1, 3: 2, 5: 3}
+#             (or by: tier): the business gets the value of the highest step it has reached.
+#   template  the SkysongNPCs template new NPCs are made from (a file in SkysongNPCs'
+#             templates folder): entity, name, skin, base stats, ancestries.
+#
+# Example:
+#   skills:
+#     martial:
+#       slots: "{level}"
+#       template: business_guard
+#     economical:
+#       slots: {by: level, 1: 1, 3: 2, 5: 3}
+#       template: business_clerk
+skills: {}
