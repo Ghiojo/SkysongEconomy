@@ -32,7 +32,7 @@ If you are new to the code, read these in order:
 | [Commands and permissions](08-commands-and-permissions.md) | Every `/se` command and every permission node |
 | [Configuration reference](09-configuration-reference.md) | Every config file and folder, key by key |
 | [Database](10-database.md) | Every table, and how data is loaded and saved |
-| [Events, API and integrations](11-events-and-api.md) | Bukkit events, what other plugins can call, PlaceholderAPI, CMI, SkysongStats, SkysongItems |
+| [Events, API and integrations](11-events-and-api.md) | Bukkit events, what other plugins can call, PlaceholderAPI, CMI, SkysongStats, SkysongNPCs, SkysongItems |
 | [Messages and menus](12-messages-and-menus.md) | `messages.yml`, `menus.yml`, the menu framework and its input slots |
 | [Testing, known gaps and how-tos](13-testing-and-maintenance.md) | Unit tests, what isn't tested, known follow-ups, recipes for common changes |
 

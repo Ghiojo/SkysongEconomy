@@ -22,7 +22,9 @@ reads the same way.
    it logs why and returns a disabled feature with no commands. The rest of the plugin still runs.
 6. `NodeFeature.start(...)` builds the nodes system. Nodes need businesses, so they are off when businesses
    are off, or when `nodes/settings.yml` is broken.
-7. `registerCommands()` builds the `/se` command tree: `ledger` and `good` always, plus whatever commands
+7. `NpcFeature.start(...)` connects to SkysongNPCs when that plugin is installed, and registers the business
+   access groups with it. Without SkysongNPCs it logs one line and has no gateways.
+8. `registerCommands()` builds the `/se` command tree: `ledger` and `good` always, plus whatever commands
    each feature returns (`business`, `tokens`, `modifier`, `node`).
 
 ### Feature bootstraps
@@ -73,6 +75,7 @@ nodes feature and other plugins use it to reach businesses.
 | `expression` | `Formula`: arithmetic with placeholders, shared by price expressions and amounts. |
 | `prices` | The price database and price expressions. |
 | `prices.modifier` | Percentage price modifiers. |
+| `business.npc` | What businesses need from SkysongNPCs, as interfaces (`NpcGateway`, `NpcSheetGateway`, `NpcAccessGateway`), and the business group names SkysongNPCs sees (`BusinessGroupRef`, `BusinessGroupDirectory`). No server classes. |
 | `tokens` | Gathering Tokens and their placeholder texts. |
 | `nodes` | `Node`, `NodeService`, node settings, the loaded node files (`NodeFiles`, `NodeTables`). |
 | `nodes.random` | Random tables (`nodes/random/*.yml`). |
@@ -91,7 +94,7 @@ nodes feature and other plugins use it to reach businesses.
 | `gui` (+ `layout`, `business`, `node`) | The chest-menu framework and every menu. |
 | `listeners` | Bukkit listeners: block protection, interaction, nameplates, timers, item tags, primer returns. |
 | `events` | Bukkit events other plugins can listen to. |
-| `integration` | The only classes that touch other plugins' APIs: SkysongStats, Gringotts, PlaceholderAPI, CMI. |
+| `integration` | The only classes that touch other plugins' APIs: SkysongStats, SkysongNPCs, Gringotts, PlaceholderAPI, CMI. |
 
 ## Patterns every feature follows
 

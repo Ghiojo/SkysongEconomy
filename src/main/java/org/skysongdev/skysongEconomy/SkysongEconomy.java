@@ -5,6 +5,7 @@ import org.bukkit.command.PluginCommand;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.skysongdev.skysongEconomy.bootstrap.BusinessFeature;
 import org.skysongdev.skysongEconomy.bootstrap.NodeFeature;
+import org.skysongdev.skysongEconomy.bootstrap.NpcFeature;
 import org.skysongdev.skysongEconomy.bootstrap.TradeInputs;
 import org.skysongdev.skysongEconomy.commands.SkysongEconomyCommand;
 import org.skysongdev.skysongEconomy.config.ConfigException;
@@ -57,6 +58,7 @@ public final class SkysongEconomy extends JavaPlugin {
     private SkysongStatsAdapter skysongStats;
     private BusinessFeature businessFeature;
     private NodeFeature nodeFeature;
+    private NpcFeature npcFeature;
 
     @Override
     public void onEnable() {
@@ -83,6 +85,7 @@ public final class SkysongEconomy extends JavaPlugin {
                 messenger, messages);
         nodeFeature = NodeFeature.start(this, configFiles, databaseSettings(), businessFeature.system(), skysongStats,
                 wallet, trade, messenger);
+        npcFeature = NpcFeature.start(this, businessFeature.system(), skysongStats);
 
         registerCommands(messenger, materialIds);
     }
@@ -199,5 +202,10 @@ public final class SkysongEconomy extends JavaPlugin {
     /** The nodes system; its parts are empty when its config couldn't be read. */
     public NodeFeature getNodeFeature() {
         return nodeFeature;
+    }
+
+    /** The connection to SkysongNPCs; its gateways are empty when that plugin is not installed. */
+    public NpcFeature getNpcFeature() {
+        return npcFeature;
     }
 }
