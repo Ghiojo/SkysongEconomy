@@ -10,6 +10,27 @@
 #       tier     the business tier, 1 to 5
 #       level    how many picks of the skill it is being picked for
 #       modules  modules the business must already have, by id
+#   effects      optional: a list of what the module does. All of them apply together. In an
+#                amount, {level} is how many picks the business has of the skill the module was
+#                picked for, and {tier} is the business's tier.
+#
+#       - type: worker-slots     the business can hire more workers
+#         amount: 1
+#
+#       - type: npc-slots        NPC slots for the module's own kind of NPC (needs SkysongNPCs)
+#         amount: 1
+#         template: war_hound    a SkysongNPCs template
+#         progression:           optional: what each of these NPCs gets, as in npcs.yml
+#           stats: {strength: 2}
+#
+#       - type: npc-benefit      something for the business's NPCs (needs SkysongNPCs)
+#         target: all            all (also when left out), or how many NPCs the owner chooses
+#         from: martial          optional: only this skill's NPCs count, or "module" for the
+#                                NPCs of this module's own npc-slots
+#         benefit:               what they get, written as in npcs.yml
+#           stat-points: {amount: 2}
+#
+#   This example has no effects: it is its description only.
 name: "<white>Sworn Oath"
 icon: PAPER
 description:

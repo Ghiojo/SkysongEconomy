@@ -9,6 +9,7 @@ import org.skysongdev.skysongEconomy.business.BusinessService;
 import org.skysongdev.skysongEconomy.business.InMemoryBusinessRepository;
 import org.skysongdev.skysongEconomy.business.module.BusinessModuleEvents.RemovalCause;
 import org.skysongdev.skysongEconomy.business.module.ModuleOption.Blocked;
+import org.skysongdev.skysongEconomy.business.module.effect.ModuleEffectParsers;
 import org.skysongdev.skysongEconomy.business.tier.BusinessTiers;
 import org.skysongdev.skysongEconomy.business.tier.TierSettings;
 import org.skysongdev.skysongEconomy.business.type.BusinessType;
@@ -76,7 +77,7 @@ class BusinessModulesTest {
 
     /** Builds the service from the files, the way the plugin wires it on start. */
     private void start(String config) {
-        ModuleParser parser = new ModuleParser(warnings::add);
+        ModuleParser parser = new ModuleParser(ModuleEffectParsers.basic().withoutNpcEffects(), warnings::add);
         List<Module> parsed = new ArrayList<>();
         FILES.forEach((id, yaml) -> parsed.add(parser.parse(id, YamlFiles.parse("modules/" + id + ".yml", new StringReader(yaml)))));
         ModuleSettings settings = new ModuleSettingsParser(SKILLS, warnings::add)
@@ -335,7 +336,7 @@ class BusinessModulesTest {
 
     @Test
     void aModuleFileNeedsANameAndSaneNumbers() {
-        ModuleParser parser = new ModuleParser(warnings::add);
+        ModuleParser parser = new ModuleParser(ModuleEffectParsers.basic().withoutNpcEffects(), warnings::add);
 
         assertThrows(ConfigException.class, () -> parse(parser, "icon: PAPER"));
         assertThrows(ConfigException.class, () -> parse(parser, "{name: A, max-picks: 0}"));
@@ -348,16 +349,7 @@ class BusinessModulesTest {
                 requires: {modules: [Kennel]}
                 """);
         assertEquals(new Module("x", "<white>Sworn Oath", "PAPER", List.of("one", "two"), 1,
-                new ModuleRequirements(1, 1, List.of("kennel"))), module);
-    }
-
-    @Test
-    void effectsAreNotAppliedYetAndSaySo() {
-        Module module = parse(new ModuleParser(warnings::add), "{name: Kennel, effects: [{type: worker-slots, amount: 1}]}");
-
-        assertEquals("Kennel", module.name());
-        assertEquals(1, warnings.size());
-        assertTrue(warnings.get(0).contains("effects"), warnings.get(0));
+                new ModuleRequirements(1, 1, List.of("kennel")), List.of()), module);
     }
 
     private static Module parse(ModuleParser parser, String yaml) {

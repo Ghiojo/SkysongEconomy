@@ -14,12 +14,17 @@ import org.skysongdev.skysongEconomy.gui.MenuButton;
 import org.skysongdev.skysongEconomy.messaging.Messenger;
 
 import java.util.Optional;
+import java.util.function.Function;
 
 /**
  * The main menu's NPCs button, which opens {@link NpcsMenu}. Shown when the business has an NPC
  * slot or an NPC; what each viewer can do there is decided slot by slot.
  */
 public final class NpcsEntry implements MainMenuEntry {
+    /** The card's name in SkysongNPCs' menu: its id there is {@code skysongeconomy:business}. */
+    public static final String CARD_BUTTON = "business";
+    private static final int CARD_SLOT = 8;
+
     private final NpcScreens screens;
 
     /**
@@ -41,10 +46,23 @@ public final class NpcsEntry implements MainMenuEntry {
     public record Services(BusinessNpcs npcs, NpcProgression progression, BusinessNpcAccess access) {
     }
 
+    /**
+     * @param moduleNames a module's name by its id, as MiniMessage, for the slots modules give;
+     *                    always empty when modules are off
+     */
     public NpcsEntry(BusinessMenus menus, Services services, Gateways gateways,
-                     NpcSettings settings, SkillCatalog skills, Messenger messenger) {
+                     NpcSettings settings, SkillCatalog skills, Function<String, Optional<String>> moduleNames,
+                     Messenger messenger) {
         this.screens = new NpcScreens(menus, services.npcs(), services.progression(), services.access(),
-                gateways.npcs(), gateways.sheets(), settings, skills, messenger);
+                gateways.npcs(), gateways.sheets(), settings, skills, moduleNames, messenger);
+    }
+
+    /**
+     * Adds a card to the menu SkysongNPCs opens on a business NPC: its business, the slot it
+     * fills and the modules that give it something. Other NPCs don't get it.
+     */
+    public void addCardTo(NpcMenuButtons npcMenu) {
+        npcMenu.addInfoButton(CARD_BUTTON, CARD_SLOT, screens::card);
     }
 
     @Override

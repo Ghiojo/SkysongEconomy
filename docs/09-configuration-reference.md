@@ -172,7 +172,40 @@ One file per module; the file name is its id. A file that can't be read is skipp
 | `requires.tier` | The business tier needed to pick it, 1 to 5 |
 | `requires.level` | How many picks of the skill it is being picked for the business needs |
 | `requires.modules` | Modules the business must already have, by id |
-| `effects` | Not applied in this version: the console warns and the module is its description only |
+| `effects` | A list of effects, each with a `type`; all apply together. None when left out |
+
+Effects (see [Module effects](05-businesses.md#module-effects)). In an [amount](#amounts-by-level-and-tier) here,
+`{level}` is how many picks the business has of the skill the module was picked for.
+
+| `type` | Keys |
+| --- | --- |
+| `worker-slots` | `amount`: required, an amount. That many more workers can be hired |
+| `npc-slots` | `amount`: required, an amount. `template`: required, the SkysongNPCs template of the module's own NPCs. `progression`: optional, what each of those NPCs receives, written like a skill's `progression` in `npcs.yml`. At most one `npc-slots` effect per module |
+| `npc-benefit` | `benefit`: required, a benefit block (`stat-points`, `stats`, `proficiency-picks`, `proficiencies`, `abilities`, `ability-picks`, as in `npcs.yml`). `target`: `all` (default) or how many NPCs the owner chooses, 1 or more. `from`: optional, a skill id (only that skill's NPCs count) or `module` (only this module's own NPCs, which needs an `npc-slots` effect in the same file) |
+
+An unknown `type`, a second `npc-slots`, or a wrong `target` or `from` skips the whole module file with a warning.
+The NPC effects need SkysongNPCs: without it they are read but do nothing, and the console says so.
+
+```yaml
+effects:
+  - type: npc-slots
+    amount: 1
+    template: war_hound
+    progression:
+      stats: {strength: 2}
+  - type: npc-benefit
+    target: all
+    from: martial
+    benefit:
+      proficiency-picks:
+        - {skill: martial, amount: 1}
+  - type: npc-benefit
+    target: 2
+    benefit:
+      stat-points: {amount: 2}
+  - type: worker-slots
+    amount: 1
+```
 
 ## `businesses/block.yml` (`business/display/NameplateSettingsParser`)
 

@@ -41,6 +41,8 @@ final class ClearModule extends BusinessSubCommand {
         ModulePick cleared = text.modules().clear(business, skill, number);
         support.messenger.send(sender, "business.modules.cleared", component("module", text.name(cleared)),
                 unparsed("skill", skill), unparsed("business", business.displayName()));
+        // The module's own NPCs and extra workers go with it; say which.
+        support.reportChanges(sender, business);
     }
 
     private int picked(Business business, String skill) {

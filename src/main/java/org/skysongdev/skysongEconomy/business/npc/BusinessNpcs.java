@@ -26,8 +26,9 @@ import java.util.function.Consumer;
 /**
  * The NPCs each business has, and the slots they fill.
  * <p>
- * A skill listed in {@code businesses/npcs.yml} gives a business NPC slots; each slot can hold
- * one SkysongNPC created from that skill's template. This service knows which NPC fills which
+ * A skill listed in {@code businesses/npcs.yml} gives a business NPC slots, and so can whatever
+ * {@link #addSlotRules} adds, such as picked modules; each slot can hold one SkysongNPC created
+ * from its source's template. This service knows which NPC fills which
  * slot, creates and removes them through {@link NpcGateway}, and keeps them in line with the
  * business:
  * <ul>
@@ -43,6 +44,9 @@ import java.util.function.Consumer;
  */
 public final class BusinessNpcs implements BusinessChangeListener {
     private final NpcSettings settings;
+    /** What gives NPC slots: the skills in the settings, then whatever was added. */
+    private NpcSlotRules rules;
+    private final List<NpcSlotRules> allRules = new ArrayList<>();
     private final BusinessService businesses;
     private final AccessService access;
     private final NpcGateway gateway;
@@ -72,6 +76,8 @@ public final class BusinessNpcs implements BusinessChangeListener {
     public BusinessNpcs(NpcSettings settings, Dependencies dependencies, BusinessNpcRepository repository,
                         BusinessNpcEvents events, Clock clock, Consumer<String> warnings) {
         this.settings = settings;
+        this.allRules.add(settings);
+        this.rules = settings;
         this.businesses = dependencies.businesses();
         this.access = dependencies.access();
         this.gateway = dependencies.gateway();
@@ -103,15 +109,25 @@ public final class BusinessNpcs implements BusinessChangeListener {
         }
         for (Business business : businesses.all()) {
             for (BusinessNpc npc : of(business)) {
-                if (settings.capacity(business, npc.source()).isEmpty()) {
-                    warnings.accept(NpcSettingsParser.FILE + " no longer gives " + business.id() + " NPCs for "
-                            + npc.source() + ", so its NPC " + npc.npc() + " is kept as it is");
+                if (rules.capacity(business, npc.source()).isEmpty()) {
+                    warnings.accept("Nothing gives " + business.id() + " NPCs for "
+                            + npc.source() + " any more (" + NpcSettingsParser.FILE + " or its module file changed), so its NPC "
+                            + npc.npc() + " is kept as it is");
                 }
             }
             sync(business);
         }
         lostSlots.clear();
         return byNpc.size();
+    }
+
+    /**
+     * Adds something else that gives NPC slots, such as picked modules. Call it before
+     * {@link #loadAll()}, so NPCs of its sources are known when they load.
+     */
+    public void addSlotRules(NpcSlotRules more) {
+        allRules.add(more);
+        rules = NpcSlotRules.all(allRules);
     }
 
     /** Adds something to tell about every NPC a business creates or loses, after the ones added before. */
@@ -139,11 +155,11 @@ public final class BusinessNpcs implements BusinessChangeListener {
      */
     public List<NpcSlotGroup> slots(Business business) {
         Map<SlotSource, List<BusinessNpc>> filled = new LinkedHashMap<>();
-        settings.capacities(business).keySet().forEach(source -> filled.put(source, new ArrayList<>()));
+        rules.capacities(business).keySet().forEach(source -> filled.put(source, new ArrayList<>()));
         of(business).forEach(npc -> filled.computeIfAbsent(npc.source(), source -> new ArrayList<>()).add(npc));
         List<NpcSlotGroup> groups = new ArrayList<>();
         filled.forEach((source, npcs) -> {
-            int capacity = settings.capacity(business, source).orElse(npcs.size());
+            int capacity = rules.capacity(business, source).orElse(npcs.size());
             if (capacity > 0 || !npcs.isEmpty()) {
                 groups.add(new NpcSlotGroup(source, capacity, npcs));
             }
@@ -176,7 +192,7 @@ public final class BusinessNpcs implements BusinessChangeListener {
     public BusinessNpc create(Business business, SlotSource source, UUID creator) {
         NpcSlotGroup group = slots(business).stream().filter(candidate -> candidate.source().equals(source)).findFirst()
                 .orElseThrow(() -> new BusinessException("business.npcs.no-such-source", Map.of("source", source.key())));
-        String template = settings.template(source).orElse(null);
+        String template = rules.template(source).orElse(null);
         if (group.free() == 0 || template == null) {
             throw new BusinessException("business.npcs.no-free-slot");
         }
@@ -215,7 +231,7 @@ public final class BusinessNpcs implements BusinessChangeListener {
     public List<LostNpc> sync(Business business) {
         List<LostNpc> removed = new ArrayList<>();
         for (NpcSlotGroup group : slots(business)) {
-            OptionalInt capacity = settings.capacity(business, group.source());
+            OptionalInt capacity = rules.capacity(business, group.source());
             if (capacity.isEmpty()) {
                 continue;
             }
@@ -259,6 +275,15 @@ public final class BusinessNpcs implements BusinessChangeListener {
     /** A changed business may have fewer slots or another owner. */
     @Override
     public void changed(Business business, @Nullable BlockPosition previousPosition) {
+        refresh(business);
+    }
+
+    /**
+     * Brings the business's NPCs in line after something other than the business itself changed
+     * how many slots it has, such as a module it picked or lost. NPCs removed with their slots
+     * are kept for {@link #takeLostSlots}.
+     */
+    public void refresh(Business business) {
         List<LostNpc> removed = sync(business);
         if (!removed.isEmpty()) {
             lostSlots.computeIfAbsent(business.id(), id -> new ArrayList<>()).addAll(0, removed);

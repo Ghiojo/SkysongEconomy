@@ -11,13 +11,16 @@ import org.skysongdev.skysongEconomy.business.module.ModuleOption.Blocked;
 
 import java.time.Clock;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
+import java.util.Set;
 import java.util.function.Consumer;
 
 /**
@@ -45,6 +48,8 @@ public final class BusinessModules implements BusinessChangeListener {
     private final Map<String, List<ModulePick>> byBusiness = new HashMap<>();
     /** Picks dropped because their skill gives fewer now, by business id, until someone reports them. */
     private final Map<String, List<ModulePick>> lostPicks = new HashMap<>();
+    /** Businesses whose picks are being brought in line right now. */
+    private final Set<String> syncing = new HashSet<>();
 
     /** @param warnings told about saved picks that could not be kept or no longer match the files, as console lines */
     public BusinessModules(ModuleSettings settings, BusinessService businesses, ModulePickRepository repository,
@@ -101,6 +106,11 @@ public final class BusinessModules implements BusinessChangeListener {
     /** @return the module with that id, empty when it has no file */
     public Optional<Module> module(String moduleId) {
         return settings.modules().find(moduleId);
+    }
+
+    /** @return every module that has a file, in file name order */
+    public Collection<Module> modules() {
+        return settings.modules().all();
     }
 
     /** @return every module the business picked, oldest first */
@@ -198,6 +208,20 @@ public final class BusinessModules implements BusinessChangeListener {
      */
     public List<ModulePick> sync(Business business) {
         List<ModulePick> removed = new ArrayList<>();
+        // Removing a module can change the business again (its extra workers go), which asks for
+        // another sync while this one is still dropping picks; this one finishes the job.
+        if (!syncing.add(business.id())) {
+            return removed;
+        }
+        try {
+            dropOverTotal(business, removed);
+        } finally {
+            syncing.remove(business.id());
+        }
+        return removed;
+    }
+
+    private void dropOverTotal(Business business, List<ModulePick> removed) {
         for (ModulePickGroup group : groups(business)) {
             OptionalInt total = settings.total(business, group.skill());
             if (total.isEmpty()) {
@@ -209,7 +233,6 @@ public final class BusinessModules implements BusinessChangeListener {
                 removed.add(picks.get(i));
             }
         }
-        return removed;
     }
 
     /**

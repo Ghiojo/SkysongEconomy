@@ -4,6 +4,10 @@ import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.Nullable;
+import org.skysongdev.skysongEconomy.business.module.Module;
+import org.skysongdev.skysongEconomy.business.module.npc.ModuleNpcLink;
+import org.skysongdev.skysongEconomy.business.module.npc.ModuleNpcRules;
+import org.skysongdev.skysongEconomy.business.module.npc.ModuleTargets;
 import org.skysongdev.skysongEconomy.business.npc.BusinessGroupDirectory;
 import org.skysongdev.skysongEconomy.business.npc.BusinessGroupRef;
 import org.skysongdev.skysongEconomy.business.npc.NpcAccessGateway;
@@ -21,14 +25,17 @@ import org.skysongdev.skysongEconomy.config.ConfigException;
 import org.skysongdev.skysongEconomy.config.ConfigSection;
 import org.skysongdev.skysongEconomy.config.YamlFiles;
 import org.skysongdev.skysongEconomy.data.database.AsyncBusinessNpcRepository;
+import org.skysongdev.skysongEconomy.data.database.AsyncModuleTargetRepository;
 import org.skysongdev.skysongEconomy.data.database.AsyncNpcAppliedRepository;
 import org.skysongdev.skysongEconomy.data.database.BackgroundWriter;
 import org.skysongdev.skysongEconomy.data.database.ConnectionProvider;
 import org.skysongdev.skysongEconomy.data.database.DatabaseSettings;
 import org.skysongdev.skysongEconomy.data.database.SqlBusinessNpcRepository;
+import org.skysongdev.skysongEconomy.data.database.SqlModuleTargetRepository;
 import org.skysongdev.skysongEconomy.data.database.SqlNpcAppliedRepository;
 import org.skysongdev.skysongEconomy.data.database.StorageException;
 import org.skysongdev.skysongEconomy.events.BukkitBusinessNpcEvents;
+import org.skysongdev.skysongEconomy.gui.business.NpcMenuButtons;
 import org.skysongdev.skysongEconomy.gui.business.NpcsEntry;
 import org.skysongdev.skysongEconomy.integration.skysongnpcs.BusinessGroupProvider;
 import org.skysongdev.skysongEconomy.integration.skysongnpcs.NpcRemovalListener;
@@ -43,6 +50,7 @@ import java.time.Clock;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -79,8 +87,9 @@ public final class NpcFeature implements AutoCloseable {
      * @param npcs   creating, removing and owning NPCs
      * @param sheets what an NPC was given
      * @param access who may do what with a business's NPCs
+     * @param menu   buttons in the menu SkysongNPCs opens on an NPC
      */
-    public record Gateways(NpcGateway npcs, NpcSheetGateway sheets, NpcAccessGateway access) {
+    public record Gateways(NpcGateway npcs, NpcSheetGateway sheets, NpcAccessGateway access, NpcMenuButtons menu) {
     }
 
     /**
@@ -94,41 +103,59 @@ public final class NpcFeature implements AutoCloseable {
     }
 
     /**
-     * Connects to SkysongNPCs when it is enabled, registers the business groups with it and
-     * starts the businesses' NPC slots.
+     * Connects to SkysongNPCs when it is enabled and registers the business groups with it.
+     * Module files are read between this and {@link #start}, because their NPC effects are
+     * checked against SkysongNPCs.
      *
-     * @param database     the database to keep business NPCs in; the feature opens its own connection
      * @param businesses   the running business system, empty when businesses are disabled
-     * @param skysongStats the character a player is playing, and the skills {@code npcs.yml} names
+     * @param skysongStats the character a player is playing
+     * @return the ways into SkysongNPCs, empty when it is not installed or businesses are disabled
      */
-    public static NpcFeature start(JavaPlugin plugin, YamlFiles configFiles, DatabaseSettings database,
-                                   Optional<BusinessSystem> businesses, SkysongStatsAdapter skysongStats,
-                                   Messenger messenger) {
+    public static Optional<Gateways> connect(JavaPlugin plugin, Optional<BusinessSystem> businesses,
+                                             SkysongStatsAdapter skysongStats) {
         Logger logger = plugin.getLogger();
         if (businesses.isEmpty()) {
-            return off(logger);
+            return Optional.empty();
         }
         Plugin skysongNpcs = plugin.getServer().getPluginManager().getPlugin(SKYSONG_NPCS);
         if (skysongNpcs == null || !skysongNpcs.isEnabled()) {
             logger.info(SKYSONG_NPCS + " is not installed: business NPCs are off");
-            return off(logger);
+            return Optional.empty();
         }
         BusinessSystem system = businesses.get();
-        SkysongNpcsAdapter adapter;
         try {
-            adapter = SkysongNpcsAdapter.connect(plugin, SkysongStatsApi.get());
+            SkysongNpcsAdapter adapter = SkysongNpcsAdapter.connect(plugin, SkysongStatsApi.get());
             adapter.registerGroups(BusinessGroupRef.TYPE, new BusinessGroupProvider(
                     new BusinessGroupDirectory(system.businesses(), system.access()), skysongStats));
             logger.info("Connected to " + SKYSONG_NPCS + ": business groups are available to NPC access as "
                     + BusinessGroupRef.TYPE + ":<business>/<group>");
+            return Optional.of(new Gateways(adapter, adapter, adapter, adapter));
         } catch (RuntimeException | LinkageError e) {
             logger.log(Level.SEVERE, "Business NPCs are off: " + SKYSONG_NPCS + " could not be used", e);
+            return Optional.empty();
+        }
+    }
+
+    /**
+     * Starts the businesses' NPC slots on a connection {@link #connect} opened.
+     *
+     * @param gateways     the ways into SkysongNPCs, empty to leave everything off
+     * @param database     the database to keep business NPCs in; the feature opens its own connection
+     * @param businesses   the running business system, empty when businesses are disabled
+     * @param skysongStats the character a player is playing, and the skills {@code npcs.yml} names
+     * @param modules      the business modules, whose NPC effects join in; off when its modules are empty
+     */
+    public static NpcFeature start(JavaPlugin plugin, YamlFiles configFiles, DatabaseSettings database,
+                                   Optional<BusinessSystem> businesses, SkysongStatsAdapter skysongStats,
+                                   Messenger messenger, Optional<Gateways> gateways, ModuleFeature modules) {
+        Logger logger = plugin.getLogger();
+        if (businesses.isEmpty() || gateways.isEmpty()) {
             return off(logger);
         }
-        Gateways gateways = new Gateways(adapter, adapter, adapter);
         List<AutoCloseable> resources = new ArrayList<>();
-        Slots slots = startSlots(plugin, configFiles, database, system, gateways, skysongStats, messenger, resources);
-        return new NpcFeature(gateways, slots, resources, logger);
+        Slots slots = startSlots(plugin, configFiles, database, businesses.get(), gateways.get(), skysongStats, messenger,
+                modules, resources);
+        return new NpcFeature(gateways.get(), slots, resources, logger);
     }
 
     /**
@@ -141,7 +168,7 @@ public final class NpcFeature implements AutoCloseable {
      */
     private static @Nullable Slots startSlots(JavaPlugin plugin, YamlFiles configFiles, DatabaseSettings database,
                                       BusinessSystem system, Gateways gateways, SkysongStatsAdapter skysongStats,
-                                      Messenger messenger, List<AutoCloseable> resources) {
+                                      Messenger messenger, ModuleFeature modules, List<AutoCloseable> resources) {
         Logger logger = plugin.getLogger();
         NpcSettings settings;
         NpcAccessDefaults accessDefaults;
@@ -164,8 +191,19 @@ public final class NpcFeature implements AutoCloseable {
                 new BusinessNpcs.Dependencies(system.businesses(), system.access(), gateways.npcs()),
                 new AsyncBusinessNpcRepository(new SqlBusinessNpcRepository(connections, logger), writer),
                 new BukkitBusinessNpcEvents(events), Clock.systemUTC(), logger::warning);
+        // Picked modules give NPC slots and benefits of their own; the NPC services must know
+        // before they load, or the modules' NPCs would look like nobody's.
+        ModuleTargets targets = modules.modules().map(picked -> new ModuleTargets(picked, businessNpcs,
+                new AsyncModuleTargetRepository(new SqlModuleTargetRepository(connections, logger), writer))).orElse(null);
+        ModuleNpcRules moduleRules = targets == null ? null : new ModuleNpcRules(modules.modules().orElseThrow(), targets);
+        if (moduleRules != null) {
+            businessNpcs.addSlotRules(moduleRules);
+        }
         try {
             logger.info("Loaded " + businessNpcs.loadAll() + " business NPC(s)");
+            if (targets != null) {
+                logger.info("Loaded " + targets.loadAll() + " NPC(s) chosen for module benefits");
+            }
         } catch (StorageException e) {
             logger.log(Level.SEVERE, "Business NPCs could not be loaded from the database", e);
         }
@@ -173,6 +211,10 @@ public final class NpcFeature implements AutoCloseable {
                 new NpcProgression.Dependencies(system.businesses(), businessNpcs, gateways.sheets()), benefits.tiers(),
                 new AsyncNpcAppliedRepository(new SqlNpcAppliedRepository(connections), writer),
                 new NpcProgressionMessages(gateways.npcs(), skysongStats, messenger), logger::warning);
+        if (moduleRules != null) {
+            progression.addSlotRules(moduleRules);
+            progression.addBenefitRules(moduleRules);
+        }
         try {
             logger.info("Brought " + progression.loadAll() + " business NPC(s) in line with " + NpcSettingsParser.FILE);
         } catch (StorageException e) {
@@ -195,10 +237,24 @@ public final class NpcFeature implements AutoCloseable {
         system.access().onGroupDeleted(npcAccess::groupDeleted);
         events.registerEvents(new NpcRemovalListener(businessNpcs), plugin);
         events.registerEvents(new NpcSheetListener(progression, npcAccess), plugin);
-        system.menus().addEntry(new NpcsEntry(system.menus(), new NpcsEntry.Services(businessNpcs, progression, npcAccess),
-                new NpcsEntry.Gateways(gateways.npcs(), gateways.sheets()), settings, skysongStats, messenger));
-        system.command().enableNpcs(businessNpcs, gateways.npcs(), gateways.sheets(), skysongStats, progression);
+        Function<String, Optional<String>> moduleNames = id -> modules.modules()
+                .flatMap(picked -> picked.module(id)).map(Module::name);
+        NpcsEntry entry = new NpcsEntry(system.menus(), new NpcsEntry.Services(businessNpcs, progression, npcAccess),
+                new NpcsEntry.Gateways(gateways.npcs(), gateways.sheets()), settings, skysongStats, moduleNames, messenger);
+        system.menus().addEntry(entry);
+        try {
+            entry.addCardTo(gateways.menu());
+        } catch (RuntimeException e) {
+            logger.log(Level.WARNING, "The business card could not be added to the SkysongNPCs menu", e);
+        }
+        system.command().enableNpcs(businessNpcs, gateways.npcs(), gateways.sheets(), skysongStats, progression, moduleNames);
         system.command().enableNpcAccess(system.access(), npcAccess);
+        if (targets != null) {
+            ModuleNpcLink link = new ModuleNpcLink(businessNpcs, progression, targets);
+            modules.modules().orElseThrow().addListener(link);
+            businessNpcs.addListener(link);
+            modules.enableNpcs(targets, gateways.npcs(), progression);
+        }
         return new Slots(businessNpcs, progression, npcAccess);
     }
 

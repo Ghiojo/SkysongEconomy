@@ -187,6 +187,17 @@ public final class DatabaseSchema {
                     + "module_id VARCHAR(64) NOT NULL, "
                     + "picked_at BIGINT NOT NULL, "
                     + "PRIMARY KEY (business_id, pick_order), "
+                    + "FOREIGN KEY (business_id) REFERENCES businesses(id) ON DELETE CASCADE) ENGINE=InnoDB",
+            // The NPCs an owner chose for a module benefit that goes to a number of NPCs. effect is the
+            // effect's place in the module file, from 0.
+            "CREATE TABLE IF NOT EXISTS business_module_targets ("
+                    + "business_id VARCHAR(64) NOT NULL, "
+                    + "pick_order INT NOT NULL, "
+                    + "effect INT NOT NULL, "
+                    + "npc_uuid CHAR(36) NOT NULL, "
+                    + "chosen_at BIGINT NOT NULL, "
+                    + "PRIMARY KEY (business_id, pick_order, effect, npc_uuid), "
+                    + "INDEX (npc_uuid), "
                     + "FOREIGN KEY (business_id) REFERENCES businesses(id) ON DELETE CASCADE) ENGINE=InnoDB");
 
     private DatabaseSchema() {

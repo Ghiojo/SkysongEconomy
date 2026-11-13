@@ -10,10 +10,13 @@ import org.skysongdev.skysongEconomy.business.npc.BusinessNpcEvents;
 import org.skysongdev.skysongEconomy.business.npc.BusinessNpcs;
 import org.skysongdev.skysongEconomy.business.npc.NpcSettings;
 import org.skysongdev.skysongEconomy.business.npc.NpcSheetGateway;
+import org.skysongdev.skysongEconomy.business.npc.NpcSlotRules;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -23,8 +26,9 @@ import java.util.function.Consumer;
 /**
  * Keeps every business NPC in line with what its business owes it.
  * <p>
- * What an NPC is owed comes from its slot's progression in {@code businesses/npcs.yml} and the
- * business's level and tier. This service asks {@link NpcReconciler} to apply the difference
+ * What an NPC is owed comes from its slot's progression (a skill's in
+ * {@code businesses/npcs.yml}, or a module's own) and the business's level and tier, plus the
+ * benefits other things give it, such as picked modules. This service asks {@link NpcReconciler} to apply the difference
  * whenever that can have changed: when the NPC is created, when its business changes (tier,
  * skill picks), on start, when someone respecs the NPC in SkysongNPCs, and when staff ask for it.
  * It also remembers what was changed on each NPC's sheet.
@@ -33,7 +37,11 @@ import java.util.function.Consumer;
  * on the main thread.
  */
 public final class NpcProgression implements BusinessChangeListener, BusinessNpcEvents {
-    private final NpcSettings settings;
+    /** What each slot's own progression owes: the skills in the settings, then whatever was added. */
+    private NpcSlotRules rules;
+    private final List<NpcSlotRules> allRules = new ArrayList<>();
+    /** What gives NPCs more than their own slot does, in the order added. */
+    private final List<NpcBenefitRules> benefitRules = new ArrayList<>();
     private final BusinessService businesses;
     private final BusinessNpcs npcs;
     private final NpcReconciler reconciler;
@@ -61,7 +69,8 @@ public final class NpcProgression implements BusinessChangeListener, BusinessNpc
      */
     public NpcProgression(NpcSettings settings, Dependencies dependencies, TierOrder tiers, NpcAppliedRepository repository,
                           ProgressionNotices notices, Consumer<String> warnings) {
-        this.settings = settings;
+        this.allRules.add(settings);
+        this.rules = settings;
         this.businesses = dependencies.businesses();
         this.npcs = dependencies.npcs();
         this.reconciler = new NpcReconciler(dependencies.sheets(), tiers);
@@ -94,11 +103,53 @@ public final class NpcProgression implements BusinessChangeListener, BusinessNpc
     }
 
     /**
-     * @return what the NPC's slot owes it right now; empty when {@code businesses/npcs.yml} no
-     *         longer lists the slot's source
+     * Adds something else that gives NPC slots with a progression of their own, such as picked
+     * modules. Call it before {@link #loadAll()}.
+     */
+    public void addSlotRules(NpcSlotRules more) {
+        allRules.add(more);
+        rules = NpcSlotRules.all(allRules);
+    }
+
+    /** Adds something that gives NPCs more than their own slot does. Call it before {@link #loadAll()}. */
+    public void addBenefitRules(NpcBenefitRules more) {
+        benefitRules.add(more);
+    }
+
+    /**
+     * @return everything the business owes the NPC right now, from its slot and from anything
+     *         else that gives it a benefit; empty when nothing knows the NPC's slot any more
      */
     public Optional<Entitlement> owed(Business business, BusinessNpc npc) {
-        return settings.entitlement(business, npc.source(), tiers);
+        Map<String, Entitlement> bySource = owedBySource(business, npc);
+        if (bySource.isEmpty()) {
+            return Optional.empty();
+        }
+        Entitlement total = Entitlement.NONE;
+        for (Entitlement entitlement : bySource.values()) {
+            total = total.plus(entitlement, tiers);
+        }
+        return Optional.of(total);
+    }
+
+    /**
+     * @return what each source owes the NPC right now, by the source's name in SkysongNPCs: its
+     *         slot's own progression first, then the benefits. A source that owes it nothing any
+     *         more is listed with {@link Entitlement#NONE}. Empty when nothing knows the NPC's slot.
+     */
+    public Map<String, Entitlement> owedBySource(Business business, BusinessNpc npc) {
+        Map<String, Entitlement> bySource = new LinkedHashMap<>();
+        Optional<Entitlement> own = rules.entitlement(business, npc.source(), tiers);
+        if (own.isEmpty()) {
+            // Nothing knows its slot any more: the NPC is left exactly as it is, benefits included.
+            return bySource;
+        }
+        bySource.put(BenefitSources.of(npc.source()), own.get());
+        for (NpcBenefitRules benefits : benefitRules) {
+            benefits.benefits(business, npc, tiers)
+                    .forEach((source, entitlement) -> bySource.merge(source, entitlement, (a, b) -> a.plus(b, tiers)));
+        }
+        return bySource;
     }
 
     /**
@@ -120,14 +171,13 @@ public final class NpcProgression implements BusinessChangeListener, BusinessNpc
      * @return what changed; {@link Changes#NONE} when nothing did, or the NPC could not be changed
      */
     public Changes sync(Business business, BusinessNpc npc) {
-        Optional<Entitlement> owed = owed(business, npc);
+        Map<String, Entitlement> owed = owedBySource(business, npc);
         if (owed.isEmpty() || !busy.add(npc.npc())) {
             return Changes.NONE;
         }
         try {
             NpcApplied before = applied.getOrDefault(npc.npc(), NpcApplied.NONE);
-            NpcReconciler.Result result = reconciler.reconcile(npc.npc(), Map.of(BenefitSources.of(npc.source()), owed.get()),
-                    before);
+            NpcReconciler.Result result = reconciler.reconcile(npc.npc(), owed, before);
             remember(npc.npc(), before, result.applied());
             return result.changes();
         } catch (RuntimeException e) {
@@ -156,7 +206,11 @@ public final class NpcProgression implements BusinessChangeListener, BusinessNpc
     public void copied(UUID original, UUID copy) {
         npcs.find(original).ifPresent(found -> {
             try {
-                reconciler.reconcile(copy, Map.of(BenefitSources.of(found.source()), Entitlement.NONE), NpcApplied.NONE);
+                Map<String, Entitlement> nothing = new LinkedHashMap<>();
+                nothing.put(BenefitSources.of(found.source()), Entitlement.NONE);
+                businesses.find(found.businessId()).ifPresent(business -> owedBySource(business, found).keySet()
+                        .forEach(source -> nothing.put(source, Entitlement.NONE)));
+                reconciler.reconcile(copy, nothing, NpcApplied.NONE);
             } catch (RuntimeException e) {
                 warnings.accept("The copy " + copy + " of the business NPC " + original
                         + " could not have the business's gifts taken back: " + e);
@@ -167,6 +221,14 @@ public final class NpcProgression implements BusinessChangeListener, BusinessNpc
     /** A changed business may owe its NPCs more or less. Runs after {@link BusinessNpcs} freed lost slots. */
     @Override
     public void changed(Business business, @Nullable BlockPosition previousPosition) {
+        refresh(business);
+    }
+
+    /**
+     * Brings the business's NPCs in line after something other than the business itself changed
+     * what they are owed, such as a module it picked or lost, and tells the owner what changed.
+     */
+    public void refresh(Business business) {
         sync(business).forEach((npc, changes) -> {
             if (changes.any()) {
                 notices.changed(business, npc, changes);

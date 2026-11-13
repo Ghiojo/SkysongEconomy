@@ -3,8 +3,12 @@ package org.skysongdev.skysongEconomy.gui.business;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
+import org.bukkit.Material;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
+import org.jetbrains.annotations.Nullable;
 import org.skysongdev.skysongEconomy.business.Business;
+import org.skysongdev.skysongEconomy.business.module.npc.ModuleNpcRules;
 import org.skysongdev.skysongEconomy.business.npc.BusinessNpc;
 import org.skysongdev.skysongEconomy.business.npc.BusinessNpcs;
 import org.skysongdev.skysongEconomy.business.npc.NpcGateway;
@@ -14,6 +18,7 @@ import org.skysongdev.skysongEconomy.business.npc.NpcSlotGroup;
 import org.skysongdev.skysongEconomy.business.npc.NpcStatus;
 import org.skysongdev.skysongEconomy.business.npc.SlotSource;
 import org.skysongdev.skysongEconomy.business.npc.access.BusinessNpcAccess;
+import org.skysongdev.skysongEconomy.business.npc.benefit.BenefitSources;
 import org.skysongdev.skysongEconomy.business.npc.benefit.Entitlement;
 import org.skysongdev.skysongEconomy.business.npc.benefit.NpcProgression;
 import org.skysongdev.skysongEconomy.business.npc.benefit.PickKind;
@@ -23,6 +28,8 @@ import org.skysongdev.skysongEconomy.messaging.Messenger;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
+import java.util.function.Function;
 import java.util.Set;
 
 /**
@@ -35,10 +42,12 @@ import java.util.Set;
  * @param sheets   what each NPC still has to choose
  * @param settings {@code businesses/npcs.yml}
  * @param skills   skill names
+ * @param moduleNames a module's name by its id, as MiniMessage; empty for a module that has no file
  */
 record NpcScreens(BusinessMenus menus, BusinessNpcs npcs, NpcProgression progression, BusinessNpcAccess access,
                   NpcGateway gateway, NpcSheetGateway sheets,
-                  NpcSettings settings, SkillCatalog skills, Messenger messenger) {
+                  NpcSettings settings, SkillCatalog skills, Function<String, Optional<String>> moduleNames,
+                  Messenger messenger) {
     /** @return whether the viewer may create NPCs: who acts as the owner, or a group with {@code manage-npcs} */
     boolean mayCreate(BusinessMenuContext context) {
         return context.actsAsOwner()
@@ -65,11 +74,38 @@ record NpcScreens(BusinessMenus menus, BusinessNpcs npcs, NpcProgression progres
         new NpcAccessGroupsMenu(this, menus.context(player, business)).open(player);
     }
 
-    /** @return what gives a slot, as players read it: the skill's name for a skill */
+    /** @return what gives a slot, as players read it: the skill's name for a skill, the module's for a module */
     Component sourceName(SlotSource source) {
-        return source.isSkill()
-                ? messenger.render("business.npcs.source.skill", Placeholder.parsed("skill", skills.displayName(source.id())))
+        if (source.isSkill()) {
+            return messenger.render("business.npcs.source.skill", Placeholder.parsed("skill", skills.displayName(source.id())));
+        }
+        Optional<String> module = source.isModule() ? moduleNames.apply(source.id()) : Optional.empty();
+        return module.isPresent()
+                ? messenger.render("business.npcs.source.module", Placeholder.parsed("module", module.get()))
                 : messenger.render("business.npcs.source.other", Placeholder.unparsed("source", source.key()));
+    }
+
+    /**
+     * @return the card SkysongNPCs' own NPC menu shows for a business NPC: its business, the
+     *         slot it fills, and the modules that give it something; {@code null} for any other NPC
+     */
+    @Nullable ItemStack card(UUID npcId) {
+        BusinessNpc npc = npcs.find(npcId).orElse(null);
+        Business business = npc == null ? null : menus.businesses().find(npc.businessId()).orElse(null);
+        if (business == null) {
+            return null;
+        }
+        List<Component> lore = new ArrayList<>();
+        lore.add(messenger.render("business.npcs.card.business", Placeholder.unparsed("business", business.displayName())));
+        lore.add(messenger.render("business.npcs.card.slot", Placeholder.component("source", sourceName(npc.source()))));
+        String own = BenefitSources.of(npc.source());
+        progression.owedBySource(business, npc).forEach((source, owed) -> {
+            if (!owed.isEmpty() && !source.equals(own)) {
+                ModuleNpcRules.moduleOf(source).ifPresent(id -> lore.add(messenger.render("business.npcs.card.module",
+                        Placeholder.parsed("module", moduleNames.apply(id).orElse(id)))));
+            }
+        });
+        return menus.theme().item(Material.BELL, messenger.render("business.npcs.card.name"), lore);
     }
 
     /** @return the NPC's name, or its id when SkysongNPCs no longer knows it */
