@@ -59,8 +59,8 @@ row 5:  B B B P K N B B B      P = previous page, K = back, N = next page
 
 ### Input slots
 
-A menu can have slots where players put items in, such as the farm planting slot (and the booster slot on the
-boosters branch). The `Menu` methods:
+A menu can have slots where players put items in, such as the farm planting slot and the booster
+slot. The `Menu` methods:
 
 | Method | Meaning |
 | --- | --- |
@@ -100,6 +100,9 @@ menu itself never changes.
 | Exports | `ExportsMenu` |
 | Delivery slots | `SlotsMenu` |
 | Ledgers, one ledger | `LedgersMenu`, `LedgerDetailsMenu`, `LedgerScreens` |
+| NPCs, one NPC | `NpcsMenu`, `NpcDetailsMenu`, `NpcScreens` |
+| Who may use the NPCs: groups, one group's actions | `NpcAccessGroupsMenu`, `NpcAccessActionsMenu` |
+| Modules, a skill's pool, choose NPCs for a module | `ModulesMenu`, `ModulePoolMenu`, `ModuleAssignMenu`, `ModuleScreens` |
 
 Work a Shift, Retrieve Pay, Train/Learn and Vault are single buttons (`*Entry`) that act when clicked.
 

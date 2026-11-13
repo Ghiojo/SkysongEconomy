@@ -371,7 +371,7 @@ on `/se business npcsync <id>`.
 
 `NpcDetailsMenu` shows a "From the business" item listing what the NPC is owed right now.
 
-Who may do what with the NPCs comes in a later change.
+A module can add NPC slots of its own and give more to these NPCs; see [Module effects](#module-effects).
 
 ## Modules
 

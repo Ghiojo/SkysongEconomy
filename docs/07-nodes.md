@@ -246,11 +246,28 @@ nameplate:                          # same options as businesses/block.yml
   background: false
 ```
 
-## Boosters (not on master yet)
+## Boosters
 
-When this was written, boosters were finished on the branch `feature/node-boosters` but not merged. From that
-branch: booster items carry the SkysongItems tags `node_booster_type` (a random table's `type`, or a farm type's
-id) and `node_booster_effect` (for example `min+1; max+25%; rolls+1`). Both node menus get a booster slot: a player
-drags one booster in, each harvest they click is boosted and uses it once (a charge, or the item itself), and
-closing the menu gives back what is left. The hook it uses already exists on master: `loot/YieldAdjuster`, which
-`LootRoller.roll(output, adjuster)` applies to amounts and roll counts. Update this section when it merges.
+A booster is an item that makes harvests give more. It carries two SkysongItems tags:
+
+| Tag | Meaning |
+| --- | --- |
+| `node_booster_type` | What it works on: a random table's `type` (such as `mining`), or a farm type's id (such as `crop`) |
+| `node_booster_effect` | What it changes, such as `min+1; max+25%; rolls+1` |
+
+Each part of the effect is `min`, `max` or `rolls`, then `+` or `-` and a whole number; `min` and `max` can end
+in `%`. `min` and `max` change the amounts of every item of the harvest (guaranteed, chance and rolled), `rolls`
+changes the number of rolls of every roll line. Chance odds don't change. Percent applies before flat, results are
+truncated, nothing goes below 0, a minimum above the maximum is lowered to it, and several parts on the same thing
+add up (`nodes/boost/BoosterEffect`, which is a `loot/YieldAdjuster` that `LootRoller.roll(output, adjuster)`
+applies).
+
+Both node menus have a booster slot (`menu.booster` in `nodes/settings.yml` is its empty icon). It is a real
+[input slot](12-messages-and-menus.md#input-slots): the player drags one booster in, and each harvest they click
+is boosted and uses it once: one charge when the item has SkysongItems charges, otherwise one item
+(`items/BoosterItems`). Closing the menu, logging out or a shutdown gives back what is left.
+
+- An item without the tags is refused, and so is a booster of another type or one with no charges left; each has
+  its own message under `node.booster` in `messages.yml`.
+- An effect that can't be read is refused and the console names the item.
+- `/se node odds` does not count boosters.
