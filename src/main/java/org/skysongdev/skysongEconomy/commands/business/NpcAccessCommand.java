@@ -12,24 +12,27 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import static net.kyori.adventure.text.minimessage.tag.resolver.Placeholder.unparsed;
 
 /**
- * /se business npcaccess &lt;id&gt; [group] [allow|deny &lt;action&gt;]: what each access group
- * may do with the business's NPCs. Without a group it lists every group; with one, what that
+ * /se business npcaccess &lt;id&gt; [list|group] [allow|deny &lt;action&gt;]: what each access group
+ * may do with the business's NPCs. Without a group, or with {@code list}, it lists every group; with one, what that
  * group may do; {@code allow} and {@code deny} change it. An action is a SkysongNPCs action such
  * as {@code inventory-view}, or one of its presets such as {@code customer}, which stands for
  * several. For the owner, staff, and groups with {@code edit-npc-access}.
  */
 final class NpcAccessCommand extends BusinessSubCommand {
     private static final List<String> CHANGES = List.of("allow", "deny");
+    /** Typed instead of a group to list every group. A group called "list" is still reached by its allow and deny forms. */
+    private static final String LIST = "list";
 
     private final AccessService access;
     private final BusinessNpcAccess npcAccess;
 
     NpcAccessCommand(BusinessCommandSupport support, AccessService access, BusinessNpcAccess npcAccess) {
-        super(support, "npcaccess", "<id> [group] [allow|deny <action>]", 1, null);
+        super(support, "npcaccess", "<id> [list|group] [allow|deny <action>]", 1, null);
         this.access = access;
         this.npcAccess = npcAccess;
     }
@@ -38,7 +41,7 @@ final class NpcAccessCommand extends BusinessSubCommand {
     protected void run(CommandSender sender, String[] args) {
         Business business = support.businesses.require(args[0]);
         requireEditor(sender, business);
-        if (args.length == 1) {
+        if (args.length == 1 || (args.length == 2 && args[1].equalsIgnoreCase(LIST))) {
             support.messenger.send(sender, "business.npcs.access.list-header", unparsed("business", business.displayName()));
             npcAccess.grants(business).forEach((group, allowed) -> line(sender, group, allowed));
             return;
@@ -90,7 +93,8 @@ final class NpcAccessCommand extends BusinessSubCommand {
         return switch (args.length) {
             case 1 -> support.businessIds(args[0]);
             case 2 -> support.businesses.find(args[0])
-                    .map(business -> startingWith(access.groups(business).stream().map(AccessGroup::id).toList(), args[1]))
+                    .map(business -> startingWith(Stream.concat(Stream.of(LIST),
+                            access.groups(business).stream().map(AccessGroup::id)).toList(), args[1]))
                     .orElse(List.of());
             case 3 -> startingWith(CHANGES, args[2]);
             // SkysongNPCs does not list its presets, so only the actions are suggested.

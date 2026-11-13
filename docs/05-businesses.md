@@ -57,7 +57,7 @@ tier 1 business named after its id, with no workers and no picks.
 | Vault | `/se business vault <id> [collect]` | Owner or staff |
 | NPC slots and NPCs | `/se business npcs <id>` | Owner or staff |
 | Bring NPCs in line | `/se business npcsync <id>` | Staff |
-| NPC permissions | `/se business npcaccess <id> [group] [allow\|deny <action>]` | Owner, staff, groups with `edit-npc-access` |
+| NPC permissions | `/se business npcaccess <id> [list\|group] [allow\|deny <action>]` | Owner, staff, groups with `edit-npc-access` |
 | Info | `/se business info <id>` | Anyone with `skysongeconomy.business` |
 
 "Staff" means `skysongeconomy.business.admin`. "Owner" means the sender's **active** character owns the business.
