@@ -1,0 +1,17 @@
+# An example module. A module is one file in this folder; its file name is its id, which
+# businesses/modules.yml lists under the skills that can pick it. This one is not in any
+# skill's pool until you list it there.
+#
+#   name         required. MiniMessage.
+#   icon         the Minecraft item shown in menus. PAPER when left out.
+#   description  one text or a list of lines. MiniMessage.
+#   max-picks    how many times one business may pick it. 1 when left out.
+#   requires     optional: what a business needs before it can pick it
+#       tier     the business tier, 1 to 5
+#       level    how many picks of the skill it is being picked for
+#       modules  modules the business must already have, by id
+name: "<white>Sworn Oath"
+icon: PAPER
+description:
+  - "<gray>Your guards are bound by oath."
+  - "<gray>Ask a DM how this plays out."

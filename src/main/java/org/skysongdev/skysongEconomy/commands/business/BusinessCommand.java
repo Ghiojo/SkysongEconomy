@@ -2,6 +2,7 @@ package org.skysongdev.skysongEconomy.commands.business;
 
 import org.skysongdev.skysongEconomy.business.BusinessService;
 import org.skysongdev.skysongEconomy.business.access.AccessService;
+import org.skysongdev.skysongEconomy.business.module.BusinessModules;
 import org.skysongdev.skysongEconomy.business.npc.BusinessNpcs;
 import org.skysongdev.skysongEconomy.business.npc.access.BusinessNpcAccess;
 import org.skysongdev.skysongEconomy.business.npc.NpcGateway;
@@ -59,6 +60,27 @@ public final class BusinessCommand extends CommandGroup {
         register(new DismissNpc(support, text));
         register(new SyncBusinessNpcs(support, text, progression));
         support.addChangeReport(text);
+    }
+
+    /**
+     * Adds what business modules bring: {@code modules} and {@code clearmodule}, the modules in
+     * {@code info}, and telling staff which modules were dropped when {@code settier} or
+     * {@code clearpick} took their picks. Call it once.
+     *
+     * @param modules the modules each business picked
+     * @param skills  skill names
+     */
+    public void enableModules(BusinessModules modules, SkillCatalog skills) {
+        ModuleCommandText text = new ModuleCommandText(modules, skills, support.messenger);
+        register(new ListBusinessModules(support, text));
+        register(new ClearModule(support, text));
+        support.addChangeReport(text);
+        support.addInfoReport((sender, business) -> {
+            if (modules.hasPicks(business)) {
+                support.messenger.send(sender, "business.modules.info-header");
+                text.list(sender, business);
+            }
+        });
     }
 
     /**

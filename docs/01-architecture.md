@@ -22,10 +22,13 @@ reads the same way.
    it logs why and returns a disabled feature with no commands. The rest of the plugin still runs.
 6. `NodeFeature.start(...)` builds the nodes system. Nodes need businesses, so they are off when businesses
    are off, or when `nodes/settings.yml` is broken.
-7. `NpcFeature.start(...)` connects to SkysongNPCs when that plugin is installed, registers the business
+7. `ModuleFeature.start(...)` reads the module files in `modules/` and `businesses/modules.yml` and starts the
+   businesses' module picks (the Modules button, `/se business modules` and `clearmodule`). It needs businesses
+   only, not SkysongNPCs.
+8. `NpcFeature.start(...)` connects to SkysongNPCs when that plugin is installed, registers the business
    access groups with it, and starts the businesses' NPC slots (`businesses/npcs.yml`, the NPCs button and
    `/se business npcs` and `dismissnpc`). Without SkysongNPCs it logs one line and has no gateways.
-8. `registerCommands()` builds the `/se` command tree: `ledger` and `good` always, plus whatever commands
+9. `registerCommands()` builds the `/se` command tree: `ledger` and `good` always, plus whatever commands
    each feature returns (`business`, `tokens`, `modifier`, `node`).
 
 ### Feature bootstraps
@@ -76,6 +79,7 @@ nodes feature and other plugins use it to reach businesses.
 | `expression` | `Formula`: arithmetic with placeholders, shared by price expressions and amounts. |
 | `prices` | The price database and price expressions. |
 | `prices.modifier` | Percentage price modifiers. |
+| `business.module` | Business modules: `Module` and `ModuleParser` (one file in `modules/`), `ModuleSettings` (`businesses/modules.yml`), `BusinessModules` (which business picked what; picking, `max-picks` and `requires`, clearing, lost picks), `ModulePickRepository`, `BusinessModuleEvents`. No server classes. |
 | `business.npc` | What businesses need from SkysongNPCs, as interfaces (`NpcGateway`, `NpcSheetGateway`, `NpcAccessGateway`), the business group names SkysongNPCs sees (`BusinessGroupRef`, `BusinessGroupDirectory`), and the NPC slots: `NpcSettings` (`businesses/npcs.yml`), `BusinessNpcs` (which NPC fills which slot; creating, dismissing, lost slots, owner changes), `BusinessNpcRepository`, `BusinessNpcEvents`. No server classes. |
 | `business.npc.benefit` | What a business gives its NPCs: `Benefit` and `Progression` (config), `Entitlement` (the numbers at a level and tier), `NpcReconciler` (applies only the difference), `NpcProgression` (runs it when something changes), `NpcApplied` (what was changed on a sheet). No server classes. |
 | `business.npc.access` | Who may do what with a business's NPCs: `BusinessNpcAccess` keeps one SkysongNPCs access policy per business (`PolicyIds`), with `NpcAccessDefaults` from `businesses/npcs.yml`. No server classes. |

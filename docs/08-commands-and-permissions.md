@@ -55,6 +55,8 @@ child may add a stricter one.
 | `clearpick <id> <number>` | staff | Frees one skill pick, numbered from 1 (oldest); names the NPCs removed with their slots |
 | `npcsync <id>` | staff | Brings every NPC of the business in line with what it is owed now and lists what changed. It happens by itself when a business changes; use it after changing an NPC by hand in SkysongNPCs. Only with SkysongNPCs |
 | `npcaccess <id> [list\|group] [allow\|deny <action>]` | owner, staff, or a group with `edit-npc-access` | What each access group may do with the business's NPCs. Alone or with `list` it lists every group, with a group it shows that group, and `allow`/`deny` change it. `<action>` is a SkysongNPCs action (`info`, `inventory-view`, `teleport`, ...) or one of its presets (`customer`, ...). Only with SkysongNPCs |
+| `modules <id>` | owner or staff | Lists the business's module picks skill by skill, numbered within each skill |
+| `clearmodule <id> <skill> <number>` | staff | Frees one module pick; `<number>` is the module's number within that skill in `modules` |
 | `dismissnpc <id> <npc>` | staff | Removes one of the business's NPCs for good and frees its slot; `<npc>` is its number in `npcs`, or its id. Only with SkysongNPCs |
 | `list` | staff | Every business |
 | `move <id>` | owner or staff | Moves it to the looked-at block (also places a broken one) |

@@ -1,0 +1,28 @@
+# Business modules: premade specialisations a business picks, one per module pick.
+#
+# A business has module picks for every skill listed under skills that it has picked. Each
+# pick takes one module from that skill's list, chosen by the owner in the business menu, and is
+# permanent: only staff can free one, with /se business clearmodule. A skill can be listed here
+# and in npcs.yml and economy-and-logistics.yml at the same time: all of them apply.
+#
+# The modules themselves are files in the modules folder, one per module; see
+# modules/sworn_oath.yml for what a file can say.
+#
+# One entry per skill: a SkysongStats skill id, as in types.yml.
+#   picks    how many module picks the business has for this skill in total. A number, a
+#            formula, or a table. In a formula {level} is how many picks the business has of
+#            this skill and {tier} is the business's tier. A table is written
+#            {by: level, 1: 1, 3: 2, 5: 3} (or by: tier): the business gets the value of the
+#            highest step it has reached.
+#   modules  the modules those picks can take: file names from the modules folder, without
+#            .yml. The same module can be in several skills' lists.
+#
+# When a business has more modules than picks for a skill (a lower tier, a cleared skill pick,
+# a lower number here) its newest modules of that skill are removed.
+#
+# Example:
+#   skills:
+#     martial:
+#       picks: {by: level, 1: 1, 3: 2, 5: 3}
+#       modules: [sworn_oath]
+skills: {}

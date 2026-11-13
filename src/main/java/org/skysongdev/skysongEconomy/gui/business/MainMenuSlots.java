@@ -4,7 +4,7 @@ import org.skysongdev.skysongEconomy.gui.layout.BorderedLayout;
 
 /**
  * Where each main menu button goes, so features don't overlap. Row 2 holds what every business
- * has, row 3 what Economy and Logistics adds, row 4 what business NPCs add.
+ * has, row 3 what Economy and Logistics adds, row 4 what business NPCs and modules add.
  */
 public final class MainMenuSlots {
     public static final int WORK_SHIFT = BorderedLayout.slot(2, 2);
@@ -19,6 +19,7 @@ public final class MainMenuSlots {
     public static final int LEDGERS = BorderedLayout.slot(3, 6);
 
     public static final int NPCS = BorderedLayout.slot(4, 2);
+    public static final int MODULES = BorderedLayout.slot(4, 3);
 
     private MainMenuSlots() {
     }

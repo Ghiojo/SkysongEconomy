@@ -44,6 +44,7 @@ final class BusinessInfo extends BusinessSubCommand {
                 business.position().isPresent()
                         ? unparsed("position", business.position().get().toString())
                         : component("position", support.messenger.render("business.info-no-block")));
+        support.reportInfo(sender, business);
     }
 
     @Override

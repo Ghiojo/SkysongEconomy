@@ -10,6 +10,8 @@ Other plugins can listen to these like any Bukkit event.
 | `ShiftEndEvent` | A shift has its full time; its pay can now be retrieved. The player may be offline. | No | `getBusiness()`, `getShift()` (pay, times, character) |
 | `BusinessNpcCreateEvent` | A business created an NPC in one of its slots; it is waiting for its first setup | No | `getBusiness()`, `getNpc()` (`BusinessNpc`: SkysongNPCs id, business, slot source, creation time) |
 | `BusinessNpcRemoveEvent` | A business no longer has an NPC and its slot is free. Unless the cause is `REMOVED_ELSEWHERE`, the NPC still exists while this fires and is removed right after | No | `getBusiness()`, `getNpc()`, `getCause()` (`DISMISSED`, `SLOT_LOST`, `BUSINESS_DELETED`, `REMOVED_ELSEWHERE`) |
+| `BusinessModulePickEvent` | A business picked a module; the pick is saved | No | `getBusiness()`, `getPick()` (`ModulePick`: module id, skill, order, time) |
+| `BusinessModuleRemoveEvent` | A business no longer has a module it picked | No | `getBusiness()`, `getPick()`, `getCause()` (`CLEARED`, `PICK_LOST`, `BUSINESS_DELETED`) |
 | `NodeHarvestEvent` | Someone harvested at a node: paid and rolled, items handed over right after | No | `getPlayer()`, `getNode()`, `getCharacter()`, `getTier()`, `getPaid()` (`HarvestCost`), `getItems()` |
 
 The shift message is not shown in game; `ShiftStartEvent.getMessage()` is meant for a Discord bridge or similar.
@@ -31,6 +33,7 @@ Get the plugin instance (`(SkysongEconomy) Bukkit.getPluginManager().getPlugin("
 | `getSkysongStats()` | `SkysongStatsAdapter` |
 | `getBusinessFeature().system()` | `Optional<BusinessSystem>`, empty when businesses are disabled |
 | `getNodeFeature().nodes()` | `Optional<NodeService>`, empty when nodes are disabled |
+| `getModuleFeature().modules()` | `Optional<BusinessModules>`: the modules each business picked (`of`, `has`, `groups`, `pool`, `pick`, `clear`); empty when businesses are disabled or `businesses/modules.yml` can't be read |
 | `getNpcFeature().gateways()` | `Optional<NpcFeature.Gateways>`: the three gateways into SkysongNPCs, empty when it is not installed or businesses are disabled |
 | `getNpcFeature().progression()` | `Optional<NpcProgression>`: what each business NPC is owed (`owed`) and bringing it in line (`sync`) |
 | `getNpcFeature().npcAccess()` | `Optional<BusinessNpcAccess>`: what each access group may do with a business's NPCs (`grants`, `allowed`, `set`, `toggle`) |

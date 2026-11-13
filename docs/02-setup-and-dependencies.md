@@ -57,7 +57,10 @@ plugins/SkysongEconomy/
 │   ├── shifts.yml                  copied
 │   ├── training.yml                copied
 │   ├── npcs.yml                    copied   business NPC slots (only read with SkysongNPCs installed)
+│   ├── modules.yml                 copied   which skills give module picks, and their pools
 │   └── block.yml                   copied   business nameplate
+├── modules/
+│   └── sworn_oath.yml              copied   example module; add one file per module
 └── nodes/
     ├── settings.yml                copied
     ├── groups/<id>.yml             yours    loot groups
@@ -105,6 +108,9 @@ while the rest of the plugin runs:
 - "Nodes are disabled until this is fixed: ..." means `nodes/settings.yml` is broken.
 - "Business NPC slots are off until this is fixed: ..." means `businesses/npcs.yml` is broken. Existing NPCs
   stay as they are; the NPCs button and the `npcs` and `dismissnpc` commands are missing until it is fixed.
+- "Business modules are off until this is fixed: ..." means `businesses/modules.yml` is broken. Picked modules
+  stay saved; the Modules button and the `modules` and `clearmodule` commands are missing until it is fixed. A
+  broken file in `modules/` only skips that module, with a warning.
 - Smaller files fall back instead of disabling anything: a broken `prices.yml` keeps 1 decimal, a broken
   `menus.yml` uses default icons, a broken `businesses/block.yml` turns business nameplates off, and a broken
   `messages.yml` uses the bundled texts.
