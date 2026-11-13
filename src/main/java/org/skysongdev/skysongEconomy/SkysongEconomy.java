@@ -85,7 +85,8 @@ public final class SkysongEconomy extends JavaPlugin {
                 messenger, messages);
         nodeFeature = NodeFeature.start(this, configFiles, databaseSettings(), businessFeature.system(), skysongStats,
                 wallet, trade, messenger);
-        npcFeature = NpcFeature.start(this, businessFeature.system(), skysongStats);
+        npcFeature = NpcFeature.start(this, configFiles, databaseSettings(), businessFeature.system(), skysongStats,
+                messenger);
 
         registerCommands(messenger, materialIds);
     }
@@ -94,7 +95,10 @@ public final class SkysongEconomy extends JavaPlugin {
     public void onDisable() {
         // Gives back anything players put in open menus, such as a primer in a planting slot.
         MenuListener.closeAll(getServer());
-        // Nodes listen to businesses, so they close first.
+        // Nodes and business NPCs listen to businesses, so they close first.
+        if (npcFeature != null) {
+            npcFeature.close();
+        }
         if (nodeFeature != null) {
             nodeFeature.close();
         }

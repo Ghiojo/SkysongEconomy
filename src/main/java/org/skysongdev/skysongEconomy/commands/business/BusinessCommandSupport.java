@@ -38,12 +38,23 @@ final class BusinessCommandSupport {
     final CharacterDirectory characters;
     final Messenger messenger;
     private final CharacterArguments characterArgs;
+    private final List<ChangeReport> changeReports = new ArrayList<>();
 
     BusinessCommandSupport(BusinessService businesses, CharacterDirectory characters, Messenger messenger) {
         this.businesses = businesses;
         this.characters = characters;
         this.messenger = messenger;
         this.characterArgs = new CharacterArguments(characters, messenger);
+    }
+
+    /** Adds something to tell staff after a command changed a business's tier or skill picks. */
+    void addChangeReport(ChangeReport report) {
+        changeReports.add(report);
+    }
+
+    /** Tells the sender what else changed with the business, such as NPCs that lost their slot. */
+    void reportChanges(CommandSender sender, Business business) {
+        changeReports.forEach(report -> report.report(sender, business));
     }
 
     Optional<Player> requirePlayer(CommandSender sender) {

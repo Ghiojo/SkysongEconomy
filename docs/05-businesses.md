@@ -21,6 +21,7 @@ Code map:
 | One activity at a time | `business/activity/ActivityLock`, `listeners/ActivityTimer` |
 | Tokens | `tokens/*`, `integration/placeholderapi/TokenExpansion` |
 | Block and nameplate | `business/BusinessBlockGuard`, `listeners/ProtectedBlockListener`, `listeners/BusinessNameplates`, `listeners/FloatingNames` (`businesses/block.yml`) |
+| Business NPCs | `business/npc/*` (`businesses/npcs.yml`), `integration/skysongnpcs/*`, `events/BusinessNpcCreateEvent`, `BusinessNpcRemoveEvent` |
 | Menus | `gui/business/*`, opened by `listeners/BusinessInteractListener` |
 | Commands | `commands/business/*`, `commands/tokens/*` |
 | Wiring | `bootstrap/BusinessFeature` |
@@ -46,6 +47,7 @@ tier 1 business named after its id, with no workers and no picks.
 | Change tier | `/se business settier <id> <tier>` | Staff |
 | Change owner | `/se business setowner <id> <player\|#server> [profile]` | Staff |
 | Clear a skill pick | `/se business clearpick <id> <number>` | Staff |
+| Dismiss an NPC | `/se business dismissnpc <id> <npc>` | Staff |
 | List all | `/se business list` | Staff |
 | Move to the block you look at | `/se business move <id>` | Owner or staff |
 | Rename | `/se business rename <id> <name...>` | Owner or staff |
@@ -53,6 +55,7 @@ tier 1 business named after its id, with no workers and no picks.
 | Hire / fire | `/se business hire\|fire <id> <player> [profile]` | Owner or staff |
 | Access groups | `/se business group <id> ...` | Owner or staff |
 | Vault | `/se business vault <id> [collect]` | Owner or staff |
+| NPC slots and NPCs | `/se business npcs <id>` | Owner or staff |
 | Info | `/se business info <id>` | Anyone with `skysongeconomy.business` |
 
 "Staff" means `skysongeconomy.business.admin`. "Owner" means the sender's **active** character owns the business.
@@ -159,6 +162,7 @@ Each group has a set of permissions and a training price:
 | `order-imports` | order E&L imports, and collect any delivery |
 | `sell-exports` | sell E&L exports |
 | `tend-farms` | plant and take out primers in the business's farm nodes (staff with `skysongeconomy.nodes.tend-bypass` always can) |
+| `manage-npcs` | create NPCs in the business's free NPC slots (see [Business NPCs](#business-npcs)) |
 
 A character may do something when **any** of their groups allows it, and pays the **lowest** training price among
 their groups that allow training. The **owner** may always do everything and trains for free.
@@ -271,8 +275,39 @@ rename). Each feature adds its own button (`MainMenuEntry`) in a fixed slot (`Ma
 | 3 | Exports | businesses with E&L |
 | 3 | Slots | businesses with E&L |
 | 3 | Ledgers | businesses with E&L; everyone can browse, only the owner selects |
+| 4 | NPCs | businesses with an NPC slot or an NPC, when SkysongNPCs is installed |
 
 The E&L buttons are described in [Economy and Logistics](06-economy-and-logistics.md).
+
+## Business NPCs
+
+Business NPCs need the SkysongNPCs plugin. A business has **NPC slots** for every skill listed in
+`businesses/npcs.yml` that it has picked; how many is that skill's `slots` amount, which can follow the skill's
+level (how many picks of it the business has) or the business's tier. A skill can give NPC slots and be an E&L
+skill at the same time: the two don't exclude each other. The bundled file lists no skill, so nothing changes
+until you add one.
+
+- **Creating.** The **NPCs** button opens `NpcsMenu`: every NPC, then the free slots, source by source. The owner
+  (staff on a server-owned business) and anyone in a group with `manage-npcs` click a free slot and confirm. The
+  NPC is made from the skill's `template` on a free spot in front of them (`spawn-at: player`) or next to the
+  business block (`spawn-at: business`). SkysongNPCs picks the spot, so free space, its per-chunk limit and the
+  `npc-place` region flag for that player all count; with no spot nothing is created and the player is told why.
+  The new NPC opens its first setup at once.
+- **Owner.** Every NPC belongs to the business owner's character, or to the server for a server-owned business,
+  and follows the business on `/se business setowner`.
+- **A filled slot** opens `NpcDetailsMenu`: the NPC's own SkysongNPCs menu (which shows each viewer only what
+  their access allows) and, for whoever acts as the owner, its setup and pending choices and "bring it here".
+- **Dismissing.** Owners can't. Staff use `/se business dismissnpc <id> <npc>`, where `<npc>` is the number
+  `/se business npcs <id>` shows (oldest first) or the NPC's id. The slot is free again.
+- **Fewer slots.** When a source gives fewer slots than it has NPCs (`settier` down, `clearpick`, a lower number
+  in the file after a restart), the **newest** NPCs over the limit are removed, and `settier` and `clearpick`
+  name them. A skill removed from the file entirely removes nobody: its NPCs stay until staff dismiss them, so a
+  typo in the file never deletes an NPC.
+- **Removed elsewhere.** An NPC removed or released in SkysongNPCs itself (`/npc remove`, `/snpc release`) frees
+  its slot (`integration/skysongnpcs/NpcRemovalListener`).
+
+What NPCs are given as the business grows (stat points, picks, abilities) and who may do what with them come in
+later changes.
 
 ## Deleting a business
 
@@ -286,7 +321,8 @@ The E&L buttons are described in [Economy and Logistics](06-economy-and-logistic
 6. ledger selections are removed;
 7. every delivery is **refunded** to whoever paid for it;
 8. the nameplate is removed;
-9. its gathering nodes become **unowned** (nobody can gather until staff give them a new owner), and primers planted
+9. its NPCs are removed;
+10. its gathering nodes become **unowned** (nobody can gather until staff give them a new owner), and primers planted
    in its farm nodes go back to their planters.
 
 A payment that fails during deletion is logged as a warning asking staff to pay by hand. The database removes the

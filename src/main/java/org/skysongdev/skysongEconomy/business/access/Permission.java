@@ -12,7 +12,9 @@ public enum Permission {
     /** Sell exports (Economy and Logistics). */
     SELL_EXPORTS,
     /** Plant primers in the business's farm nodes and take them out. Nobody but the owner has it by default. */
-    TEND_FARMS;
+    TEND_FARMS,
+    /** Create NPCs in the business's free NPC slots. Nobody but the owner has it by default. */
+    MANAGE_NPCS;
 
     /** @return the name used in config and commands, e.g. {@code order-imports} */
     public String key() {

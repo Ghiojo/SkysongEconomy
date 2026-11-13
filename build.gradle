@@ -42,6 +42,8 @@ dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
     testImplementation 'org.yaml:snakeyaml:2.2'
+    // The nullability annotations the main code gets from Paper; tests use them in their fakes.
+    testCompileOnly 'org.jetbrains:annotations:24.1.0'
 }
 
 test {

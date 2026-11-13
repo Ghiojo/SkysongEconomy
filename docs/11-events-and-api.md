@@ -8,13 +8,15 @@ Other plugins can listen to these like any Bukkit event.
 | --- | --- | --- | --- |
 | `ShiftStartEvent` | A player is about to start a shift, after every check passed and before downtime is spent | Yes: nothing is spent and the player is told the shift was cancelled | `getBusiness()`, `getPlayer()`, `getCharacter()`, `getMessage()` (the business's shift message, placeholders filled in) |
 | `ShiftEndEvent` | A shift has its full time; its pay can now be retrieved. The player may be offline. | No | `getBusiness()`, `getShift()` (pay, times, character) |
+| `BusinessNpcCreateEvent` | A business created an NPC in one of its slots; it is waiting for its first setup | No | `getBusiness()`, `getNpc()` (`BusinessNpc`: SkysongNPCs id, business, slot source, creation time) |
+| `BusinessNpcRemoveEvent` | A business no longer has an NPC and its slot is free. Unless the cause is `REMOVED_ELSEWHERE`, the NPC still exists while this fires and is removed right after | No | `getBusiness()`, `getNpc()`, `getCause()` (`DISMISSED`, `SLOT_LOST`, `BUSINESS_DELETED`, `REMOVED_ELSEWHERE`) |
 | `NodeHarvestEvent` | Someone harvested at a node: paid and rolled, items handed over right after | No | `getPlayer()`, `getNode()`, `getCharacter()`, `getTier()`, `getPaid()` (`HarvestCost`), `getItems()` |
 
 The shift message is not shown in game; `ShiftStartEvent.getMessage()` is meant for a Discord bridge or similar.
 
-The rules don't fire Bukkit events themselves: they call `business/shift/ShiftEvents` and
-`nodes/harvest/NodeHarvestEvents`, whose server implementations (`events/BukkitShiftEvents`,
-`BukkitNodeHarvestEvents`) fire the events. Tests use fakes. To add an event, follow the same shape.
+The rules don't fire Bukkit events themselves: they call `business/shift/ShiftEvents`,
+`business/npc/BusinessNpcEvents` and `nodes/harvest/NodeHarvestEvents`, whose server implementations
+(`events/BukkitShiftEvents`, `BukkitBusinessNpcEvents`, `BukkitNodeHarvestEvents`) fire the events. Tests use fakes. To add an event, follow the same shape.
 
 ## Calling the plugin from another plugin
 
@@ -30,11 +32,12 @@ Get the plugin instance (`(SkysongEconomy) Bukkit.getPluginManager().getPlugin("
 | `getBusinessFeature().system()` | `Optional<BusinessSystem>`, empty when businesses are disabled |
 | `getNodeFeature().nodes()` | `Optional<NodeService>`, empty when nodes are disabled |
 | `getNpcFeature().gateways()` | `Optional<NpcFeature.Gateways>`: the three gateways into SkysongNPCs, empty when it is not installed or businesses are disabled |
+| `getNpcFeature().businessNpcs()` | `Optional<BusinessNpcs>`: which NPCs each business has and the slots they fill; also empty when `businesses/npcs.yml` can't be read |
 
 `BusinessSystem` (in `bootstrap/`) is a record of every running business service: `businesses`, `types`, `access`,
 `vaults`, `tokens`, `activities`, `shifts`, `training`, `economyLogistics`, `ledgers`, `ledgerSelections`,
-`modifiers`, `pricing`, `deliveries`, `exports`, and `menus` (to add a main menu button with
-`menus.addEntry(MainMenuEntry)`).
+`modifiers`, `pricing`, `deliveries`, `exports`, `menus` (to add a main menu button with
+`menus.addEntry(MainMenuEntry)`) and `command` (the `/se business` command, to add sub-commands to).
 
 Rules for callers:
 
@@ -78,7 +81,7 @@ The adapter implements the three interfaces in `business/npc`, which is all the 
 
 | Interface | Methods | Used for |
 | --- | --- | --- |
-| `NpcGateway` | `exists`, `create(template, owner, where, radius)`, `remove`, `setOwner`, `inSetup` | A business NPC's life. `create` asks SkysongNPCs for a free spot (`SpawnPoint.InFrontOf` a player or `NextTo` a block) and answers with an `NpcCreation`: created, no spot, nowhere (player offline or world not loaded), unknown template, or refused. The owner is a character, or `null` for the server. |
+| `NpcGateway` | `exists`, `create(template, owner, where, radius)`, `remove`, `setOwner`, `isOwnedBy`, `inSetup`, `name` (plain text), `openMenu`, `openChoices`, `teleportTo` | A business NPC's life. `create` asks SkysongNPCs for a free spot (`SpawnPoint.InFrontOf` a player or `NextTo` a block) and answers with an `NpcCreation`: created, no spot, nowhere (player offline or world not loaded), unknown template, or refused. The owner is a character, or `null` for the server. |
 | `NpcSheetGateway` | Stat points (`points`, `grantPoints`, `takeUnspentPoints`), proficiency picks (`picks`, `grantPicks` with optional promotion, `takeUnspentPicks`), `respec(npc, source)`, abilities (`holdsAbility`, `grantAbility`, `revokeAbility`), ability choices, baked stats (`addModifier`, `removeModifier`, `hasModifier`), fixed proficiencies (`proficiencyTier`, `setProficiencyTier`), and `tierIds`, `isStat`, `isProficiency`, `isAbility` for checking config | What an NPC is given. Everything in SkysongNPCs is tracked per source text (at most 64 characters, no spaces), so Economy only counts and takes back its own. Modifiers and proficiency tiers go on the NPC's SkysongStats sheet, which has no sources. |
 | `NpcAccessGateway` | `actions`, `preset`, `hasPolicy`, `createPolicy`, `deletePolicy`, `grants`, `setGrant`, `assign`, `unassign`, `policyOf` | SkysongNPCs access policies. Policies made here are owned by the SkysongEconomy plugin. Actions and groups are plain texts (`inventory-view`, `economy:smithy/workers`). |
 

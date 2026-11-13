@@ -23,6 +23,9 @@ public interface NpcSheetGateway {
     /** The longest source SkysongNPCs accepts. */
     int MAX_SOURCE_LENGTH = 64;
 
+    /** @return the choices the NPC still has to make, from every source */
+    NpcPending pending(UUID npc);
+
     // Stat points the owner assigns
 
     /** @return the source's point grants on that NPC, oldest first; empty when it gave none */

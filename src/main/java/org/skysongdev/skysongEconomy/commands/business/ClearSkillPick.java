@@ -26,6 +26,7 @@ final class ClearSkillPick extends BusinessSubCommand {
         SkillPick cleared = support.businesses.clearPick(business, parseNumber(args[1], business));
         support.messenger.send(sender, "business.picks.cleared", unparsed("number", args[1]),
                 unparsed("skill", cleared.skillId()), unparsed("business", business.displayName()));
+        support.reportChanges(sender, business);
     }
 
     private static int parseNumber(String text, Business business) {

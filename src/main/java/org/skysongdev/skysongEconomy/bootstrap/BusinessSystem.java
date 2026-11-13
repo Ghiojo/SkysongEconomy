@@ -1,5 +1,6 @@
 package org.skysongdev.skysongEconomy.bootstrap;
 
+import org.skysongdev.skysongEconomy.commands.business.BusinessCommand;
 import org.skysongdev.skysongEconomy.business.BusinessService;
 import org.skysongdev.skysongEconomy.business.access.AccessService;
 import org.skysongdev.skysongEconomy.business.activity.ActivityLock;
@@ -36,6 +37,7 @@ import org.skysongdev.skysongEconomy.trade.delivery.DeliveryService;
  * @param deliveries ordered imports, until they are collected
  * @param exports    selling exports
  * @param menus      the business menus, to add main menu buttons to
+ * @param command    the {@code /se business} command, to add sub-commands to
  */
 public record BusinessSystem(BusinessService businesses, BusinessTypeRegistry types, AccessService access,
                              BusinessVaults vaults, GatheringTokens tokens, ActivityLock activities,
@@ -43,5 +45,5 @@ public record BusinessSystem(BusinessService businesses, BusinessTypeRegistry ty
                              EconomyLogisticsSettings economyLogistics, LedgerRegistry ledgers, LedgerSelections ledgerSelections,
                              PriceModifiers modifiers, TradePricing pricing, DeliveryService deliveries,
                              ExportService exports,
-                             BusinessMenus menus) {
+                             BusinessMenus menus, BusinessCommand command) {
 }

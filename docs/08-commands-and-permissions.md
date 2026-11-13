@@ -50,9 +50,10 @@ child may add a stricter one.
 | --- | --- | --- |
 | `create <id> <type> <owner\|#server> [profile]` | staff | Turns the looked-at block into a tier 1 business |
 | `delete <id> [confirm]` | staff | Without `confirm`, explains; with it, deletes (see [Businesses](05-businesses.md#deleting-a-business)) |
-| `settier <id> <tier>` | staff | 1 to 5; lowering removes the newest hires and picks that no longer fit |
+| `settier <id> <tier>` | staff | 1 to 5; lowering removes the newest hires, picks and NPCs that no longer fit |
 | `setowner <id> <player\|#server> [profile]` | staff | Gives the business to a character or to the server |
-| `clearpick <id> <number>` | staff | Frees one skill pick, numbered from 1 (oldest) |
+| `clearpick <id> <number>` | staff | Frees one skill pick, numbered from 1 (oldest); names the NPCs removed with their slots |
+| `dismissnpc <id> <npc>` | staff | Removes one of the business's NPCs for good and frees its slot; `<npc>` is its number in `npcs`, or its id. Only with SkysongNPCs |
 | `list` | staff | Every business |
 | `move <id>` | owner or staff | Moves it to the looked-at block (also places a broken one) |
 | `rename <id> <name...>` | owner or staff | Display name, up to 48 characters |
@@ -61,10 +62,11 @@ child may add a stricter one.
 | `fire <id> <player> [profile]` | owner or staff | Removes a worker |
 | `group <id> list` | owner or staff | Access groups, members, permissions, prices |
 | `group <id> create\|delete <group>` | owner or staff | Custom groups |
-| `group <id> allow\|deny <group> <permission>` | owner or staff | `train`, `order-imports`, `sell-exports`, `tend-farms` |
+| `group <id> allow\|deny <group> <permission>` | owner or staff | `train`, `order-imports`, `sell-exports`, `tend-farms`, `manage-npcs` |
 | `group <id> price <group> <amount>` | owner or staff | Training price |
 | `group <id> add\|remove <group> <player> [profile]` | owner or staff | Members of custom groups |
 | `vault <id> [collect]` | owner or staff | Shows the vault; `collect` pays it out |
+| `npcs <id>` | owner or staff | NPC slots by source, and each NPC with its number and what it is waiting for. Only with SkysongNPCs |
 | `info <id>` | anyone with the group permission | Type, tier, owner, workers, picks, block |
 
 ## `/se tokens`: Gathering Tokens

@@ -7,7 +7,8 @@
 # may do everything and trains for free.
 #
 # Permissions: train, order-imports, sell-exports, tend-farms (plant primers in the business's
-# farm nodes and take them out; only the owner can unless a group allows it).
+# farm nodes and take them out; only the owner can unless a group allows it), manage-npcs
+# (create NPCs in the business's free NPC slots; see npcs.yml).
 
 # How many groups an owner may add besides workers and everyone.
 max-custom-groups: 8

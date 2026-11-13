@@ -22,8 +22,9 @@ reads the same way.
    it logs why and returns a disabled feature with no commands. The rest of the plugin still runs.
 6. `NodeFeature.start(...)` builds the nodes system. Nodes need businesses, so they are off when businesses
    are off, or when `nodes/settings.yml` is broken.
-7. `NpcFeature.start(...)` connects to SkysongNPCs when that plugin is installed, and registers the business
-   access groups with it. Without SkysongNPCs it logs one line and has no gateways.
+7. `NpcFeature.start(...)` connects to SkysongNPCs when that plugin is installed, registers the business
+   access groups with it, and starts the businesses' NPC slots (`businesses/npcs.yml`, the NPCs button and
+   `/se business npcs` and `dismissnpc`). Without SkysongNPCs it logs one line and has no gateways.
 8. `registerCommands()` builds the `/se` command tree: `ledger` and `good` always, plus whatever commands
    each feature returns (`business`, `tokens`, `modifier`, `node`).
 
@@ -63,7 +64,7 @@ nodes feature and other plugins use it to reach businesses.
 | `business` | `Business` (state), `BusinessService` (rules), `BusinessRepository`, `BusinessChangeListener`, `BusinessException`, `Hire`, `SkillPick`, `TierChange`, `BlockPosition`, `BusinessBlockGuard`. |
 | `business.type` | Business types from `businesses/types.yml`. |
 | `business.tier` | Tier settings from `businesses/tiers.yml`. |
-| `business.access` | Access groups and permissions (`train`, `order-imports`, `sell-exports`, `tend-farms`), defaults from `businesses/access.yml`. |
+| `business.access` | Access groups and permissions (`train`, `order-imports`, `sell-exports`, `tend-farms`, `manage-npcs`), defaults from `businesses/access.yml`. |
 | `business.vault` | The owner's earnings per business. |
 | `business.activity` | `ActivityLock`: one shift or training session per player account. |
 | `business.shift` | Work a Shift and Retrieve Pay, `businesses/shifts.yml`. |
@@ -75,7 +76,7 @@ nodes feature and other plugins use it to reach businesses.
 | `expression` | `Formula`: arithmetic with placeholders, shared by price expressions and amounts. |
 | `prices` | The price database and price expressions. |
 | `prices.modifier` | Percentage price modifiers. |
-| `business.npc` | What businesses need from SkysongNPCs, as interfaces (`NpcGateway`, `NpcSheetGateway`, `NpcAccessGateway`), and the business group names SkysongNPCs sees (`BusinessGroupRef`, `BusinessGroupDirectory`). No server classes. |
+| `business.npc` | What businesses need from SkysongNPCs, as interfaces (`NpcGateway`, `NpcSheetGateway`, `NpcAccessGateway`), the business group names SkysongNPCs sees (`BusinessGroupRef`, `BusinessGroupDirectory`), and the NPC slots: `NpcSettings` (`businesses/npcs.yml`), `BusinessNpcs` (which NPC fills which slot; creating, dismissing, lost slots, owner changes), `BusinessNpcRepository`, `BusinessNpcEvents`. No server classes. |
 | `tokens` | Gathering Tokens and their placeholder texts. |
 | `nodes` | `Node`, `NodeService`, node settings, the loaded node files (`NodeFiles`, `NodeTables`). |
 | `nodes.random` | Random tables (`nodes/random/*.yml`). |
