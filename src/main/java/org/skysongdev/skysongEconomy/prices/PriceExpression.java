@@ -1,7 +1,10 @@
 package org.skysongdev.skysongEconomy.prices;
 
+import org.skysongdev.skysongEconomy.expression.Formula;
+import org.skysongdev.skysongEconomy.expression.FormulaException;
+import org.skysongdev.skysongEconomy.expression.Placeholders;
+
 import java.math.BigDecimal;
-import java.math.MathContext;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Map;
@@ -16,21 +19,28 @@ import java.util.Set;
  * of what is being priced) and {@code {item:<material_id>}} (another item's base value).
  * Expressions are parsed once and evaluated many times. The result is exact: truncate it with
  * {@link PriceSettings#truncate} where players see or pay it.
+ * <p>
+ * The arithmetic itself is a {@link Formula}; this class adds what the placeholders mean for
+ * prices and reports problems as {@link PriceException}s.
  */
 public final class PriceExpression {
-    /** Precision of division, far beyond any price. */
-    private static final MathContext DIVISION = MathContext.DECIMAL64;
+    private static final String BASE = "base";
+    private static final String ITEM_PREFIX = "item:";
 
-    private final String text;
-    private final Node root;
+    private final Formula formula;
     private final Set<String> items;
     private final boolean usesBase;
 
-    private PriceExpression(String text, Node root, Set<String> items, boolean usesBase) {
-        this.text = text;
-        this.root = root;
-        this.items = Collections.unmodifiableSet(items);
-        this.usesBase = usesBase;
+    private PriceExpression(Formula formula) {
+        this.formula = formula;
+        Set<String> referenced = new LinkedHashSet<>();
+        for (String placeholder : formula.placeholders()) {
+            if (placeholder.startsWith(ITEM_PREFIX)) {
+                referenced.add(placeholder.substring(ITEM_PREFIX.length()));
+            }
+        }
+        this.items = Collections.unmodifiableSet(referenced);
+        this.usesBase = formula.placeholders().contains(BASE);
     }
 
     /**
@@ -38,9 +48,11 @@ public final class PriceExpression {
      */
     public static PriceExpression parse(String text) {
         Objects.requireNonNull(text, "text");
-        Parser parser = new Parser(text.strip());
-        Node root = parser.parse();
-        return new PriceExpression(text.strip(), root, parser.items, parser.usesBase);
+        try {
+            return new PriceExpression(Formula.parse(text, PriceExpression::placeholder));
+        } catch (FormulaException e) {
+            throw new PriceException("prices.invalid-expression", Map.of("expression", e.formula(), "problem", e.problem()));
+        }
     }
 
     /** @return an expression that is just this number */
@@ -52,7 +64,13 @@ public final class PriceExpression {
      * @throws PriceException when a value it needs is missing, or it divides by zero
      */
     public BigDecimal evaluate(PriceContext context) {
-        return root.value(context);
+        try {
+            return formula.evaluate(placeholder -> placeholder.equals(BASE)
+                    ? context.base()
+                    : context.item(placeholder.substring(ITEM_PREFIX.length())));
+        } catch (FormulaException e) {
+            throw new PriceException("prices.division-by-zero", Map.of());
+        }
     }
 
     /** @return the material ids its {@code {item:...}} references name, in order */
@@ -67,214 +85,36 @@ public final class PriceExpression {
 
     /** @return the expression as written, without surrounding spaces */
     public String text() {
-        return text;
+        return formula.text();
     }
 
     @Override
     public boolean equals(Object other) {
-        return other instanceof PriceExpression expression && expression.text.equals(text);
+        return other instanceof PriceExpression expression && expression.formula.equals(formula);
     }
 
     @Override
     public int hashCode() {
-        return text.hashCode();
+        return formula.hashCode();
     }
 
     @Override
     public String toString() {
-        return text;
+        return formula.text();
     }
 
-    /** One part of a parsed expression. */
-    private interface Node {
-        BigDecimal value(PriceContext context);
-    }
-
-    private record Constant(BigDecimal number) implements Node {
-        @Override
-        public BigDecimal value(PriceContext context) {
-            return number;
+    /** The placeholders a price may use: {@code {base}} and {@code {item:<material_id>}}. */
+    private static String placeholder(String written) {
+        if (written.equals(BASE)) {
+            return BASE;
         }
-    }
-
-    private record Base() implements Node {
-        @Override
-        public BigDecimal value(PriceContext context) {
-            return context.base();
+        if (written.startsWith(ITEM_PREFIX)) {
+            String materialId = written.substring(ITEM_PREFIX.length()).strip();
+            if (materialId.isEmpty()) {
+                throw new Placeholders.Unknown("has {item:} without a material id");
+            }
+            return ITEM_PREFIX + materialId;
         }
-    }
-
-    private record Item(String materialId) implements Node {
-        @Override
-        public BigDecimal value(PriceContext context) {
-            return context.item(materialId);
-        }
-    }
-
-    private record Negate(Node operand) implements Node {
-        @Override
-        public BigDecimal value(PriceContext context) {
-            return operand.value(context).negate();
-        }
-    }
-
-    private record Binary(char operator, Node left, Node right) implements Node {
-        @Override
-        public BigDecimal value(PriceContext context) {
-            BigDecimal a = left.value(context);
-            BigDecimal b = right.value(context);
-            return switch (operator) {
-                case '+' -> a.add(b);
-                case '-' -> a.subtract(b);
-                case '*' -> a.multiply(b);
-                default -> {
-                    if (b.signum() == 0) {
-                        throw new PriceException("prices.division-by-zero", Map.of());
-                    }
-                    yield a.divide(b, DIVISION);
-                }
-            };
-        }
-    }
-
-    /**
-     * Recursive descent over:
-     * <pre>
-     * expression = term (("+" | "-") term)*
-     * term       = factor (("*" | "/") factor)*
-     * factor     = ("-" | "+") factor | number | "(" expression ")" | "{base}" | "{item:" id "}"
-     * </pre>
-     */
-    private static final class Parser {
-        private final String text;
-        private int position;
-        private final Set<String> items = new LinkedHashSet<>();
-        private boolean usesBase;
-
-        Parser(String text) {
-            this.text = text;
-        }
-
-        Node parse() {
-            if (text.isEmpty()) {
-                throw error("is empty");
-            }
-            Node node = expression();
-            skipSpaces();
-            if (position < text.length()) {
-                throw error("has '" + text.charAt(position) + "' where an operator was expected");
-            }
-            return node;
-        }
-
-        private Node expression() {
-            Node node = term();
-            while (true) {
-                skipSpaces();
-                if (accept('+')) {
-                    node = new Binary('+', node, term());
-                } else if (accept('-')) {
-                    node = new Binary('-', node, term());
-                } else {
-                    return node;
-                }
-            }
-        }
-
-        private Node term() {
-            Node node = factor();
-            while (true) {
-                skipSpaces();
-                if (accept('*')) {
-                    node = new Binary('*', node, factor());
-                } else if (accept('/')) {
-                    node = new Binary('/', node, factor());
-                } else {
-                    return node;
-                }
-            }
-        }
-
-        private Node factor() {
-            skipSpaces();
-            if (accept('-')) {
-                return new Negate(factor());
-            }
-            if (accept('+')) {
-                return factor();
-            }
-            if (accept('(')) {
-                Node inner = expression();
-                skipSpaces();
-                if (!accept(')')) {
-                    throw error("is missing a ')'");
-                }
-                return inner;
-            }
-            if (peek() == '{') {
-                return placeholder();
-            }
-            if (Character.isDigit(peek()) || peek() == '.') {
-                return number();
-            }
-            throw position >= text.length() ? error("ends too early") : error("has '" + peek() + "' where a value was expected");
-        }
-
-        private Node placeholder() {
-            int close = text.indexOf('}', position);
-            if (close < 0) {
-                throw error("has a '{' without '}'");
-            }
-            String inside = text.substring(position + 1, close).strip();
-            position = close + 1;
-            if (inside.equals("base")) {
-                usesBase = true;
-                return new Base();
-            }
-            if (inside.startsWith("item:")) {
-                String materialId = inside.substring("item:".length()).strip();
-                if (materialId.isEmpty()) {
-                    throw error("has {item:} without a material id");
-                }
-                items.add(materialId);
-                return new Item(materialId);
-            }
-            throw error("has {" + inside + "}: use {base} or {item:<material_id>}");
-        }
-
-        private Node number() {
-            int start = position;
-            while (position < text.length() && (Character.isDigit(peek()) || peek() == '.')) {
-                position++;
-            }
-            String digits = text.substring(start, position);
-            try {
-                return new Constant(new BigDecimal(digits));
-            } catch (NumberFormatException e) {
-                throw error("has '" + digits + "', which isn't a number");
-            }
-        }
-
-        private boolean accept(char expected) {
-            if (peek() == expected) {
-                position++;
-                return true;
-            }
-            return false;
-        }
-
-        private char peek() {
-            return position < text.length() ? text.charAt(position) : '\0';
-        }
-
-        private void skipSpaces() {
-            while (position < text.length() && Character.isWhitespace(text.charAt(position))) {
-                position++;
-            }
-        }
-
-        private PriceException error(String problem) {
-            return new PriceException("prices.invalid-expression", Map.of("expression", text, "problem", problem));
-        }
+        throw new Placeholders.Unknown("has {" + written + "}: use {base} or {item:<material_id>}");
     }
 }

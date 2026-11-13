@@ -150,3 +150,35 @@ Full examples are in [Nodes](07-nodes.md). File names must be valid ids (lower-c
 
 Skysong_Items templates, in that plugin's own format. `architite_coins/` holds the three coins; `items/` holds one
 template per material id that ledgers, loot and primers may name.
+
+## Amounts by level and tier
+
+Some values follow how far a business has come (`business/scale`). They can use two numbers:
+
+- `{level}`: the skill pick tier, which is how many of the business's skill picks are the skill in question (the
+  same count Economy and Logistics calls its level);
+- `{tier}`: the business's overall tier, 1 to 5.
+
+An amount (`business/scale/AmountParser`) is written in one of three ways:
+
+```yaml
+amount: 4                               # a fixed number
+amount: "3 + {level}"                   # a formula: numbers, + - * /, parentheses, {level} and {tier}
+amount: {by: tier, 1: 1, 3: 2, 5: 3}    # a table: a row applies from its number upward
+```
+
+- A formula must be in quotes when it starts with `{`. Its result loses its decimals (`{level} / 2` is 1 at level
+  3), and a result below 0 counts as 0. A formula that would divide by zero at some level and tier is refused when
+  the file loads.
+- A table follows `level` unless it says `by: tier`. Its rows are numbered 1 to 5 and give 0 below the first row:
+  the example gives 1 at tiers 1 and 2, 2 at tiers 3 and 4, and 3 at tier 5.
+
+The same table form holds other kinds of values (`business/scale/StepsParser`), for example
+`{by: level, 1: proficient, 4: adept}`.
+
+A functionality that is switched on per skill keeps a `skills:` map in its own file
+(`business/scale/SkillSections`): a skill listed there has the functionality with the settings written under it, and
+a skill left out does not. Unknown skills are skipped with a console warning. Each functionality has its own file, so
+one skill can have any combination of them.
+
+No config file uses these yet: they are the base for the business NPC and module files.

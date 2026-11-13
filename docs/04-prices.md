@@ -14,7 +14,8 @@ together), `data/database/PriceLedgerRepository` and `SqlModifierRepository` (st
 
 ## Price expressions
 
-An expression is arithmetic written as text (`prices/PriceExpression`). It allows:
+An expression is arithmetic written as text (`prices/PriceExpression`, which adds the price placeholders to the
+shared parser `expression/Formula`). It allows:
 
 - numbers, such as `4` or `0.25`
 - `+ - * /`, parentheses and a leading minus
