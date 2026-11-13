@@ -89,7 +89,7 @@ All five tiers must be listed.
 | `defaults.everyone.permissions` | Default permissions of the `everyone` group |
 | `defaults.everyone.training-price` | Default training price for everyone, also the starting price of new custom groups |
 
-Permissions: `train`, `order-imports`, `sell-exports`, `tend-farms`, `manage-npcs`. Defaults apply live to businesses whose owner
+Permissions: `train`, `order-imports`, `sell-exports`, `tend-farms`, `manage-npcs`, `edit-npc-access`. Defaults apply live to businesses whose owner
 never changed their groups.
 
 ## `businesses/shifts.yml` (`business/shift/ShiftSettingsParser`)
@@ -121,6 +121,7 @@ Only read when SkysongNPCs is installed. See [Business NPCs](05-businesses.md#bu
 | --- | --- |
 | `spawn-at` | Where a new NPC appears: `player` (a free spot in front of whoever creates it, the default) or `business` (a free spot next to the business block) |
 | `spawn-radius` | How many blocks around that place SkysongNPCs looks for a free spot. Default 3 |
+| `default-access.workers`, `default-access.everyone` | What the built-in groups may do with a business's NPCs until its owner changes it: a list of SkysongNPCs actions or presets. Written into the business's access policy when it is made (with its first NPC), so a later edit only reaches businesses that have no policy yet. Left out: nothing. Read by `business/npc/access/NpcAccessDefaults` |
 | `skills.<skill>.slots` | How many NPCs a business can have for this skill: an [amount](#amounts-by-level-and-tier), so a number, a formula with `{level}` and `{tier}`, or a table |
 | `skills.<skill>.template` | The SkysongNPCs template new NPCs are made from. It is checked when an NPC is created, not on load |
 

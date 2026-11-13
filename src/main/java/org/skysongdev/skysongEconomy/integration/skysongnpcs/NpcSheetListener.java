@@ -3,6 +3,7 @@ package org.skysongdev.skysongEconomy.integration.skysongnpcs;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.skysongdev.skysongEconomy.business.npc.access.BusinessNpcAccess;
 import org.skysongdev.skysongEconomy.business.npc.benefit.NpcProgression;
 import org.skysongdev.skysongnpcs.api.event.NpcCloneEvent;
 import org.skysongdev.skysongnpcs.api.event.NpcRespecEvent;
@@ -13,9 +14,11 @@ import org.skysongdev.skysongnpcs.api.event.NpcRespecEvent;
  */
 public final class NpcSheetListener implements Listener {
     private final NpcProgression progression;
+    private final BusinessNpcAccess access;
 
-    public NpcSheetListener(NpcProgression progression) {
+    public NpcSheetListener(NpcProgression progression, BusinessNpcAccess access) {
         this.progression = progression;
+        this.access = access;
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
@@ -26,5 +29,8 @@ public final class NpcSheetListener implements Listener {
     @EventHandler(priority = EventPriority.MONITOR)
     public void onClone(NpcCloneEvent event) {
         progression.copied(event.getOriginal().id(), event.getCopy().id());
+        // SkysongNPCs' own listener, registered before this one, has put the copy on the
+        // original's policy by now.
+        access.copied(event.getOriginal().id(), event.getCopy().id());
     }
 }

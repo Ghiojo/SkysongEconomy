@@ -14,6 +14,7 @@ class PermissionTest {
         assertEquals("train", Permission.TRAIN.key());
         assertEquals("tend-farms", Permission.TEND_FARMS.key());
         assertEquals("manage-npcs", Permission.MANAGE_NPCS.key());
+        assertEquals("edit-npc-access", Permission.EDIT_NPC_ACCESS.key());
     }
 
     @Test

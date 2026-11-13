@@ -14,7 +14,9 @@ public enum Permission {
     /** Plant primers in the business's farm nodes and take them out. Nobody but the owner has it by default. */
     TEND_FARMS,
     /** Create NPCs in the business's free NPC slots. Nobody but the owner has it by default. */
-    MANAGE_NPCS;
+    MANAGE_NPCS,
+    /** Change what each group may do with the business's NPCs. Nobody but the owner has it by default. */
+    EDIT_NPC_ACCESS;
 
     /** @return the name used in config and commands, e.g. {@code order-imports} */
     public String key() {

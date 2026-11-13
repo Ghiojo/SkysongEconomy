@@ -3,6 +3,7 @@ package org.skysongdev.skysongEconomy.commands.business;
 import org.skysongdev.skysongEconomy.business.BusinessService;
 import org.skysongdev.skysongEconomy.business.access.AccessService;
 import org.skysongdev.skysongEconomy.business.npc.BusinessNpcs;
+import org.skysongdev.skysongEconomy.business.npc.access.BusinessNpcAccess;
 import org.skysongdev.skysongEconomy.business.npc.NpcGateway;
 import org.skysongdev.skysongEconomy.business.npc.NpcSheetGateway;
 import org.skysongdev.skysongEconomy.business.npc.benefit.NpcProgression;
@@ -58,5 +59,13 @@ public final class BusinessCommand extends CommandGroup {
         register(new DismissNpc(support, text));
         register(new SyncBusinessNpcs(support, text, progression));
         support.addChangeReport(text);
+    }
+
+    /**
+     * Adds {@code npcaccess}: what each access group may do with a business's NPCs. Call it
+     * once, when SkysongNPCs is installed.
+     */
+    public void enableNpcAccess(AccessService access, BusinessNpcAccess npcAccess) {
+        register(new NpcAccessCommand(support, access, npcAccess));
     }
 }

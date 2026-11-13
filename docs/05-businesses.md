@@ -21,7 +21,7 @@ Code map:
 | One activity at a time | `business/activity/ActivityLock`, `listeners/ActivityTimer` |
 | Tokens | `tokens/*`, `integration/placeholderapi/TokenExpansion` |
 | Block and nameplate | `business/BusinessBlockGuard`, `listeners/ProtectedBlockListener`, `listeners/BusinessNameplates`, `listeners/FloatingNames` (`businesses/block.yml`) |
-| Business NPCs | `business/npc/*` and `business/npc/benefit/*` (`businesses/npcs.yml`), `integration/skysongnpcs/*`, `events/BusinessNpcCreateEvent`, `BusinessNpcRemoveEvent` |
+| Business NPCs | `business/npc/*`, `business/npc/benefit/*` and `business/npc/access/*` (`businesses/npcs.yml`), `integration/skysongnpcs/*`, `events/BusinessNpcCreateEvent`, `BusinessNpcRemoveEvent` |
 | Menus | `gui/business/*`, opened by `listeners/BusinessInteractListener` |
 | Commands | `commands/business/*`, `commands/tokens/*` |
 | Wiring | `bootstrap/BusinessFeature` |
@@ -57,6 +57,7 @@ tier 1 business named after its id, with no workers and no picks.
 | Vault | `/se business vault <id> [collect]` | Owner or staff |
 | NPC slots and NPCs | `/se business npcs <id>` | Owner or staff |
 | Bring NPCs in line | `/se business npcsync <id>` | Staff |
+| NPC permissions | `/se business npcaccess <id> [list\|group] [allow\|deny <action>]` | Owner, staff, groups with `edit-npc-access` |
 | Info | `/se business info <id>` | Anyone with `skysongeconomy.business` |
 
 "Staff" means `skysongeconomy.business.admin`. "Owner" means the sender's **active** character owns the business.
@@ -164,6 +165,7 @@ Each group has a set of permissions and a training price:
 | `sell-exports` | sell E&L exports |
 | `tend-farms` | plant and take out primers in the business's farm nodes (staff with `skysongeconomy.nodes.tend-bypass` always can) |
 | `manage-npcs` | create NPCs in the business's free NPC slots (see [Business NPCs](#business-npcs)) |
+| `edit-npc-access` | change what each group may do with the business's NPCs (see [Who may use the NPCs](#who-may-use-the-npcs)) |
 
 A character may do something when **any** of their groups allows it, and pays the **lowest** training price among
 their groups that allow training. The **owner** may always do everything and trains for free.
@@ -306,6 +308,29 @@ until you add one.
   typo in the file never deletes an NPC.
 - **Removed elsewhere.** An NPC removed or released in SkysongNPCs itself (`/npc remove`, `/snpc release`) frees
   its slot (`integration/skysongnpcs/NpcRemovalListener`).
+
+### Who may use the NPCs
+
+The owner may do everything with the business's NPCs. Everyone else gets what their **access groups** are allowed,
+with SkysongNPCs' own actions: `info`, `stats-view`, `abilities-view`, `wardrobe-view`, `inventory-view`,
+`equipment-view`, `teleport`, `follow`, `look`, `wardrobe-edit`, `inventory-edit`, `equipment-edit`, `rename`,
+`skin`, `appearance`, `choose`, `pickup`, `manage`.
+
+- **One policy per business.** `business/npc/access/BusinessNpcAccess` keeps one SkysongNPCs access policy per
+  business, `economy.<business id>` (an id too long for SkysongNPCs is cut and ends in a number). Its grants name
+  the business's groups as `economy:<business>/<group>`, and every NPC of the business follows it, so a change
+  applies to all of them at once, including NPCs created later. SkysongNPCs stores the policy; this plugin saves
+  nothing about it.
+- **Defaults.** The policy is made with the business's first NPC, with `default-access` from `npcs.yml` for
+  `workers` and `everyone`. Custom groups start with nothing.
+- **Changing it.** The owner, staff, and any group with `edit-npc-access` use **NPCs > NPC permissions** in the
+  business menu (`NpcAccessGroupsMenu`, then `NpcAccessActionsMenu`: green is allowed, click to flip) or
+  `/se business npcaccess`. The command also takes SkysongNPCs presets such as `customer`, which stand for several
+  actions.
+- **Kept in line.** A deleted group loses its grants, so a new group of the same name starts empty. A deleted
+  business's policy is deleted. On start every business NPC is put back on its policy and grants of groups that no
+  longer exist are dropped; grants staff added to the policy by hand for other group types are left alone. A copy
+  staff make of a business NPC in SkysongNPCs is not a business NPC and is taken off the policy.
 
 ### What an NPC receives
 

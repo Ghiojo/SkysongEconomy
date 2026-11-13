@@ -12,9 +12,13 @@ import org.skysongdev.skysongEconomy.business.npc.NpcSheetGateway;
 import org.skysongdev.skysongEconomy.business.npc.BusinessNpcs;
 import org.skysongdev.skysongEconomy.business.npc.NpcSettings;
 import org.skysongdev.skysongEconomy.business.npc.NpcSettingsParser;
+import org.skysongdev.skysongEconomy.business.npc.access.BusinessNpcAccess;
+import org.skysongdev.skysongEconomy.business.npc.access.NpcAccessDefaults;
+import org.skysongdev.skysongEconomy.business.npc.access.NpcActions;
 import org.skysongdev.skysongEconomy.business.npc.benefit.BenefitParser;
 import org.skysongdev.skysongEconomy.business.npc.benefit.NpcProgression;
 import org.skysongdev.skysongEconomy.config.ConfigException;
+import org.skysongdev.skysongEconomy.config.ConfigSection;
 import org.skysongdev.skysongEconomy.config.YamlFiles;
 import org.skysongdev.skysongEconomy.data.database.AsyncBusinessNpcRepository;
 import org.skysongdev.skysongEconomy.data.database.AsyncNpcAppliedRepository;
@@ -46,8 +50,9 @@ import java.util.logging.Logger;
  * Connects businesses to SkysongNPCs, which is optional. With SkysongNPCs installed it opens the
  * gateways the business NPC features use, lets SkysongNPCs name business access groups as
  * {@code economy:<business>/<group>}, and gives businesses their NPC slots: the settings in
- * {@code businesses/npcs.yml}, storage, the NPCs button and the {@code /se business npcs} and
- * {@code dismissnpc} commands. Without SkysongNPCs, or when businesses are off, there are no
+ * {@code businesses/npcs.yml}, storage, the NPCs button, the {@code /se business npcs},
+ * {@code dismissnpc}, {@code npcsync} and {@code npcaccess} commands, and one SkysongNPCs access
+ * policy per business. Without SkysongNPCs, or when businesses are off, there are no
  * gateways and everything that needs NPCs stays off.
  */
 public final class NpcFeature implements AutoCloseable {
@@ -83,8 +88,9 @@ public final class NpcFeature implements AutoCloseable {
      *
      * @param npcs        which NPCs each business has
      * @param progression what each of them is owed
+     * @param access      what each access group may do with them
      */
-    private record Slots(BusinessNpcs npcs, NpcProgression progression) {
+    private record Slots(BusinessNpcs npcs, NpcProgression progression, BusinessNpcAccess access) {
     }
 
     /**
@@ -138,10 +144,12 @@ public final class NpcFeature implements AutoCloseable {
                                       Messenger messenger, List<AutoCloseable> resources) {
         Logger logger = plugin.getLogger();
         NpcSettings settings;
+        NpcAccessDefaults accessDefaults;
         BenefitParser benefits = new BenefitParser(skysongStats, gateways.sheets());
         try {
-            settings = new NpcSettingsParser(skysongStats, benefits, logger::warning)
-                    .parse(configFiles.load(NpcSettingsParser.FILE));
+            ConfigSection root = configFiles.load(NpcSettingsParser.FILE);
+            settings = new NpcSettingsParser(skysongStats, benefits, logger::warning).parse(root);
+            accessDefaults = NpcAccessDefaults.parse(root, new NpcActions(gateways.access()));
         } catch (ConfigException e) {
             logger.severe("Business NPC slots are off until this is fixed: " + e.getMessage());
             return null;
@@ -170,17 +178,28 @@ public final class NpcFeature implements AutoCloseable {
         } catch (StorageException e) {
             logger.log(Level.SEVERE, "What was changed on business NPCs' sheets could not be loaded from the database", e);
         }
+        BusinessNpcAccess npcAccess = new BusinessNpcAccess(accessDefaults, new BusinessNpcAccess.Dependencies(
+                system.businesses(), system.access(), businessNpcs, gateways.access()), logger::warning);
+        try {
+            logger.info("Put " + npcAccess.loadAll() + " business NPC(s) back on their business's access policy");
+        } catch (RuntimeException e) {
+            logger.log(Level.SEVERE, "Business NPCs could not be put on their business's access policy", e);
+        }
         // After loading, so businesses that change from now on keep their NPCs in line: first the
-        // slots, then what the NPCs that are left are owed.
+        // slots, then what the NPCs that are left are owed, then who may use them.
         businessNpcs.addListener(progression);
+        businessNpcs.addListener(npcAccess);
         system.businesses().addListener(businessNpcs);
         system.businesses().addListener(progression);
+        system.businesses().addListener(npcAccess);
+        system.access().onGroupDeleted(npcAccess::groupDeleted);
         events.registerEvents(new NpcRemovalListener(businessNpcs), plugin);
-        events.registerEvents(new NpcSheetListener(progression), plugin);
-        system.menus().addEntry(new NpcsEntry(system.menus(), businessNpcs, progression,
+        events.registerEvents(new NpcSheetListener(progression, npcAccess), plugin);
+        system.menus().addEntry(new NpcsEntry(system.menus(), new NpcsEntry.Services(businessNpcs, progression, npcAccess),
                 new NpcsEntry.Gateways(gateways.npcs(), gateways.sheets()), settings, skysongStats, messenger));
         system.command().enableNpcs(businessNpcs, gateways.npcs(), gateways.sheets(), skysongStats, progression);
-        return new Slots(businessNpcs, progression);
+        system.command().enableNpcAccess(system.access(), npcAccess);
+        return new Slots(businessNpcs, progression, npcAccess);
     }
 
     private static NpcFeature off(Logger logger) {
@@ -203,6 +222,11 @@ public final class NpcFeature implements AutoCloseable {
     /** @return what each business NPC is owed and the means to bring it in line; empty whenever {@link #businessNpcs()} is */
     public Optional<NpcProgression> progression() {
         return Optional.ofNullable(slots).map(Slots::progression);
+    }
+
+    /** @return what each access group may do with a business's NPCs; empty whenever {@link #businessNpcs()} is */
+    public Optional<BusinessNpcAccess> npcAccess() {
+        return Optional.ofNullable(slots).map(Slots::access);
     }
 
     /** Waits for pending saves, then closes the database connection. */

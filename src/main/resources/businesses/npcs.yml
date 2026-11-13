@@ -19,6 +19,19 @@ spawn-at: player
 # How many blocks around that place SkysongNPCs looks for a free spot.
 spawn-radius: 3
 
+# What the built-in access groups may do with a business's NPCs until its owner changes it.
+# Each business has one SkysongNPCs access policy, economy.<business id>, that all its NPCs
+# follow; these defaults are written into it when it is made, so changing them here only
+# affects businesses that get their first NPC afterwards. Values are SkysongNPCs actions
+# (info, stats-view, abilities-view, wardrobe-view, inventory-view, equipment-view, teleport,
+# follow, look, wardrobe-edit, inventory-edit, equipment-edit, rename, skin, appearance,
+# choose, pickup, manage) or presets from SkysongNPCs' config.yml. The owner always may do
+# everything. Owners change this per group under NPCs > NPC permissions in the business menu,
+# or with /se business npcaccess; so can any group with the edit-npc-access permission.
+default-access:
+  workers: [info, stats-view, abilities-view, inventory-view, equipment-view, teleport, follow, look]
+  everyone: []
+
 # One entry per skill: a SkysongStats skill id, as in types.yml.
 #   slots     how many NPCs the business can have for this skill. A number, a formula, or a
 #             table. In a formula {level} is how many picks the business has of this skill and
