@@ -54,6 +54,7 @@ child may add a stricter one.
 | `setowner <id> <player\|#server> [profile]` | staff | Gives the business to a character or to the server |
 | `clearpick <id> <number>` | staff | Frees one skill pick, numbered from 1 (oldest); names the NPCs removed with their slots |
 | `npcsync <id>` | staff | Brings every NPC of the business in line with what it is owed now and lists what changed. It happens by itself when a business changes; use it after changing an NPC by hand in SkysongNPCs. Only with SkysongNPCs |
+| `npcaccess <id> [group] [allow\|deny <action>]` | owner, staff, or a group with `edit-npc-access` | What each access group may do with the business's NPCs. Alone it lists every group, with a group it shows that group, and `allow`/`deny` change it. `<action>` is a SkysongNPCs action (`info`, `inventory-view`, `teleport`, ...) or one of its presets (`customer`, ...). Only with SkysongNPCs |
 | `dismissnpc <id> <npc>` | staff | Removes one of the business's NPCs for good and frees its slot; `<npc>` is its number in `npcs`, or its id. Only with SkysongNPCs |
 | `list` | staff | Every business |
 | `move <id>` | owner or staff | Moves it to the looked-at block (also places a broken one) |
@@ -63,7 +64,7 @@ child may add a stricter one.
 | `fire <id> <player> [profile]` | owner or staff | Removes a worker |
 | `group <id> list` | owner or staff | Access groups, members, permissions, prices |
 | `group <id> create\|delete <group>` | owner or staff | Custom groups |
-| `group <id> allow\|deny <group> <permission>` | owner or staff | `train`, `order-imports`, `sell-exports`, `tend-farms`, `manage-npcs` |
+| `group <id> allow\|deny <group> <permission>` | owner or staff | `train`, `order-imports`, `sell-exports`, `tend-farms`, `manage-npcs`, `edit-npc-access` |
 | `group <id> price <group> <amount>` | owner or staff | Training price |
 | `group <id> add\|remove <group> <player> [profile]` | owner or staff | Members of custom groups |
 | `vault <id> [collect]` | owner or staff | Shows the vault; `collect` pays it out |

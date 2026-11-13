@@ -13,6 +13,7 @@ import org.skysongdev.skysongEconomy.business.npc.NpcSheetGateway;
 import org.skysongdev.skysongEconomy.business.npc.NpcSlotGroup;
 import org.skysongdev.skysongEconomy.business.npc.NpcStatus;
 import org.skysongdev.skysongEconomy.business.npc.SlotSource;
+import org.skysongdev.skysongEconomy.business.npc.access.BusinessNpcAccess;
 import org.skysongdev.skysongEconomy.business.npc.benefit.Entitlement;
 import org.skysongdev.skysongEconomy.business.npc.benefit.NpcProgression;
 import org.skysongdev.skysongEconomy.business.npc.benefit.PickKind;
@@ -22,24 +23,46 @@ import org.skysongdev.skysongEconomy.messaging.Messenger;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * What the NPC menus share: the services they read and the texts they all write the same way.
  *
  * @param npcs     the NPCs each business has
  * @param progression what the business owes each NPC
+ * @param access   what each access group may do with the NPCs
  * @param gateway  SkysongNPCs, for names, menus and teleporting
  * @param sheets   what each NPC still has to choose
  * @param settings {@code businesses/npcs.yml}
  * @param skills   skill names
  */
-record NpcScreens(BusinessMenus menus, BusinessNpcs npcs, NpcProgression progression, NpcGateway gateway,
-                  NpcSheetGateway sheets,
+record NpcScreens(BusinessMenus menus, BusinessNpcs npcs, NpcProgression progression, BusinessNpcAccess access,
+                  NpcGateway gateway, NpcSheetGateway sheets,
                   NpcSettings settings, SkillCatalog skills, Messenger messenger) {
     /** @return whether the viewer may create NPCs: who acts as the owner, or a group with {@code manage-npcs} */
     boolean mayCreate(BusinessMenuContext context) {
         return context.actsAsOwner()
                 || context.character().filter(character -> npcs.mayCreate(context.business(), character)).isPresent();
+    }
+
+    /**
+     * @return whether the viewer may change what groups may do with the NPCs: the owner, staff,
+     *         or a group with {@code edit-npc-access}
+     */
+    boolean mayEditAccess(BusinessMenuContext context) {
+        return context.canManage()
+                || context.character().filter(character -> access.mayEdit(context.business(), character)).isPresent();
+    }
+
+    /** @return what a group may do with the NPCs, as one line of text */
+    Component allowed(Set<String> actions) {
+        return actions.isEmpty()
+                ? messenger.render("business.npcs.access.nothing")
+                : Component.text(String.join(", ", actions));
+    }
+
+    void openAccess(Player player, Business business) {
+        new NpcAccessGroupsMenu(this, menus.context(player, business)).open(player);
     }
 
     /** @return what gives a slot, as players read it: the skill's name for a skill */

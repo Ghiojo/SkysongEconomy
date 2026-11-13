@@ -401,6 +401,54 @@ business:
     list-none: "<gray><business> has no NPC slots."
     list-group: "<gray><source>: <white><used>/<max></white> slot(s) filled"
     list-npc: "<gray>  <number>. <white><npc></white> <dark_gray>(<status><dark_gray>)"
+    access:
+      unknown-action: "<red><yellow><action></yellow> is not something a group can be allowed to do with NPCs. Actions: <actions>"
+      not-allowed: "<red>Only the owner of <yellow><business></yellow>, or a group the owner allows, can change NPC permissions."
+      nothing: "nothing"
+      list-header: "<gold>What each group may do with the NPCs of <business>:"
+      list-entry: "<gray>- <white><group></white>: <actions>"
+      allowed: "<green><yellow><group></yellow> may now <yellow><action></yellow> with the NPCs of <business>."
+      denied: "<green><yellow><group></yellow> may no longer <yellow><action></yellow> with the NPCs of <business>."
+      button:
+        name: "<aqua>NPC permissions"
+        lore:
+          - "<gray>What each access group may do"
+          - "<gray>with this business's NPCs."
+          - ""
+          - "<yellow>Click to change"
+      groups:
+        title: "<dark_gray>NPC permissions: <business>"
+        header:
+          name: "<aqua>NPC permissions"
+          lore:
+            - "<gray>These apply to every NPC of the"
+            - "<gray>business. The owner may always"
+            - "<gray>do everything."
+        group:
+          name: "<white><group>"
+          lore:
+            - "<gray>May: <white><actions></white>"
+            - ""
+            - "<yellow>Click to change"
+      actions:
+        title: "<dark_gray>NPC permissions: <group>"
+        header:
+          name: "<white><group>"
+          lore:
+            - "<gray>What this group may do with the"
+            - "<gray>NPCs of <business>."
+        allowed:
+          name: "<green><action>"
+          lore:
+            - "<gray>Allowed"
+            - ""
+            - "<yellow>Click to deny"
+        denied:
+          name: "<gray><action>"
+          lore:
+            - "<gray>Not allowed"
+            - ""
+            - "<yellow>Click to allow"
     progress:
       more: "<green><npc> of <business> received more from the business. Open it at the business's NPCs to make its choices."
       reset: "<yellow><npc> of <business> is owed less than before. What the business gave it was given back: assign it again at the business's NPCs."

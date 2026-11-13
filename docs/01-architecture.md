@@ -64,7 +64,7 @@ nodes feature and other plugins use it to reach businesses.
 | `business` | `Business` (state), `BusinessService` (rules), `BusinessRepository`, `BusinessChangeListener`, `BusinessException`, `Hire`, `SkillPick`, `TierChange`, `BlockPosition`, `BusinessBlockGuard`. |
 | `business.type` | Business types from `businesses/types.yml`. |
 | `business.tier` | Tier settings from `businesses/tiers.yml`. |
-| `business.access` | Access groups and permissions (`train`, `order-imports`, `sell-exports`, `tend-farms`, `manage-npcs`), defaults from `businesses/access.yml`. |
+| `business.access` | Access groups and permissions (`train`, `order-imports`, `sell-exports`, `tend-farms`, `manage-npcs`, `edit-npc-access`), defaults from `businesses/access.yml`. |
 | `business.vault` | The owner's earnings per business. |
 | `business.activity` | `ActivityLock`: one shift or training session per player account. |
 | `business.shift` | Work a Shift and Retrieve Pay, `businesses/shifts.yml`. |
@@ -78,6 +78,7 @@ nodes feature and other plugins use it to reach businesses.
 | `prices.modifier` | Percentage price modifiers. |
 | `business.npc` | What businesses need from SkysongNPCs, as interfaces (`NpcGateway`, `NpcSheetGateway`, `NpcAccessGateway`), the business group names SkysongNPCs sees (`BusinessGroupRef`, `BusinessGroupDirectory`), and the NPC slots: `NpcSettings` (`businesses/npcs.yml`), `BusinessNpcs` (which NPC fills which slot; creating, dismissing, lost slots, owner changes), `BusinessNpcRepository`, `BusinessNpcEvents`. No server classes. |
 | `business.npc.benefit` | What a business gives its NPCs: `Benefit` and `Progression` (config), `Entitlement` (the numbers at a level and tier), `NpcReconciler` (applies only the difference), `NpcProgression` (runs it when something changes), `NpcApplied` (what was changed on a sheet). No server classes. |
+| `business.npc.access` | Who may do what with a business's NPCs: `BusinessNpcAccess` keeps one SkysongNPCs access policy per business (`PolicyIds`), with `NpcAccessDefaults` from `businesses/npcs.yml`. No server classes. |
 | `tokens` | Gathering Tokens and their placeholder texts. |
 | `nodes` | `Node`, `NodeService`, node settings, the loaded node files (`NodeFiles`, `NodeTables`). |
 | `nodes.random` | Random tables (`nodes/random/*.yml`). |

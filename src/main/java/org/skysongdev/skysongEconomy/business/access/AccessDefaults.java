@@ -49,7 +49,7 @@ public record AccessDefaults(AccessGroup workers, AccessGroup everyone, int maxC
             for (String key : section.strings("permissions")) {
                 permissions.add(Permission.fromKey(key)
                         .orElseThrow(() -> section.error("permissions", "has an unknown permission '" + key
-                                + "': use train, order-imports, sell-exports, tend-farms or manage-npcs")));
+                                + "': use train, order-imports, sell-exports, tend-farms, manage-npcs or edit-npc-access")));
             }
         } else {
             permissions.addAll(fallbackPermissions);

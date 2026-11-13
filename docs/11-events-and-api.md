@@ -33,6 +33,7 @@ Get the plugin instance (`(SkysongEconomy) Bukkit.getPluginManager().getPlugin("
 | `getNodeFeature().nodes()` | `Optional<NodeService>`, empty when nodes are disabled |
 | `getNpcFeature().gateways()` | `Optional<NpcFeature.Gateways>`: the three gateways into SkysongNPCs, empty when it is not installed or businesses are disabled |
 | `getNpcFeature().progression()` | `Optional<NpcProgression>`: what each business NPC is owed (`owed`) and bringing it in line (`sync`) |
+| `getNpcFeature().npcAccess()` | `Optional<BusinessNpcAccess>`: what each access group may do with a business's NPCs (`grants`, `allowed`, `set`, `toggle`) |
 | `getNpcFeature().businessNpcs()` | `Optional<BusinessNpcs>`: which NPCs each business has and the slots they fill; also empty when `businesses/npcs.yml` can't be read |
 
 `BusinessSystem` (in `bootstrap/`) is a record of every running business service: `businesses`, `types`, `access`,

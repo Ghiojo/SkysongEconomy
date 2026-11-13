@@ -15,6 +15,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.regex.Pattern;
 
 /**
@@ -39,6 +40,8 @@ public final class AccessService implements BusinessChangeListener {
     private final AccessRepository repository;
     /** Saved groups by business id, built-in groups first. */
     private final Map<String, LinkedHashMap<String, AccessGroup>> saved = new HashMap<>();
+    /** Told about every deleted group, after it is gone. */
+    private final List<BiConsumer<Business, String>> groupDeletions = new ArrayList<>();
 
     public AccessService(AccessDefaults defaults, AccessRepository repository) {
         this.defaults = defaults;
@@ -53,6 +56,14 @@ public final class AccessService implements BusinessChangeListener {
             groups.forEach(group -> byId.put(group.id(), group));
             saved.put(businessId, byId);
         });
+    }
+
+    /**
+     * @param listener told the business and the id of every group {@link #deleteGroup} deletes,
+     *                 after it is gone; lets other features forget what they kept for the group
+     */
+    public void onGroupDeleted(BiConsumer<Business, String> listener) {
+        groupDeletions.add(listener);
     }
 
     /** @return every group of the business: workers, everyone, then the owner's in the order they were made */
@@ -136,6 +147,7 @@ public final class AccessService implements BusinessChangeListener {
         LinkedHashMap<String, AccessGroup> groups = editable(business);
         groups.remove(group.id());
         save(business, groups);
+        groupDeletions.forEach(listener -> listener.accept(business, group.id()));
     }
 
     /** Lets the group's members do that, or stops them. */

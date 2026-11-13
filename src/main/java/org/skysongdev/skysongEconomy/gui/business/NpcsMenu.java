@@ -16,6 +16,7 @@ import org.skysongdev.skysongEconomy.gui.ConfirmMenu;
 import org.skysongdev.skysongEconomy.gui.MenuButton;
 import org.skysongdev.skysongEconomy.gui.MenuTheme;
 import org.skysongdev.skysongEconomy.gui.PagedMenu;
+import org.skysongdev.skysongEconomy.gui.layout.BorderedLayout;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -83,6 +84,16 @@ final class NpcsMenu extends PagedMenu<NpcsMenu.Slot> {
                 "business.npcs.menu.header.lore",
                 Placeholder.unparsed("used", String.valueOf(screens.used(business))),
                 Placeholder.unparsed("max", String.valueOf(screens.capacity(business)))));
+    }
+
+    /** The NPC permissions button, for whoever may change them. */
+    @Override
+    protected void drawSide() {
+        if (screens.mayEditAccess(context)) {
+            set(BorderedLayout.rightColumn().get(0), MenuButton.of(theme.item(Material.IRON_DOOR,
+                            "business.npcs.access.button.name", "business.npcs.access.button.lore"),
+                    click -> screens.openAccess(click.player(), context.business())));
+        }
     }
 
     @Override
