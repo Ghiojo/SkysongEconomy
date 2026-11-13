@@ -7,6 +7,7 @@
 | Gringotts 3.0.1 | Yes (`depend`) | Money: balances, paying, charging, formatting amounts. The Architite coins are registered as its denominations. | `integration/gringotts/GringottsWallet`, `currency/ArchititeCurrency` |
 | Skysong_Items (1.8.0 on the server) | Yes (`depend`) | Building items from template files, reading the `material_id` tag and other item tags, registering the `node_primer` tag. Only the public API in `org.skysongdev.skysongitems.api` is used. | `items/*`, `listeners/NodeItemTags` |
 | SkysongStats | Yes (`depend`) | Characters (profiles), skills and skill levels, XP, proficiency training, downtime. | `integration/skysongstats/SkysongStatsAdapter` (the only class that calls its API) |
+| SkysongNPCs (API 0.23.0 or newer) | Optional (`softdepend`) | Business NPCs, and letting NPC access name business groups as `economy:<business>/<group>`. Without it the console says "SkysongNPCs is not installed: business NPCs are off" and everything else works. An older SkysongNPCs is refused with a console error that names the API it has. | `integration/skysongnpcs/SkysongNpcsAdapter` (the only class that calls its API), `integration/skysongnpcs/BusinessGroupProvider` |
 | PlaceholderAPI | Optional (`softdepend`) | `%skysongeconomy_tokens%` placeholders. | `integration/placeholderapi/TokenExpansion` |
 | CMI | Optional (`softdepend`) | Whether a player is AFK, so shift and training time stops. Called by reflection because CMI has no Maven artifact. | `integration/cmi/CmiAfkCheck` |
 
@@ -22,7 +23,8 @@ Dependencies in `build.gradle` are all `compileOnly`, because the plugins above 
 
 - `io.papermc.paper:paper-api:1.21-R0.1-SNAPSHOT` from repo.papermc.io
 - `libs/gringotts-3.0.1.jar` (a local jar, kept in the repository)
-- `com.github.Ghiojo:Skysong-Special-Items:1.0.1` and `com.github.Ghiojo:SkysongStats:1.0.0` from JitPack.
+- `com.github.Ghiojo:Skysong-Special-Items:1.0.1`, `com.github.Ghiojo:SkysongStats:1.4.0` and
+  `com.github.Ghiojo:SkysongNPCs:1.0.0` (API 0.23.0) from JitPack.
   Ghiojo repositories are always `com.github.Ghiojo:<RepoName>:<tag>`, with no `:api` module.
 - `me.clip:placeholderapi:2.11.6` from repo.extendedclip.com
 

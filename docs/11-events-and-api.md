@@ -29,6 +29,7 @@ Get the plugin instance (`(SkysongEconomy) Bukkit.getPluginManager().getPlugin("
 | `getSkysongStats()` | `SkysongStatsAdapter` |
 | `getBusinessFeature().system()` | `Optional<BusinessSystem>`, empty when businesses are disabled |
 | `getNodeFeature().nodes()` | `Optional<NodeService>`, empty when nodes are disabled |
+| `getNpcFeature().gateways()` | `Optional<NpcFeature.Gateways>`: the three gateways into SkysongNPCs, empty when it is not installed or businesses are disabled |
 
 `BusinessSystem` (in `bootstrap/`) is a record of every running business service: `businesses`, `types`, `access`,
 `vaults`, `tokens`, `activities`, `shifts`, `training`, `economyLogistics`, `ledgers`, `ledgerSelections`,
@@ -66,6 +67,31 @@ Implements every `character/` interface over `SkysongStatsApi.get()`:
 | `SkillProgression` | `addXp(character, skill, xp)`, `trainProficiency(character, skill, points, maxTier)` | Train/Learn rewards |
 
 `CharacterRef` mirrors SkysongStats' `CharacterId` without depending on it, so rules are testable.
+
+### SkysongNPCs: `integration/skysongnpcs/SkysongNpcsAdapter`
+
+SkysongNPCs is optional. `bootstrap/NpcFeature` checks that the plugin is enabled before anything loads the
+adapter, and `SkysongNpcsAdapter.connect` refuses an API older than `REQUIRED_API` (0.23.0), so a server with an old
+SkysongNPCs gets one clear console error instead of failing halfway through a command.
+
+The adapter implements the three interfaces in `business/npc`, which is all the business code sees:
+
+| Interface | Methods | Used for |
+| --- | --- | --- |
+| `NpcGateway` | `exists`, `create(template, owner, where, radius)`, `remove`, `setOwner`, `inSetup` | A business NPC's life. `create` asks SkysongNPCs for a free spot (`SpawnPoint.InFrontOf` a player or `NextTo` a block) and answers with an `NpcCreation`: created, no spot, nowhere (player offline or world not loaded), unknown template, or refused. The owner is a character, or `null` for the server. |
+| `NpcSheetGateway` | Stat points (`points`, `grantPoints`, `takeUnspentPoints`), proficiency picks (`picks`, `grantPicks` with optional promotion, `takeUnspentPicks`), `respec(npc, source)`, abilities (`holdsAbility`, `grantAbility`, `revokeAbility`), ability choices, baked stats (`addModifier`, `removeModifier`, `hasModifier`), fixed proficiencies (`proficiencyTier`, `setProficiencyTier`), and `tierIds`, `isStat`, `isProficiency`, `isAbility` for checking config | What an NPC is given. Everything in SkysongNPCs is tracked per source text (at most 64 characters, no spaces), so Economy only counts and takes back its own. Modifiers and proficiency tiers go on the NPC's SkysongStats sheet, which has no sources. |
+| `NpcAccessGateway` | `actions`, `preset`, `hasPolicy`, `createPolicy`, `deletePolicy`, `grants`, `setGrant`, `assign`, `unassign`, `policyOf` | SkysongNPCs access policies. Policies made here are owned by the SkysongEconomy plugin. Actions and groups are plain texts (`inventory-view`, `economy:smithy/workers`). |
+
+**Business groups in SkysongNPCs.** On enable, `BusinessGroupProvider` is registered under the group type `economy`,
+so any SkysongNPCs grant or policy can name `economy:<business id>/<group>`: `workers`, `everyone`, or one of the
+owner's groups. SkysongNPCs asks live on every check, and `business/npc/BusinessGroupDirectory` answers from the
+businesses and `AccessService` in memory, so hiring, firing and group changes count at once. Membership belongs to
+the character being played, not the account. The owner is in no group, because SkysongNPCs already lets an NPC's
+owner do everything. `/snpc access` suggests the groups of the businesses the player's current character owns.
+
+The unit tests use `FakeSkysongNpcs` (in `src/test`, package `business.npc`), which implements all three gateways
+in memory the way SkysongNPCs' API documents them, with helpers that play the player: `spendPoints`, `spendPick`,
+`promote`, `chooseAbility`, `completeSetup`.
 
 ### Gringotts: `integration/gringotts/GringottsWallet`
 

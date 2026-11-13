@@ -9,17 +9,18 @@
 | Config | `ConfigSectionTest`, `FileRegistryTest`, every `*ParserTest` (types, tiers, access, shifts, training, nameplates, E&L, ledgers, node settings, random tables, farm resources and types) |
 | Businesses | `BusinessServiceTest`, `AccessServiceTest`, `AccessGroupTest`, `PermissionTest`, `BusinessVaultsTest`, `ShiftServiceTest`, `TrainingServiceTest`, `ActivityLockTest`, `BusinessScaleTest`, `AmountParserTest`, `StepsParserTest`, `SkillSectionsTest` |
 | Prices and trade | `FormulaTest`, `PriceExpressionTest`, `PriceDatabaseTest`, `PriceSettingsTest`, `PriceModifiersTest`, `ModifierArgumentsTest`, `TradePricingTest`, `BundleTest`, `LedgerLoaderTest`, `LedgerSelectionsTest`, `DeliveryServiceTest`, `ExportServiceTest`, `ItemListCodecTest`, `DurationsTest`, `IntRangeTest` |
+| Business NPCs | `BusinessGroupRefTest`, `BusinessGroupDirectoryTest`, `FakeSkysongNpcsTest` (pins down how the fake behaves), `ApiVersionTest` |
 | Tokens | `GatheringTokensTest`, `TokenPlaceholdersTest` |
 | Loot and nodes | `LootParserTest`, `LootGroupTest`, `LootGroupLoaderTest`, `LootRollerTest`, `LootOddsTest`, `NodeTest`, `NodeServiceTest`, `NodeFilesTest`, `NodeTablesTest`, `RandomHarvesterTest`, `FarmPlotsTest`, `FarmHarvesterTest`, `PrimerReturnsTest` |
 | Other | `MessageCatalogTest`, `StoredItemsTest`, `SkillLevelsTest`, menu layout tests |
 
 Tests use in-memory fakes instead of the server: `InMemoryBusinessRepository`, `InMemoryAccessRepository`,
 `InMemoryNodeRepository`, `InMemoryTokenRepository`, `InMemoryModifierRepository`, `MapWallet`, `MapPrices`,
-`TradeFixture`, `FarmWorld`. When you add a rule, add it to a service with a test next to the existing ones.
+`TradeFixture`, `FarmWorld`, `FakeSkysongNpcs`. When you add a rule, add it to a service with a test next to the existing ones.
 
 **Not covered by unit tests**: anything that needs a running server: commands, menus and `MenuListener`,
 listeners (block protection, nameplates, timers), the `Sql...` repositories and `DatabaseSchema`, and the
-integrations (Gringotts, SkysongStats, SkysongItems, PlaceholderAPI, CMI). Those are checked on a test server with
+integrations (Gringotts, SkysongStats, SkysongNPCs, SkysongItems, PlaceholderAPI, CMI). Those are checked on a test server with
 the smoke test checklist.
 
 The cloud environment these features were written in could not download Paper from repo.papermc.io, so server code
