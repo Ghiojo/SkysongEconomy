@@ -379,6 +379,69 @@ business:
         - "<gray>you train here."
       lore-no-character:
         - "<gray>Play a character to train."
+  modules:
+    no-free-pick: "<red>This business has no free module pick for <yellow><skill></yellow>."
+    not-in-pool: "<red><yellow><module></yellow> is not a module <yellow><skill></yellow> can pick."
+    no-such-pick: "<red>There is no module number <yellow><number></yellow> for <skill>. It has <count> module(s): see <white>/se business modules <id></white>."
+    not-owner: "<red>Only the owner can pick the business's modules."
+    picked: "<green><business> now has the module <module><green>."
+    cleared: "<green>Removed the module <module><green> (<skill>) from <business>. Its pick is free again."
+    lost-picks: "<yellow><business> has fewer module picks now, so these newest modules were removed: <modules>"
+    blocked:
+      max-picks: "<red>Already picked (at most <max>)."
+      tier: "<red>Needs a tier <tier> business."
+      level: "<red>Needs <level> picks of this skill."
+      modules: "<red>Needs the module(s): <modules>."
+    list-header: "<gold>Modules of <business>:"
+    list-none: "<gray><business> has no module picks."
+    list-group: "<gray><skill> <dark_gray>(<id>)</dark_gray>: <white><picked>/<max></white> pick(s) used"
+    list-module: "<gray>  <number>. <white><module></white> <dark_gray>(<id>)"
+    info-header: "<gray>Modules:"
+    button:
+      name: "<aqua>Modules"
+      lore:
+        - "<gray>What this business has specialised in."
+        - "<gray>Picked: <white><picked>/<max></white>"
+        - "<gray>Free picks: <white><free></white>"
+        - ""
+        - "<yellow>Click to view"
+    menu:
+      title: "<dark_gray>Modules: <business>"
+      header:
+        name: "<aqua>Modules"
+        lore:
+          - "<gray>Picked: <white><picked>/<max></white>"
+          - "<gray>Each pick takes one module of its"
+          - "<gray>skill. A pick is permanent."
+      picked-for: "<dark_gray>Picked for <skill>"
+      missing:
+        name: "<red><module>"
+        lore:
+          - "<gray>Picked for <skill>"
+          - "<gray>This module's file is missing."
+          - "<gray>Tell staff."
+      free:
+        name: "<gray>Free module pick"
+        lore:
+          - "<gray>For: <white><skill></white>"
+          - "<gray>Only the owner can pick a module."
+      free-pick:
+        name: "<green>Free module pick"
+        lore:
+          - "<gray>For: <white><skill></white>"
+          - ""
+          - "<yellow>Click to choose a module"
+    pool:
+      title: "<dark_gray>Pick a module: <skill>"
+      click: "<yellow>Click to pick"
+      header:
+        name: "<aqua><skill> <aqua>modules"
+        lore:
+          - "<gray>Free picks: <white><free></white>"
+          - "<gray>A pick is permanent."
+    confirm:
+      title: "<dark_gray>Pick this module?"
+      permanent: "<red>A module pick can't be undone."
   npcs:
     no-such-source: "<red>This business has no NPC slots for <yellow><source></yellow>."
     no-free-slot: "<red>Every NPC slot of that kind is filled."

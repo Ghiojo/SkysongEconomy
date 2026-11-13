@@ -39,6 +39,7 @@ final class BusinessCommandSupport {
     final Messenger messenger;
     private final CharacterArguments characterArgs;
     private final List<ChangeReport> changeReports = new ArrayList<>();
+    private final List<ChangeReport> infoReports = new ArrayList<>();
 
     BusinessCommandSupport(BusinessService businesses, CharacterDirectory characters, Messenger messenger) {
         this.businesses = businesses;
@@ -55,6 +56,15 @@ final class BusinessCommandSupport {
     /** Tells the sender what else changed with the business, such as NPCs that lost their slot. */
     void reportChanges(CommandSender sender, Business business) {
         changeReports.forEach(report -> report.report(sender, business));
+    }
+
+    /** Adds something a feature shows after {@code /se business info}, such as the business's modules. */
+    void addInfoReport(ChangeReport report) {
+        infoReports.add(report);
+    }
+
+    void reportInfo(CommandSender sender, Business business) {
+        infoReports.forEach(report -> report.report(sender, business));
     }
 
     Optional<Player> requirePlayer(CommandSender sender) {

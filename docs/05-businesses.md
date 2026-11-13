@@ -22,6 +22,7 @@ Code map:
 | Tokens | `tokens/*`, `integration/placeholderapi/TokenExpansion` |
 | Block and nameplate | `business/BusinessBlockGuard`, `listeners/ProtectedBlockListener`, `listeners/BusinessNameplates`, `listeners/FloatingNames` (`businesses/block.yml`) |
 | Business NPCs | `business/npc/*`, `business/npc/benefit/*` and `business/npc/access/*` (`businesses/npcs.yml`), `integration/skysongnpcs/*`, `events/BusinessNpcCreateEvent`, `BusinessNpcRemoveEvent` |
+| Modules | `business/module/*` (`businesses/modules.yml`, `modules/<id>.yml`), `bootstrap/ModuleFeature`, `events/BusinessModulePickEvent`, `BusinessModuleRemoveEvent` |
 | Menus | `gui/business/*`, opened by `listeners/BusinessInteractListener` |
 | Commands | `commands/business/*`, `commands/tokens/*` |
 | Wiring | `bootstrap/BusinessFeature` |
@@ -58,6 +59,8 @@ tier 1 business named after its id, with no workers and no picks.
 | NPC slots and NPCs | `/se business npcs <id>` | Owner or staff |
 | Bring NPCs in line | `/se business npcsync <id>` | Staff |
 | NPC permissions | `/se business npcaccess <id> [list\|group] [allow\|deny <action>]` | Owner, staff, groups with `edit-npc-access` |
+| Modules | `/se business modules <id>` | Owner or staff |
+| Free a module pick | `/se business clearmodule <id> <skill> <number>` | Staff |
 | Info | `/se business info <id>` | Anyone with `skysongeconomy.business` |
 
 "Staff" means `skysongeconomy.business.admin`. "Owner" means the sender's **active** character owns the business.
@@ -279,6 +282,7 @@ rename). Each feature adds its own button (`MainMenuEntry`) in a fixed slot (`Ma
 | 3 | Slots | businesses with E&L |
 | 3 | Ledgers | businesses with E&L; everyone can browse, only the owner selects |
 | 4 | NPCs | businesses with an NPC slot or an NPC, when SkysongNPCs is installed |
+| 4 | Modules | businesses with a module pick or a module; only the owner (or staff on a server-owned business) can pick |
 
 The E&L buttons are described in [Economy and Logistics](06-economy-and-logistics.md).
 
@@ -368,6 +372,31 @@ on `/se business npcsync <id>`.
 `NpcDetailsMenu` shows a "From the business" item listing what the NPC is owed right now.
 
 Who may do what with the NPCs comes in a later change.
+
+## Modules
+
+A module is a premade specialisation a business picks. A business has **module picks** for every skill listed in
+`businesses/modules.yml` that it has picked; how many is that skill's `picks` amount, the **total** at the skill's
+level and the business's tier. A skill can give module picks, NPC slots and E&L at the same time. The bundled file
+lists no skill, so nothing changes until you add one. Modules need no other plugin.
+
+- **A module** is one file in `modules/`: `name`, `icon`, `description`, and optionally `max-picks` and `requires`
+  (see the [configuration reference](09-configuration-reference.md)). In this version a module is its description:
+  it is for the tabletop side, and shows in the Modules menu, `/se business modules` and `/se business info`.
+  `effects` in a file are not applied yet; the console says so when it finds them.
+- **Picking.** The **Modules** button opens `ModulesMenu`: every picked module, then the free picks, skill by skill.
+  The owner (staff on a server-owned business) clicks a free pick, chooses from that skill's pool in
+  `ModulePoolMenu`, and confirms. A module the business can't pick is shown with the reason: already picked
+  (`max-picks`, counted across all skills of the business), or a `requires` that is not met.
+- **Permanent.** A pick can't be undone by the owner. Staff free one with
+  `/se business clearmodule <id> <skill> <number>`, where `<number>` counts the skill's modules from 1, oldest
+  first, as `/se business modules <id>` shows.
+- **Fewer picks.** When a skill gives fewer picks than it has modules (`settier` down, `clearpick`, a lower number
+  in the file after a restart), the **newest** modules of that skill are removed, and `settier` and `clearpick`
+  name them. A skill removed from the file removes nothing, and neither does a deleted module file: the pick is
+  kept and the menu shows the module as missing, so a typo never takes a module from anyone.
+- **Requirements are checked when picking only.** A module stays picked if the business later drops below its
+  `requires`.
 
 ## Deleting a business
 

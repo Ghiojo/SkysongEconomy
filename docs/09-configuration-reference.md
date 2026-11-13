@@ -146,6 +146,34 @@ proficiency, tier and ability id is checked on load:
 `<skill>` is a SkysongStats skill id; an unknown one is warned about and ignored. The bundled file has
 `skills: {}`, so no business has NPC slots until you add a skill.
 
+## `businesses/modules.yml` (`business/module/ModuleSettingsParser`)
+
+See [Modules](05-businesses.md#modules).
+
+| Key | Meaning |
+| --- | --- |
+| `skills.<skill>.picks` | How many module picks a business has for this skill in total: an [amount](#amounts-by-level-and-tier). Required |
+| `skills.<skill>.modules` | The modules those picks can take: file names from `modules/` without `.yml`. A name with no file is warned about and left out |
+
+`<skill>` is a SkysongStats skill id; an unknown one is warned about and ignored. The bundled file has
+`skills: {}`, so no business has module picks until you add a skill.
+
+## `modules/<id>.yml` (`business/module/ModuleParser`)
+
+One file per module; the file name is its id. A file that can't be read is skipped with a warning. The bundled
+`sworn_oath.yml` is an example and is in no skill's pool.
+
+| Key | Meaning |
+| --- | --- |
+| `name` | Required. MiniMessage |
+| `icon` | The Minecraft item shown in menus. Default `PAPER` |
+| `description` | One text or a list of lines, MiniMessage |
+| `max-picks` | How many times one business may pick it, across all its skills. Default 1 |
+| `requires.tier` | The business tier needed to pick it, 1 to 5 |
+| `requires.level` | How many picks of the skill it is being picked for the business needs |
+| `requires.modules` | Modules the business must already have, by id |
+| `effects` | Not applied in this version: the console warns and the module is its description only |
+
 ## `businesses/block.yml` (`business/display/NameplateSettingsParser`)
 
 | Key | Meaning |

@@ -178,7 +178,16 @@ public final class DatabaseSchema {
                     + "tier_before VARCHAR(64) NULL, "
                     + "tier_applied VARCHAR(64) NULL, "
                     + "PRIMARY KEY (npc_uuid, kind, target), "
-                    + "FOREIGN KEY (npc_uuid) REFERENCES business_npcs(npc_uuid) ON DELETE CASCADE) ENGINE=InnoDB");
+                    + "FOREIGN KEY (npc_uuid) REFERENCES business_npcs(npc_uuid) ON DELETE CASCADE) ENGINE=InnoDB",
+            // The modules each business picked. pick_order counts up within a business: higher is newer.
+            "CREATE TABLE IF NOT EXISTS business_modules ("
+                    + "business_id VARCHAR(64) NOT NULL, "
+                    + "pick_order INT NOT NULL, "
+                    + "skill VARCHAR(64) NOT NULL, "
+                    + "module_id VARCHAR(64) NOT NULL, "
+                    + "picked_at BIGINT NOT NULL, "
+                    + "PRIMARY KEY (business_id, pick_order), "
+                    + "FOREIGN KEY (business_id) REFERENCES businesses(id) ON DELETE CASCADE) ENGINE=InnoDB");
 
     private DatabaseSchema() {
     }

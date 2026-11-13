@@ -5,6 +5,7 @@ import org.bukkit.command.PluginCommand;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.skysongdev.skysongEconomy.bootstrap.BusinessFeature;
 import org.skysongdev.skysongEconomy.bootstrap.NodeFeature;
+import org.skysongdev.skysongEconomy.bootstrap.ModuleFeature;
 import org.skysongdev.skysongEconomy.bootstrap.NpcFeature;
 import org.skysongdev.skysongEconomy.bootstrap.TradeInputs;
 import org.skysongdev.skysongEconomy.commands.SkysongEconomyCommand;
@@ -58,6 +59,7 @@ public final class SkysongEconomy extends JavaPlugin {
     private SkysongStatsAdapter skysongStats;
     private BusinessFeature businessFeature;
     private NodeFeature nodeFeature;
+    private ModuleFeature moduleFeature;
     private NpcFeature npcFeature;
 
     @Override
@@ -85,6 +87,8 @@ public final class SkysongEconomy extends JavaPlugin {
                 messenger, messages);
         nodeFeature = NodeFeature.start(this, configFiles, databaseSettings(), businessFeature.system(), skysongStats,
                 wallet, trade, messenger);
+        moduleFeature = ModuleFeature.start(this, getFile(), paths, configFiles, databaseSettings(),
+                businessFeature.system(), skysongStats, messenger);
         npcFeature = NpcFeature.start(this, configFiles, databaseSettings(), businessFeature.system(), skysongStats,
                 messenger);
 
@@ -95,9 +99,12 @@ public final class SkysongEconomy extends JavaPlugin {
     public void onDisable() {
         // Gives back anything players put in open menus, such as a primer in a planting slot.
         MenuListener.closeAll(getServer());
-        // Nodes and business NPCs listen to businesses, so they close first.
+        // Nodes, modules and business NPCs listen to businesses, so they close first.
         if (npcFeature != null) {
             npcFeature.close();
+        }
+        if (moduleFeature != null) {
+            moduleFeature.close();
         }
         if (nodeFeature != null) {
             nodeFeature.close();
@@ -206,6 +213,11 @@ public final class SkysongEconomy extends JavaPlugin {
     /** The nodes system; its parts are empty when its config couldn't be read. */
     public NodeFeature getNodeFeature() {
         return nodeFeature;
+    }
+
+    /** Business modules; empty when businesses are disabled or its config couldn't be read. */
+    public ModuleFeature getModuleFeature() {
+        return moduleFeature;
     }
 
     /** The connection to SkysongNPCs; its gateways are empty when that plugin is not installed. */
