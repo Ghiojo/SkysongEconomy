@@ -1,5 +1,8 @@
 package org.skysongdev.skysongEconomy.integration.skysongnpcs;
 
+import org.skysongdev.skysongEconomy.gui.business.NpcMenuButtons;
+import java.util.function.Function;
+import org.bukkit.inventory.ItemStack;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -52,7 +55,7 @@ import java.util.UUID;
  * interfaces it implements. SkysongNPCs is optional, so nothing may load this class unless that
  * plugin is enabled. Like the API itself, it must be used on the main thread.
  */
-public final class SkysongNpcsAdapter implements NpcGateway, NpcSheetGateway, NpcAccessGateway {
+public final class SkysongNpcsAdapter implements NpcGateway, NpcSheetGateway, NpcAccessGateway, NpcMenuButtons {
     /** The oldest SkysongNPCs API with everything used here: sources, respec by source, promotion, ability choices. */
     public static final ApiVersion REQUIRED_API = new ApiVersion(0, 23, 0);
 
@@ -94,6 +97,12 @@ public final class SkysongNpcsAdapter implements NpcGateway, NpcSheetGateway, Np
      */
     public void registerGroups(String type, GroupProvider provider) {
         npcs.access().registerGroupProvider(plugin, type, provider);
+    }
+
+    @Override
+    public void addInfoButton(String name, int slot, Function<UUID, @Nullable ItemStack> icon) {
+        npcs.menu().registerButton(plugin, name, slot, context -> icon.apply(context.npc().id()),
+                context -> icon.apply(context.npc().id()) != null, click -> { });
     }
 
     // NpcGateway

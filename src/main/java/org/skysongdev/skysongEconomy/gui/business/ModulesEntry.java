@@ -4,6 +4,9 @@ import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.Material;
 import org.skysongdev.skysongEconomy.business.Business;
 import org.skysongdev.skysongEconomy.business.module.BusinessModules;
+import org.skysongdev.skysongEconomy.business.module.npc.ModuleTargets;
+import org.skysongdev.skysongEconomy.business.npc.NpcGateway;
+import org.skysongdev.skysongEconomy.business.npc.benefit.NpcProgression;
 import org.skysongdev.skysongEconomy.character.SkillCatalog;
 import org.skysongdev.skysongEconomy.gui.MenuButton;
 import org.skysongdev.skysongEconomy.messaging.Messenger;
@@ -19,6 +22,17 @@ public final class ModulesEntry implements MainMenuEntry {
 
     public ModulesEntry(BusinessMenus menus, BusinessModules modules, SkillCatalog skills, Messenger messenger) {
         this.screens = new ModuleScreens(menus, modules, skills, messenger);
+    }
+
+    /**
+     * Switches on choosing the NPCs for module benefits. Called once the business NPCs run.
+     *
+     * @param targets     which NPCs were chosen for which benefit
+     * @param npcs        SkysongNPCs, for names
+     * @param progression gives a chosen NPC its benefit at once
+     */
+    public void enableNpcs(ModuleTargets targets, NpcGateway npcs, NpcProgression progression) {
+        screens.enableNpcs(new ModuleScreens.NpcSide(targets, npcs, progression));
     }
 
     @Override

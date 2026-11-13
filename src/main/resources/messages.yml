@@ -387,6 +387,7 @@ business:
     picked: "<green><business> now has the module <module><green>."
     cleared: "<green>Removed the module <module><green> (<skill>) from <business>. Its pick is free again."
     lost-picks: "<yellow><business> has fewer module picks now, so these newest modules were removed: <modules>"
+    lost-workers: "<yellow><business> lost worker slots with a module, so these newest workers were removed: <workers>"
     blocked:
       max-picks: "<red>Already picked (at most <max>)."
       tier: "<red>Needs a tier <tier> business."
@@ -396,6 +397,7 @@ business:
     list-none: "<gray><business> has no module picks."
     list-group: "<gray><skill> <dark_gray>(<id>)</dark_gray>: <white><picked>/<max></white> pick(s) used"
     list-module: "<gray>  <number>. <white><module></white> <dark_gray>(<id>)"
+    list-open: "<yellow>     <count> NPC(s) still to choose, in the Modules menu"
     info-header: "<gray>Modules:"
     button:
       name: "<aqua>Modules"
@@ -414,6 +416,8 @@ business:
           - "<gray>Each pick takes one module of its"
           - "<gray>skill. A pick is permanent."
       picked-for: "<dark_gray>Picked for <skill>"
+      open: "<yellow>NPCs still to choose: <count>"
+      open-click: "<yellow>Click to choose"
       missing:
         name: "<red><module>"
         lore:
@@ -442,6 +446,25 @@ business:
     confirm:
       title: "<dark_gray>Pick this module?"
       permanent: "<red>A module pick can't be undone."
+    assign:
+      title: "<dark_gray>Choose NPCs: <module>"
+      header: "<yellow>Choose <count> more NPC(s) to receive it."
+      nobody: "<yellow>This business has no NPC that can be chosen for this yet. Come back when it does."
+      chosen: "<green><npc> now has what <module><green> gives."
+      full: "<red>Every NPC for this module is chosen already."
+      not-eligible: "<red>That NPC can't be chosen for this module."
+      gone: "<red>The business no longer has that module."
+      npc:
+        name: "<white><npc>"
+        lore:
+          - "<yellow>Click to choose"
+      confirm:
+        title: "<dark_gray>Choose this NPC?"
+        name: "<white><npc>"
+        lore:
+          - "<gray>Receives what <module><gray> gives."
+          - ""
+          - "<red>This can't be changed afterwards."
   npcs:
     no-such-source: "<red>This business has no NPC slots for <yellow><source></yellow>."
     no-free-slot: "<red>Every NPC slot of that kind is filled."
@@ -529,7 +552,13 @@ business:
       ready: "<green>ready"
     source:
       skill: "<skill>"
+      module: "<module>"
       other: "<source>"
+    card:
+      name: "<gold>Business NPC"
+      business: "<gray>Works for: <white><business></white>"
+      slot: "<gray>Slot from: <white><source></white>"
+      module: "<gray>Module: <white><module></white>"
     button:
       name: "<aqua>NPCs"
       lore:

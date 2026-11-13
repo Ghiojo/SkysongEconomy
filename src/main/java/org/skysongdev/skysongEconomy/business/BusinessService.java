@@ -16,6 +16,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.ToIntFunction;
 import java.util.regex.Pattern;
 
 /**
@@ -40,6 +41,8 @@ public final class BusinessService {
     private final Map<String, Business> byId = new LinkedHashMap<>();
     private final Map<BlockPosition, Business> byPosition = new HashMap<>();
     private final List<BusinessChangeListener> listeners = new ArrayList<>();
+    /** What lets businesses hire more than their tier allows, each asked for its number. */
+    private final List<ToIntFunction<Business>> extraWorkerSlots = new ArrayList<>();
     private final List<BlockGuard> otherBlocks = new ArrayList<>();
 
     public BusinessService(BusinessTypeRegistry types, BusinessTiers tiers, BusinessRepository repository, Clock clock) {
@@ -224,7 +227,7 @@ public final class BusinessService {
                     "min", String.valueOf(Business.MIN_TIER), "max", String.valueOf(Business.MAX_TIER)));
         }
         business.setTier(tier);
-        List<Hire> workers = business.trimWorkersTo(tiers.get(tier).maxWorkers());
+        List<Hire> workers = business.trimWorkersTo(maxWorkers(business));
         List<SkillPick> picks = business.trimPicksTo(tier);
         save(business);
         return new TierChange(workers, picks);
@@ -291,7 +294,7 @@ public final class BusinessService {
         if (business.isWorker(character)) {
             throw new BusinessException("business.hire.already-worker", Map.of("character", character.profile()));
         }
-        int max = tiers.get(business.tier()).maxWorkers();
+        int max = maxWorkers(business);
         if (business.workers().size() >= max) {
             throw new BusinessException("business.hire.full", Map.of("max", String.valueOf(max)));
         }
@@ -313,9 +316,37 @@ public final class BusinessService {
         save(business);
     }
 
-    /** @return how many workers the business may have at its current tier */
+    /** @return how many workers the business may have: its tier's limit, plus what was added with {@link #addWorkerSlots} */
     public int maxWorkers(Business business) {
-        return tiers.get(business.tier()).maxWorkers();
+        int extra = 0;
+        for (ToIntFunction<Business> slots : extraWorkerSlots) {
+            extra += Math.max(0, slots.applyAsInt(business));
+        }
+        return tiers.get(business.tier()).maxWorkers() + extra;
+    }
+
+    /**
+     * Adds something that lets businesses hire more workers than their tier allows, such as
+     * picked modules.
+     *
+     * @param slots how many more workers a business may have right now; asked on every hire
+     */
+    public void addWorkerSlots(ToIntFunction<Business> slots) {
+        extraWorkerSlots.add(slots);
+    }
+
+    /**
+     * Removes the newest hires the business has no room for, after something other than its tier
+     * lowered {@link #maxWorkers}.
+     *
+     * @return the removed hires, newest first; none when everyone still fits
+     */
+    public List<Hire> trimWorkers(Business business) {
+        List<Hire> removed = business.trimWorkersTo(maxWorkers(business));
+        if (!removed.isEmpty()) {
+            save(business);
+        }
+        return removed;
     }
 
     private void requireFree(BlockPosition position) {

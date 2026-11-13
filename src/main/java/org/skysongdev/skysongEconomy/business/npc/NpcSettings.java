@@ -19,7 +19,7 @@ import java.util.OptionalInt;
  * @param spawnRadius how many blocks around that point SkysongNPCs looks for a free spot
  * @param skills      the skills that give NPCs, each with its settings
  */
-public record NpcSettings(SpawnAt spawnAt, int spawnRadius, SkillSections<NpcSkillSettings> skills) {
+public record NpcSettings(SpawnAt spawnAt, int spawnRadius, SkillSections<NpcSkillSettings> skills) implements NpcSlotRules {
     /** The search radius when the file doesn't set one. */
     public static final int DEFAULT_SPAWN_RADIUS = 3;
 
@@ -40,6 +40,7 @@ public record NpcSettings(SpawnAt spawnAt, int spawnRadius, SkillSections<NpcSki
      * @return how many NPC slots each source gives the business right now, in file order. A
      *         skill the business never picked is left out, as it gives nothing.
      */
+    @Override
     public Map<SlotSource, Integer> capacities(Business business) {
         Map<SlotSource, Integer> capacities = new LinkedHashMap<>();
         skills.all().forEach((skillId, settings) -> {
@@ -54,6 +55,7 @@ public record NpcSettings(SpawnAt spawnAt, int spawnRadius, SkillSections<NpcSki
      * @return how many slots that source gives the business right now; empty when the file no
      *         longer lists the source, so nothing can be said about it
      */
+    @Override
     public OptionalInt capacity(Business business, SlotSource source) {
         if (!source.isSkill() || !skills.has(source.id())) {
             return OptionalInt.empty();
@@ -67,6 +69,7 @@ public record NpcSettings(SpawnAt spawnAt, int spawnRadius, SkillSections<NpcSki
      * @return what the source's own progression owes each of its NPCs at this business right
      *         now; empty when the file no longer lists the source, so its NPCs are left as they are
      */
+    @Override
     public Optional<Entitlement> entitlement(Business business, SlotSource source, TierOrder tiers) {
         if (!source.isSkill()) {
             return Optional.empty();
@@ -76,6 +79,7 @@ public record NpcSettings(SpawnAt spawnAt, int spawnRadius, SkillSections<NpcSki
     }
 
     /** @return the SkysongNPCs template the source's NPCs are created from, empty when the source gives no NPCs */
+    @Override
     public Optional<String> template(SlotSource source) {
         if (!source.isSkill()) {
             return Optional.empty();

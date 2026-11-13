@@ -11,6 +11,7 @@ import org.skysongdev.skysongEconomy.business.BusinessException;
 import org.skysongdev.skysongEconomy.business.module.BusinessModules;
 import org.skysongdev.skysongEconomy.business.module.Module;
 import org.skysongdev.skysongEconomy.business.module.ModuleOption;
+import org.skysongdev.skysongEconomy.business.module.ModulePick;
 import org.skysongdev.skysongEconomy.gui.ConfirmMenu;
 import org.skysongdev.skysongEconomy.gui.MenuButton;
 import org.skysongdev.skysongEconomy.gui.MenuTheme;
@@ -86,12 +87,14 @@ final class ModulePoolMenu extends PagedMenu<ModuleOption> {
             return;
         }
         try {
-            screens.modules().pick(business, skill, module.id());
+            ModulePick picked = screens.modules().pick(business, skill, module.id());
             screens.messenger().send(player, "business.modules.picked", Placeholder.component("module", screens.name(module)),
                     Placeholder.unparsed("business", business.displayName()));
+            // A benefit for a number of NPCs asks who gets it right away.
+            screens.openAssignOrList(player, business, picked);
         } catch (BusinessException refusal) {
             screens.messenger().send(player, refusal);
+            screens.openList(player, business);
         }
-        screens.openList(player, business);
     }
 }

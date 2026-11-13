@@ -15,6 +15,8 @@ import org.skysongdev.skysongEconomy.character.SkillCatalog;
 import org.skysongdev.skysongEconomy.messaging.Messenger;
 
 import java.util.List;
+import java.util.function.Function;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static net.kyori.adventure.text.minimessage.tag.resolver.Placeholder.parsed;
@@ -27,9 +29,10 @@ import static net.kyori.adventure.text.minimessage.tag.resolver.Placeholder.unpa
  * @param gateway SkysongNPCs, for names
  * @param sheets  what each NPC still has to choose
  * @param skills  skill names
+ * @param moduleNames a module's name by its id, as MiniMessage; empty for a module that has no file
  */
 record NpcCommandText(BusinessNpcs npcs, NpcGateway gateway, NpcSheetGateway sheets, SkillCatalog skills,
-                      Messenger messenger) implements ChangeReport {
+                      Function<String, Optional<String>> moduleNames, Messenger messenger) implements ChangeReport {
     /** @return the NPC's name, or its id when SkysongNPCs no longer knows it */
     String name(BusinessNpc npc) {
         return gateway.name(npc.npc()).orElse(npc.npc().toString());
@@ -37,8 +40,12 @@ record NpcCommandText(BusinessNpcs npcs, NpcGateway gateway, NpcSheetGateway she
 
     /** @return what gives a slot, as players read it: the skill's name for a skill */
     Component sourceName(SlotSource source) {
-        return source.isSkill()
-                ? messenger.render("business.npcs.source.skill", parsed("skill", skills.displayName(source.id())))
+        if (source.isSkill()) {
+            return messenger.render("business.npcs.source.skill", parsed("skill", skills.displayName(source.id())));
+        }
+        Optional<String> module = source.isModule() ? moduleNames.apply(source.id()) : Optional.empty();
+        return module.isPresent()
+                ? messenger.render("business.npcs.source.module", parsed("module", module.get()))
                 : messenger.render("business.npcs.source.other", unparsed("source", source.key()));
     }
 

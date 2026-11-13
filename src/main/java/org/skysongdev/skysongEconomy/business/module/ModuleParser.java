@@ -1,6 +1,8 @@
 package org.skysongdev.skysongEconomy.business.module;
 
 import org.skysongdev.skysongEconomy.business.Business;
+import org.skysongdev.skysongEconomy.business.module.effect.ModuleEffect;
+import org.skysongdev.skysongEconomy.business.module.effect.ModuleEffectParsers;
 import org.skysongdev.skysongEconomy.config.ConfigException;
 import org.skysongdev.skysongEconomy.config.ConfigSection;
 
@@ -21,7 +23,8 @@ import java.util.function.Consumer;
  *   level: 1
  *   modules: [kennel]
  * </pre>
- * Only {@code name} is required. {@code description} is one text or a list of lines.
+ * Only {@code name} is required. {@code description} is one text or a list of lines. An optional
+ * {@code effects} list says what the module does once picked; see {@link ModuleEffectParsers}.
  */
 public final class ModuleParser {
     /** The folder, relative to the plugin's data folder. */
@@ -29,10 +32,15 @@ public final class ModuleParser {
 
     private static final String DEFAULT_ICON = "PAPER";
 
+    private final ModuleEffectParsers effects;
     private final Consumer<String> warnings;
 
-    /** @param warnings told about things in a file that are not used */
-    public ModuleParser(Consumer<String> warnings) {
+    /**
+     * @param effects  reads the {@code effects} list
+     * @param warnings told about effects this server can't apply
+     */
+    public ModuleParser(ModuleEffectParsers effects, Consumer<String> warnings) {
+        this.effects = effects;
         this.warnings = warnings;
     }
 
@@ -46,11 +54,12 @@ public final class ModuleParser {
         if (maxPicks < 1) {
             throw root.error("max-picks", "must be 1 or more");
         }
-        if (root.contains("effects")) {
-            warnings.accept(root.path() + ": effects are not applied by this version yet; the module is its description only");
-        }
+        List<ModuleEffect> effects = this.effects.parse(id, root);
+        effects.stream().filter(ModuleEffect.Unavailable.class::isInstance).map(ModuleEffect::type).distinct()
+                .forEach(type -> warnings.accept(root.path() + ": the " + type
+                        + " effect needs the SkysongNPCs plugin, which is not installed, so it does nothing"));
         return new Module(id, root.requireString("name"), root.string("icon", DEFAULT_ICON), description(root), maxPicks,
-                requirements(root));
+                requirements(root), effects);
     }
 
     private static List<String> description(ConfigSection root) {

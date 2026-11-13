@@ -43,6 +43,7 @@ import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.logging.Level;
 
 /**
@@ -87,10 +88,13 @@ public final class SkysongEconomy extends JavaPlugin {
                 messenger, messages);
         nodeFeature = NodeFeature.start(this, configFiles, databaseSettings(), businessFeature.system(), skysongStats,
                 wallet, trade, messenger);
+        // Module files are checked against SkysongNPCs, and business NPCs need the modules' slots:
+        // connect, read the modules, then start the NPC slots.
+        Optional<NpcFeature.Gateways> npcGateways = NpcFeature.connect(this, businessFeature.system(), skysongStats);
         moduleFeature = ModuleFeature.start(this, getFile(), paths, configFiles, databaseSettings(),
-                businessFeature.system(), skysongStats, messenger);
+                businessFeature.system(), skysongStats, messenger, npcGateways.map(NpcFeature.Gateways::sheets));
         npcFeature = NpcFeature.start(this, configFiles, databaseSettings(), businessFeature.system(), skysongStats,
-                messenger);
+                messenger, npcGateways, moduleFeature);
 
         registerCommands(messenger, materialIds);
     }

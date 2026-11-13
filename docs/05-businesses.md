@@ -381,9 +381,9 @@ level and the business's tier. A skill can give module picks, NPC slots and E&L 
 lists no skill, so nothing changes until you add one. Modules need no other plugin.
 
 - **A module** is one file in `modules/`: `name`, `icon`, `description`, and optionally `max-picks` and `requires`
-  (see the [configuration reference](09-configuration-reference.md)). In this version a module is its description:
-  it is for the tabletop side, and shows in the Modules menu, `/se business modules` and `/se business info`.
-  `effects` in a file are not applied yet; the console says so when it finds them.
+  (see the [configuration reference](09-configuration-reference.md)). Without `effects` a module is its
+  description: it is for the tabletop side, and shows in the Modules menu, `/se business modules` and
+  `/se business info`. With `effects` it also changes the business; see [Module effects](#module-effects).
 - **Picking.** The **Modules** button opens `ModulesMenu`: every picked module, then the free picks, skill by skill.
   The owner (staff on a server-owned business) clicks a free pick, chooses from that skill's pool in
   `ModulePoolMenu`, and confirms. A module the business can't pick is shown with the reason: already picked
@@ -397,6 +397,44 @@ lists no skill, so nothing changes until you add one. Modules need no other plug
   kept and the menu shows the module as missing, so a typo never takes a module from anyone.
 - **Requirements are checked when picking only.** A module stays picked if the business later drops below its
   `requires`.
+
+### Module effects
+
+A module file's optional `effects` list says what the module does. All effects of a module apply together, and
+every amount can follow the level of the skill the module was picked for, or the business's tier.
+
+| Effect | What it does | Needs |
+| --- | --- | --- |
+| `worker-slots` | `amount` more workers than the tier allows | nothing |
+| `npc-slots` | `amount` NPC slots of the module's **own** kind of NPC: its `template`, and its `progression` (the same block a skill has in `npcs.yml`). These NPCs use no skill's NPC settings | SkysongNPCs |
+| `npc-benefit` | A `benefit` block for the NPCs `target` and `from` choose | SkysongNPCs |
+
+Without SkysongNPCs the two NPC effects do nothing, the console says so once per file, and the rest of the module
+still works.
+
+- **Worker slots** (`business/module/effect/ModuleWorkerSlots`) add to `BusinessService.maxWorkers`. When the
+  module is removed and the business has more workers than room, the **newest** hires are removed, and the command
+  that caused it names them.
+- **The module's own NPCs.** The slots show in the NPCs menu and `/se business npcs` under the module's name, and
+  are created, dismissed and counted like a skill's. Their slot source is `module:<id>`. `ModuleNpcRules` is the
+  `NpcSlotRules` that adds them next to the ones `npcs.yml` gives. When the module is removed, its NPCs are
+  removed with its slots.
+- **Benefits.** `target: all` (the default) gives the benefit to every NPC that counts, including ones created
+  later. `target: 2` gives it to two NPCs the owner chooses. `from:` narrows which NPCs count: a skill id for that
+  skill's NPCs, or `module` for the NPCs of this module's own slots; left out, every NPC of the business counts.
+  The same module picked twice (`max-picks`) gives its amounts twice.
+- **Choosing NPCs.** Right after picking a module with a numbered target the owner is asked which NPCs get it
+  (`ModuleAssignMenu`), and confirms each one. With fewer eligible NPCs than the number, the rest waits: the
+  Modules menu shows "NPCs still to choose" on the module and a click opens the choice again, and
+  `/se business modules` shows the count. A choice is **permanent** for that NPC; only when the NPC is removed does
+  its share open again. `business/module/npc/ModuleTargets` keeps the choices.
+- **How it reaches the NPC.** Module benefits go through the same `NpcProgression` and `NpcReconciler` as a
+  skill's progression, each module under its own source (`economy:module:<id>`), so removing a module takes back
+  exactly what that module gave and nothing else: points and picks spent from it are given back first.
+  `/se business npcsync <id>` covers modules too.
+- **In the NPC's own menu.** A business NPC has a card in the menu SkysongNPCs opens on it (button
+  `skysongeconomy:business`): the business it works for, where its slot comes from, and the modules that give it
+  something.
 
 ## Deleting a business
 

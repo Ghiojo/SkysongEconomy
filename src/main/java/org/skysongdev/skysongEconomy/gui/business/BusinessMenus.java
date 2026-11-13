@@ -61,6 +61,11 @@ public final class BusinessMenus {
     }
 
     /** @return the shared menu look, which other features' menus reuse */
+    /** @return every business, for menus that start from something else than a business */
+    public BusinessService businesses() {
+        return businesses;
+    }
+
     public MenuTheme theme() {
         return theme;
     }

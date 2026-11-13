@@ -1,8 +1,11 @@
 package org.skysongdev.skysongEconomy.commands.business;
 
+import org.jetbrains.annotations.Nullable;
 import org.skysongdev.skysongEconomy.business.BusinessService;
 import org.skysongdev.skysongEconomy.business.access.AccessService;
 import org.skysongdev.skysongEconomy.business.module.BusinessModules;
+import org.skysongdev.skysongEconomy.business.module.effect.ModuleWorkerSlots;
+import org.skysongdev.skysongEconomy.business.module.npc.ModuleTargets;
 import org.skysongdev.skysongEconomy.business.npc.BusinessNpcs;
 import org.skysongdev.skysongEconomy.business.npc.access.BusinessNpcAccess;
 import org.skysongdev.skysongEconomy.business.npc.NpcGateway;
@@ -19,7 +22,12 @@ import org.skysongdev.skysongEconomy.messaging.Messenger;
  * /se business: creating and managing businesses. Staff commands need
  * {@code skysongeconomy.business.admin}; owner commands check ownership themselves.
  */
+import java.util.function.Function;
+import java.util.Optional;
+
 public final class BusinessCommand extends CommandGroup {
+    /** Set once modules are enabled. */
+    private @Nullable ModuleCommandText moduleText;
     private final BusinessCommandSupport support;
 
     public BusinessCommand(BusinessService businesses, BusinessTypeRegistry types, AccessService access, BusinessVaults vaults,
@@ -52,10 +60,11 @@ public final class BusinessCommand extends CommandGroup {
      * @param sheets  what each NPC still has to choose
      * @param skills  skill names
      * @param progression what each NPC is owed, for {@code npcsync}
+     * @param moduleNames a module's name by its id, for the slots modules give
      */
     public void enableNpcs(BusinessNpcs npcs, NpcGateway gateway, NpcSheetGateway sheets, SkillCatalog skills,
-                           NpcProgression progression) {
-        NpcCommandText text = new NpcCommandText(npcs, gateway, sheets, skills, support.messenger);
+                           NpcProgression progression, Function<String, Optional<String>> moduleNames) {
+        NpcCommandText text = new NpcCommandText(npcs, gateway, sheets, skills, moduleNames, support.messenger);
         register(new ListBusinessNpcs(support, text));
         register(new DismissNpc(support, text));
         register(new SyncBusinessNpcs(support, text, progression));
@@ -68,10 +77,12 @@ public final class BusinessCommand extends CommandGroup {
      * {@code clearpick} took their picks. Call it once.
      *
      * @param modules the modules each business picked
+     * @param workers the workers a business loses with a module
      * @param skills  skill names
      */
-    public void enableModules(BusinessModules modules, SkillCatalog skills) {
-        ModuleCommandText text = new ModuleCommandText(modules, skills, support.messenger);
+    public void enableModules(BusinessModules modules, ModuleWorkerSlots workers, SkillCatalog skills) {
+        ModuleCommandText text = new ModuleCommandText(support, modules, workers, skills);
+        moduleText = text;
         register(new ListBusinessModules(support, text));
         register(new ClearModule(support, text));
         support.addChangeReport(text);
@@ -81,6 +92,13 @@ public final class BusinessCommand extends CommandGroup {
                 text.list(sender, business);
             }
         });
+    }
+
+    /** Lets {@code modules} and {@code info} say how many NPCs are still to choose for each module. */
+    public void enableModuleNpcs(ModuleTargets targets) {
+        if (moduleText != null) {
+            moduleText.enableNpcs(targets);
+        }
     }
 
     /**
