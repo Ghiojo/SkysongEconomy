@@ -115,6 +115,11 @@ tags (`listeners/NodeItemTags`). Never use Skysong_Items' internal classes: they
 removed `utils.Utils`, which once crashed this plugin on enable). The project rule is that the Skysong-Special-Items
 repository is not edited from here.
 
+Item "properties" are now called **traits** (API 1.4.0, tag `1.2.0`). The old names (`ItemAccess.properties()`,
+`ItemProperties`, `PropertyDefinition`, `SkysongItemsRegisterEvent.registerProperty`) are deprecated for removal, so
+new code uses `ItemAccess.traits()`, `ItemTraits`, `TraitDefinition` and `registerTrait`. The build compiles with
+`-Xlint:deprecation`, so any use of the old names shows up as a warning.
+
 ### PlaceholderAPI: `integration/placeholderapi/TokenExpansion`
 
 Registered only when PlaceholderAPI is installed (the class can't load without it). The texts come from

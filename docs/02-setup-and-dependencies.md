@@ -23,7 +23,7 @@ Dependencies in `build.gradle` are all `compileOnly`, because the plugins above 
 
 - `io.papermc.paper:paper-api:1.21-R0.1-SNAPSHOT` from repo.papermc.io
 - `libs/gringotts-3.0.1.jar` (a local jar, kept in the repository)
-- `com.github.Ghiojo:Skysong-Special-Items:1.0.1`, `com.github.Ghiojo:SkysongStats:1.4.0` and
+- `com.github.Ghiojo:Skysong-Special-Items:1.2.0`, `com.github.Ghiojo:SkysongStats:1.4.0` and
   `com.github.Ghiojo:SkysongNPCs:1.0.0` (API 0.23.0) from JitPack.
   Ghiojo repositories are always `com.github.Ghiojo:<RepoName>:<tag>`, with no `:api` module.
 - `me.clip:placeholderapi:2.11.6` from repo.extendedclip.com
