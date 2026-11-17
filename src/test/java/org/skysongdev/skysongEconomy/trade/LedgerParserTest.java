@@ -3,6 +3,7 @@ package org.skysongdev.skysongEconomy.trade;
 import org.junit.jupiter.api.Test;
 import org.skysongdev.skysongEconomy.config.ConfigException;
 import org.skysongdev.skysongEconomy.config.YamlFiles;
+import org.skysongdev.skysongEconomy.prices.modifier.TargetKind;
 
 import java.io.InputStreamReader;
 import java.io.Reader;
@@ -36,6 +37,7 @@ class LedgerParserTest {
             Ledger ledger = parser.parse("smugglers", YamlFiles.parse("ledgers/smugglers.yml", reader));
             assertEquals(List.of(), warnings);
             assertEquals("ENDER_CHEST", ledger.icon());
+            assertEquals(Set.of(TargetKind.GLOBAL, TargetKind.GOOD_TYPE, TargetKind.ITEM), ledger.exemptFrom());
             ImportOffer weapons = ledger.importOffer("steel_weapons").orElseThrow();
             assertEquals(3, weapons.contents().parts().size());
             assertEquals(List.of("express", "regular", "slow"), List.copyOf(weapons.prices().keySet()));
@@ -122,5 +124,25 @@ class LedgerParserTest {
     @Test
     void aLedgerNeedsAName() {
         assertThrows(ConfigException.class, () -> parse("icon: CHEST"));
+    }
+
+    @Test
+    void aLedgerWithoutExemptFromPaysEveryModifier() {
+        Ledger ledger = parse("name: Test");
+        assertFalse(ledger.isTaxExempt());
+        assertEquals(Set.of(), ledger.exemptFrom());
+    }
+
+    @Test
+    void unknownExemptionsAndTheLedgerKindAreIgnoredWithAWarning() {
+        Ledger ledger = parse("""
+                name: Test
+                exempt-from: [Global, ledger, taxes]
+                """);
+        assertEquals(Set.of(TargetKind.GLOBAL), ledger.exemptFrom());
+        assertTrue(ledger.isTaxExempt());
+        assertEquals(2, warnings.size());
+        assertTrue(warnings.get(0).contains("ledger"), warnings.get(0));
+        assertTrue(warnings.get(1).contains("taxes"), warnings.get(1));
     }
 }

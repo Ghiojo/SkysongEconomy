@@ -84,6 +84,9 @@ final class LedgerDetailsMenu extends PagedMenu<TradeOffer> {
     @Override
     protected @Nullable MenuButton header() {
         List<Component> lore = new ArrayList<>(screens.render(ledger.description()));
+        if (ledger.isTaxExempt()) {
+            lore.add(screens.messenger.render("business.ledgers.menu.tax-exempt"));
+        }
         lore.add(Component.empty());
         lore.add(screens.messenger.render("business.ledgers.details.counts",
                 Placeholder.unparsed("imports", String.valueOf(ledger.imports().size())),

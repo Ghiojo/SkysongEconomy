@@ -6,8 +6,12 @@ import org.skysongdev.skysongEconomy.prices.modifier.AppliesTo;
 import org.skysongdev.skysongEconomy.prices.modifier.ModifiedPrice;
 import org.skysongdev.skysongEconomy.prices.modifier.ModifierDraft;
 import org.skysongdev.skysongEconomy.prices.modifier.ModifierTarget;
+import org.skysongdev.skysongEconomy.prices.modifier.TargetKind;
 
 import java.math.BigDecimal;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -43,6 +47,19 @@ class TradePricingTest {
         assertEquals(4, price.applied().size());
         // 56 * 1.20 = 67.2
         assertEquals(new BigDecimal("67.2"), price.price());
+    }
+
+    @Test
+    void aTaxExemptLedgerPassesItsExemptionsToTheModifiers() {
+        Ledger exempt = new Ledger("smugglers", "Smugglers", "CHEST", List.of(), Map.of("crate", TradeFixture.CRATE),
+                Map.of(), Set.of(TargetKind.GLOBAL));
+        modifier("crown_tax", "global", "10");
+        modifier("bribe", "ledger:smugglers", "10");
+        ModifiedPrice price = trade.pricing.quote(trade.shop, exempt, TradeFixture.CRATE, TradeFixture.EXPRESS).price();
+        assertEquals(1, price.applied().size());
+        assertEquals(1, price.skipped().size());
+        // 56 * 1.10 = 61.6
+        assertEquals(new BigDecimal("61.6"), price.price());
     }
 
     @Test

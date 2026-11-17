@@ -51,6 +51,7 @@ See [Economy and Logistics](06-economy-and-logistics.md#ledgers) for a full exam
 | Key | Meaning |
 | --- | --- |
 | `name`, `icon`, `description` | Ledger button: MiniMessage name, Minecraft material (default `PAPER`), MiniMessage lines |
+| `exempt-from` | Optional list of modifier target kinds (`global`, `business`, `good-type`, `item`) its trades ignore; see [tax-exempt ledgers](06-economy-and-logistics.md#tax-exempt-ledgers) |
 | `imports.<id>.name`, `icon`, `lore` | The import's button |
 | `imports.<id>.contents` | List of `{item, amount}` and `{rolls, from: [{item, weight, amount}]}` |
 | `imports.<id>.prices.<delivery time>` | Price expression per delivery time offered |

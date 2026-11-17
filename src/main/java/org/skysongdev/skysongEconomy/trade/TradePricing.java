@@ -44,7 +44,7 @@ public final class TradePricing {
         BigDecimal base = offer.contents().baseValue(prices.context(null));
         BigDecimal value = expression.evaluate(prices.context(base));
         PriceSubject subject = new PriceSubject(TradeDirection.IMPORT, business.id(), ledger.id(),
-                offer.contents().materialIds(), goodTypes.of(offer.contents().materialIds()));
+                offer.contents().materialIds(), goodTypes.of(offer.contents().materialIds()), ledger.exemptFrom());
         return new ImportQuote(ledger, offer, time, modifiers.price(value, subject, settings));
     }
 
@@ -62,7 +62,7 @@ public final class TradePricing {
         }
         BigDecimal value = offer.price().evaluate(prices.context(base));
         PriceSubject subject = new PriceSubject(TradeDirection.EXPORT, business.id(), ledger.id(), materialIds,
-                goodTypes.of(materialIds));
+                goodTypes.of(materialIds), ledger.exemptFrom());
         return new ExportQuote(ledger, offer, takes, modifiers.price(value, subject, settings));
     }
 }

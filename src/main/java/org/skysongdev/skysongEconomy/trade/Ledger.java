@@ -1,11 +1,14 @@
 package org.skysongdev.skysongEconomy.trade;
 
+import org.skysongdev.skysongEconomy.prices.modifier.TargetKind;
+
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * A trade ledger, one file in the {@code ledgers} folder: a set of imports and exports that
@@ -17,9 +20,11 @@ import java.util.Optional;
  * @param description MiniMessage lines
  * @param imports     by id, in file order
  * @param exports     by id, in file order
+ * @param exemptFrom  the modifier target kinds its trades ignore; empty for a normal ledger. Modifiers
+ *                    on the ledger itself always apply, so this never holds {@link TargetKind#LEDGER}.
  */
 public record Ledger(String id, String displayName, String icon, List<String> description,
-                     Map<String, ImportOffer> imports, Map<String, ExportOffer> exports) {
+                     Map<String, ImportOffer> imports, Map<String, ExportOffer> exports, Set<TargetKind> exemptFrom) {
     public Ledger {
         Objects.requireNonNull(id, "id");
         Objects.requireNonNull(displayName, "displayName");
@@ -27,6 +32,21 @@ public record Ledger(String id, String displayName, String icon, List<String> de
         description = List.copyOf(description);
         imports = Collections.unmodifiableMap(new LinkedHashMap<>(imports));
         exports = Collections.unmodifiableMap(new LinkedHashMap<>(exports));
+        exemptFrom = Set.copyOf(exemptFrom);
+        if (exemptFrom.contains(TargetKind.LEDGER)) {
+            throw new IllegalArgumentException("A ledger can't be exempt from its own modifiers");
+        }
+    }
+
+    /** A ledger that pays every modifier. */
+    public Ledger(String id, String displayName, String icon, List<String> description,
+                  Map<String, ImportOffer> imports, Map<String, ExportOffer> exports) {
+        this(id, displayName, icon, description, imports, exports, Set.of());
+    }
+
+    /** @return whether its trades ignore some general modifiers */
+    public boolean isTaxExempt() {
+        return !exemptFrom.isEmpty();
     }
 
     public Optional<ImportOffer> importOffer(String id) {

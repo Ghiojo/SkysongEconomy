@@ -40,6 +40,7 @@ name: "<dark_gray>Smugglers' Ledger"     # MiniMessage
 icon: ENDER_CHEST                         # Minecraft material, default PAPER
 description:
   - "<gray>Goods nobody asks questions about."
+exempt-from: [global, good-type, item]    # optional: makes the ledger tax exempt (see below)
 
 imports:
   steel_weapons:                          # import id, unique in this ledger
@@ -165,4 +166,23 @@ both:    price = truncate(value * (1 + sum of applying modifiers' percent / 100)
 ```
 
 The `PriceSubject` that modifiers match on carries the direction (import or export), the business id, the ledger
-id, the material ids involved and their good types.
+id, the material ids involved, their good types and the ledger's `exempt-from` kinds.
+
+## Tax-exempt ledgers
+
+A ledger with an `exempt-from` list is **tax exempt**: modifiers whose target is one of those kinds are ignored
+for its imports and exports, so smugglers don't pay the crown's taxes. Allowed kinds are `global`, `business`,
+`good-type` and `item`.
+
+- Modifiers aimed at the ledger itself (`ledger:<id>`) **always apply**, so staff can still tax or discount an
+  exempt ledger directly. `ledger` is refused in the list with a warning.
+- Exemption works both ways: an exempt ledger skips general **discounts** too, not just taxes.
+- It covers imports and exports alike.
+- An unknown kind is ignored with a console warning; the rest of the ledger still loads.
+
+The usual setting is `[global, good-type, item]`: anything aimed at the whole market is skipped, while modifiers
+on the business trading and on the ledger still apply. Use `[global]` to skip only global modifiers.
+
+Players see it in the menus: the ledger button and ledger details show *Tax exempt*, and a price's hover lists
+the modifiers that weren't applied, struck through (`business.imports.price.exempt` and `.skipped` in
+`messages.yml`).

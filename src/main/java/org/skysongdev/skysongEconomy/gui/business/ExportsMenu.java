@@ -17,7 +17,6 @@ import org.skysongdev.skysongEconomy.messaging.RefusedException;
 import org.skysongdev.skysongEconomy.money.Wallet;
 import org.skysongdev.skysongEconomy.prices.PriceException;
 import org.skysongdev.skysongEconomy.prices.modifier.PriceModifier;
-import org.skysongdev.skysongEconomy.prices.modifier.PriceModifiers;
 import org.skysongdev.skysongEconomy.trade.EconomyLogisticsSettings;
 import org.skysongdev.skysongEconomy.trade.ExportBatch;
 import org.skysongdev.skysongEconomy.trade.ExportOffer;
@@ -104,15 +103,7 @@ final class ExportsMenu extends PagedMenu<ExportsMenu.Choice> {
 
     private List<Component> price(ExportQuote quote) {
         Messenger messenger = screens.messenger();
-        List<Component> lines = new ArrayList<>();
-        if (!quote.price().applied().isEmpty()) {
-            lines.add(messenger.render("business.imports.price.base",
-                    Placeholder.unparsed("price", screens.wallet().format(quote.price().base()))));
-            for (PriceModifier modifier : quote.price().applied()) {
-                lines.add(messenger.render("business.imports.price.modifier", Placeholder.parsed("name", modifier.displayName()),
-                        Placeholder.unparsed("percent", PriceModifiers.signed(modifier.percent()))));
-            }
-        }
+        List<Component> lines = new ArrayList<>(ImportScreens.modifierLines(messenger, screens.wallet(), quote.price()));
         lines.add(messenger.render("business.exports.menu.pays",
                 Placeholder.unparsed("price", screens.wallet().format(quote.price().price()))));
         return lines;

@@ -67,17 +67,40 @@ final class ImportScreens {
         return lines;
     }
 
-    /** @return the price, and when modifiers apply, the price before them and each modifier */
+    /**
+     * @return the price, and when modifiers match, the price before them, each modifier applied and
+     *         each one skipped because the ledger is tax exempt
+     */
     List<Component> price(ModifiedPrice price) {
-        List<Component> lines = new ArrayList<>();
-        if (!price.applied().isEmpty()) {
-            lines.add(messenger.render("business.imports.price.base", Placeholder.unparsed("price", wallet.format(price.base()))));
-            for (PriceModifier modifier : price.applied()) {
-                lines.add(messenger.render("business.imports.price.modifier", Placeholder.parsed("name", modifier.displayName()),
-                        Placeholder.unparsed("percent", PriceModifiers.signed(modifier.percent()))));
-            }
-        }
+        List<Component> lines = new ArrayList<>(modifierLines(messenger, wallet, price));
         lines.add(messenger.render("business.imports.price.final", Placeholder.unparsed("price", wallet.format(price.price()))));
         return lines;
+    }
+
+    /**
+     * @return the lines that explain how modifiers changed a price, without the final price; none
+     *         when no modifier matched. Shared by the import and export menus.
+     */
+    static List<Component> modifierLines(Messenger messenger, Wallet wallet, ModifiedPrice price) {
+        List<Component> lines = new ArrayList<>();
+        if (!price.hasModifiers()) {
+            return lines;
+        }
+        lines.add(messenger.render("business.imports.price.base", Placeholder.unparsed("price", wallet.format(price.base()))));
+        for (PriceModifier modifier : price.applied()) {
+            lines.add(modifierLine(messenger, "business.imports.price.modifier", modifier));
+        }
+        if (!price.skipped().isEmpty()) {
+            lines.add(messenger.render("business.imports.price.exempt"));
+            for (PriceModifier modifier : price.skipped()) {
+                lines.add(modifierLine(messenger, "business.imports.price.skipped", modifier));
+            }
+        }
+        return lines;
+    }
+
+    private static Component modifierLine(Messenger messenger, String key, PriceModifier modifier) {
+        return messenger.render(key, Placeholder.parsed("name", modifier.displayName()),
+                Placeholder.unparsed("percent", PriceModifiers.signed(modifier.percent())));
     }
 }

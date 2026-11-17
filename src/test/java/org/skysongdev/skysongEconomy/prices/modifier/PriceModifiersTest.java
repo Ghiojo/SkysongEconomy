@@ -89,6 +89,46 @@ class PriceModifiersTest {
     }
 
     @Test
+    void anExemptTradeSkipsGeneralModifiersButPaysItsLedgersOwn() {
+        PriceSubject exempt = new PriceSubject(TradeDirection.IMPORT, "tavern", "smugglers", Set.of("red_wine"),
+                Set.of("alcohol", "wine"), Set.of(TargetKind.GLOBAL, TargetKind.GOOD_TYPE, TargetKind.ITEM));
+        modifiers.add(draft("crown_tax", "global", "10"));
+        modifiers.add(draft("embargo", "good-type:wine", "50"));
+        modifiers.add(draft("duty", "item:red_wine", "5"));
+        modifiers.add(draft("fine", "business:tavern", "20"));
+        modifiers.add(draft("bribe", "ledger:smugglers", "10"));
+
+        ModifiedPrice price = modifiers.price(new BigDecimal("100"), exempt, ONE_DECIMAL);
+        assertEquals(List.of("fine", "bribe"), price.applied().stream().map(PriceModifier::type).toList());
+        assertEquals(List.of("crown_tax", "embargo", "duty"), price.skipped().stream().map(PriceModifier::type).toList());
+        assertEquals(0, new BigDecimal("130").compareTo(price.price()));
+    }
+
+    @Test
+    void anExemptTradeSkipsGeneralDiscountsToo() {
+        PriceSubject exempt = new PriceSubject(TradeDirection.IMPORT, "tavern", "smugglers", Set.of("red_wine"),
+                Set.of(), Set.of(TargetKind.GLOBAL));
+        modifiers.add(draft("festival", "global", "-15"));
+        ModifiedPrice price = modifiers.price(new BigDecimal("100"), exempt, ONE_DECIMAL);
+        assertEquals(0, new BigDecimal("100").compareTo(price.price()));
+        assertEquals(1, price.skipped().size());
+    }
+
+    @Test
+    void aNormalTradeSkipsNothing() {
+        modifiers.add(draft("crown_tax", "global", "10"));
+        ModifiedPrice price = modifiers.price(new BigDecimal("100"), WINE_IMPORT, ONE_DECIMAL);
+        assertEquals(List.of(), price.skipped());
+        assertEquals(0, new BigDecimal("110").compareTo(price.price()));
+    }
+
+    @Test
+    void aTradeCantBeExemptFromItsOwnLedger() {
+        assertThrows(IllegalArgumentException.class, () -> new PriceSubject(TradeDirection.IMPORT, "tavern", "smugglers",
+                Set.of(), Set.of(), Set.of(TargetKind.LEDGER)));
+    }
+
+    @Test
     void pricesAreTruncatedAndNeverNegative() {
         modifiers.add(draft("a", "global", "3"));
         assertEquals(new BigDecimal("4.2"), modifiers.price(new BigDecimal("4.09"), WINE_IMPORT, ONE_DECIMAL).price());

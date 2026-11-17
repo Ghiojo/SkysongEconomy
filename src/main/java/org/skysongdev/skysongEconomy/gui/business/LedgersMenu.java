@@ -33,6 +33,9 @@ final class LedgersMenu extends PagedMenu<Ledger> {
     protected MenuButton button(Ledger ledger) {
         Business business = context.business();
         List<Component> lore = new ArrayList<>(screens.render(ledger.description()));
+        if (ledger.isTaxExempt()) {
+            lore.add(screens.messenger.render("business.ledgers.menu.tax-exempt"));
+        }
         lore.add(Component.empty());
         lore.add(screens.messenger.render(screens.selections.isSelected(business, ledger.id())
                 ? "business.ledgers.menu.selected" : "business.ledgers.menu.not-selected"));

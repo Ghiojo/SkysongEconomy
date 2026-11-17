@@ -4,12 +4,15 @@ import org.skysongdev.skysongEconomy.config.ConfigException;
 import org.skysongdev.skysongEconomy.config.ConfigSection;
 import org.skysongdev.skysongEconomy.prices.PriceException;
 import org.skysongdev.skysongEconomy.prices.PriceExpression;
+import org.skysongdev.skysongEconomy.prices.modifier.TargetKind;
 
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -20,6 +23,7 @@ import java.util.function.Predicate;
  * name: "<dark_gray>Smugglers' Ledger"
  * icon: ENDER_CHEST
  * description: ["<gray>Goods nobody asks questions about."]
+ * exempt-from: [global, good-type, item]       # optional: modifier kinds its trades ignore
  * imports:
  *   steel_weapons:
  *     name: "<white>Crate of steel weapons"
@@ -84,7 +88,29 @@ public final class LedgerParser {
                 warnings.accept("Skipped an export: " + e.getMessage());
             }
         }
-        return new Ledger(id, root.requireString("name"), icon(root), root.strings("description"), imports, exports);
+        return new Ledger(id, root.requireString("name"), icon(root), root.strings("description"), imports, exports,
+                exemptFrom(root));
+    }
+
+    /**
+     * Reads {@code exempt-from}: the modifier target kinds this ledger's trades ignore. An unknown
+     * kind, or {@code ledger} (modifiers on the ledger always apply), is ignored with a warning.
+     */
+    private Set<TargetKind> exemptFrom(ConfigSection root) {
+        Set<TargetKind> kinds = EnumSet.noneOf(TargetKind.class);
+        for (String text : root.strings("exempt-from")) {
+            Optional<TargetKind> kind = TargetKind.parse(text);
+            if (kind.isEmpty()) {
+                warnings.accept(root.error("exempt-from", "'" + text + "' is not one of global, business, good-type, item,"
+                        + " so it is ignored").getMessage());
+            } else if (kind.get() == TargetKind.LEDGER) {
+                warnings.accept(root.error("exempt-from", "can't hold 'ledger': modifiers on a ledger always apply to it,"
+                        + " so it is ignored").getMessage());
+            } else {
+                kinds.add(kind.get());
+            }
+        }
+        return kinds;
     }
 
     private ImportOffer parseImport(String id, ConfigSection section) {

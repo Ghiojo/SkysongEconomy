@@ -139,6 +139,7 @@ business:
       selected: "<green>Selected by this business"
       not-selected: "<gray>Not selected"
       click: "<yellow>Click to see its imports and exports."
+      tax-exempt: "<aqua>Tax exempt"
     details:
       title: "<ledger>"
       counts: "<white><imports></white> <gray>import(s), <white><exports></white> <gray>export(s)"
@@ -234,6 +235,9 @@ business:
     price:
       base: "<gray>Price before modifiers: <white><price></white>"
       modifier: "<gray>  <name><gray>: <yellow><percent>%"
+      # Shown when the ledger is tax exempt and some modifiers were ignored.
+      exempt: "<dark_gray>Tax exempt, not applied:"
+      skipped: "<dark_gray>  <st><name>: <percent>%</st>"
       final: "<gold>Price: <white><price></white>"
     confirm:
       title: "Order this import?"
