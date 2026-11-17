@@ -44,7 +44,7 @@ dependencies {
     // Characters, skills, proficiencies and downtime. Provided at runtime by the SkysongStats plugin.
     compileOnly 'com.github.Ghiojo:SkysongStats:1.4.0'
     // Optional: business NPCs. Provided at runtime by the SkysongNPCs plugin, when it is installed.
-    compileOnly 'com.github.Ghiojo:SkysongNPCs:1.0.0'
+    compileOnly 'com.github.Ghiojo:SkysongNPCs:1.1.0'
     // Optional: finding NPCs in the world for NPC upkeep. Provided at runtime by Citizens, which
     // SkysongNPCs needs. 2.0.43 is the last Citizens built for 1.21.11, the same SkysongNPCs uses.
     compileOnly('net.citizensnpcs:citizens-main:2.0.43-SNAPSHOT') {

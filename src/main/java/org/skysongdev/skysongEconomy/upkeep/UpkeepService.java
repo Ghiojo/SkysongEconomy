@@ -269,6 +269,14 @@ public final class UpkeepService {
         return Optional.ofNullable(byNpc.get(npc)).filter(NpcUpkeep::hasUpkeep);
     }
 
+    /**
+     * @return whether the NPC has an upkeep and is unmaintained; an NPC whose upkeep staff took
+     *         away is never unmaintained, whatever its saved row says
+     */
+    public boolean isUnmaintained(UUID npc) {
+        return upkeep(npc).filter(found -> found.state() == UpkeepState.UNMAINTAINED).isPresent();
+    }
+
     /** @return the NPC's saved row, also when staff took its upkeep away by hand */
     public Optional<NpcUpkeep> saved(UUID npc) {
         return Optional.ofNullable(byNpc.get(npc));

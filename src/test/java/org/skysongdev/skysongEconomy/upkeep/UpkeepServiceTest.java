@@ -63,6 +63,18 @@ class UpkeepServiceTest {
     }
 
     @Test
+    void onlyAnNpcWithAnUpkeepCanBeUnmaintained() {
+        service.syncTemplates();
+
+        assertFalse(service.isUnmaintained(guard));
+        assertFalse(service.isUnmaintained(dog));
+        service.mark(guard, UpkeepState.UNMAINTAINED, UpkeepEvents.Cause.STAFF);
+        assertTrue(service.isUnmaintained(guard));
+        service.setByHand(guard, null);
+        assertFalse(service.isUnmaintained(guard));
+    }
+
+    @Test
     void npcsFromAListedTemplateGetItsProfileAndStartMaintained() {
         assertEquals(1, service.syncTemplates());
 
