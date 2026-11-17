@@ -56,7 +56,6 @@ final class UpkeepInfo extends UpkeepSubCommand {
             return;
         }
         int cycles = support.upkeep.payment().cyclesCovered(profile.get().cost(), stock.view(npc), MAX_CYCLES_SHOWN);
-        support.messenger.send(sender, "upkeep.info-next", support.next(upkeep),
-                Placeholder.unparsed("cycles", cycles >= MAX_CYCLES_SHOWN ? MAX_CYCLES_SHOWN + "+" : String.valueOf(cycles)));
+        support.messenger.send(sender, "upkeep.info-next", support.next(upkeep), support.cycles(cycles, MAX_CYCLES_SHOWN));
     }
 }

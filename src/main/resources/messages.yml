@@ -930,5 +930,16 @@ upkeep:
   list-empty: "<gray>No NPC has an upkeep."
   list-entry: "<gray>- <white><npc></white> <dark_gray>(<profile>)</dark_gray>: <state><gray>, next cycle <white><next></white>"
   list-entry-unmaintained: "<gray>- <white><npc></white> <dark_gray>(<profile>)</dark_gray>: <state><gray> since <white><since></white> ago"
+  # The Upkeep button in an NPC's menu, and the chest it opens.
+  button:
+    name: "<gold>Upkeep"
+    state: "<state>"
+    cost: "<gray>Each cycle eats: <white><cost>"
+    next: "<gray>Next cycle in <white><next></white>; the stock covers <white><cycles></white> cycle(s)."
+    unmaintained: "<gray>Unmaintained for <white><since></white>: it eats nothing until it is repaired."
+    hint: "<yellow>Click to open its upkeep chest."
+  chest-title: "<dark_gray>Upkeep: <npc>"
+  chest-refused-item: "<red>That item doesn't pay this NPC's upkeep."
+  chest-deposit-only: "<red>You can put upkeep items in, but only those who may edit the NPC's inventory can take them out."
   cost-entry-item: "<amount>x <item>"
   cost-entry-good-type: "<amount>x any <type>"
