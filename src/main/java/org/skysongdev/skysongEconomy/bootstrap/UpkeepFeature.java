@@ -1,8 +1,10 @@
 package org.skysongdev.skysongEconomy.bootstrap;
 
+import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.Location;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.Plugin;
+import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
 import org.jetbrains.annotations.Nullable;
@@ -23,15 +25,20 @@ import org.skysongdev.skysongEconomy.data.database.StorageException;
 import org.skysongdev.skysongEconomy.events.BukkitUpkeepEvents;
 import org.skysongdev.skysongEconomy.integration.citizens.CitizensNpcs;
 import org.skysongdev.skysongEconomy.integration.skysongnpcs.SkysongNpcsUpkeepAdapter;
+import org.skysongdev.skysongEconomy.integration.skysongnpcs.UpkeepMenuButton;
 import org.skysongdev.skysongEconomy.integration.skysongnpcs.UpkeepNpcListener;
 import org.skysongdev.skysongEconomy.items.MaterialIdResolver;
+import org.skysongdev.skysongEconomy.listeners.UpkeepChestListener;
 import org.skysongdev.skysongEconomy.items.SkysongItemFactory;
 import org.skysongdev.skysongEconomy.messaging.Messenger;
 import org.skysongdev.skysongEconomy.upkeep.StockedItems;
+import org.skysongdev.skysongEconomy.upkeep.UpkeepChests;
 import org.skysongdev.skysongEconomy.upkeep.UpkeepPayment;
 import org.skysongdev.skysongEconomy.upkeep.UpkeepService;
 import org.skysongdev.skysongEconomy.upkeep.UpkeepSettings;
 import org.skysongdev.skysongEconomy.upkeep.UpkeepSettingsParser;
+import org.skysongdev.skysongEconomy.upkeep.UpkeepText;
+import org.skysongdev.skysongnpcs.api.SkysongNpcsApi;
 
 import java.time.Clock;
 import java.util.ArrayList;
@@ -45,8 +52,8 @@ import java.util.logging.Logger;
 
 /**
  * Gives NPCs their upkeep: the profiles in {@code npc-upkeep.yml}, storage of each NPC's upkeep
- * and stock, settling cycles every {@code check-every} seconds, and the {@code /se upkeep}
- * commands. Needs SkysongNPCs (and Citizens, which SkysongNPCs is built on), but not businesses:
+ * and stock, settling cycles every {@code check-every} seconds, the Upkeep button and chest on
+ * the SkysongNPCs menu, and the {@code /se upkeep} commands. Needs SkysongNPCs (and Citizens, which SkysongNPCs is built on), but not businesses:
  * any NPC can have an upkeep. Off without them, or while {@code npc-upkeep.yml} can't be read;
  * saved upkeeps stay saved meanwhile.
  */
@@ -122,8 +129,13 @@ public final class UpkeepFeature implements AutoCloseable {
                 new UpkeepService.Dependencies(npcs, stock, new UpkeepPayment(goodTypes)),
                 new AsyncUpkeepRepository(new SqlUpkeepRepository(connections, logger), writer),
                 new BukkitUpkeepEvents(plugin.getServer().getPluginManager()), clock, logger::warning);
+        UpkeepChests chests = new UpkeepChests(service, stock, materialIds, npc -> messenger.render("upkeep.chest-title",
+                Placeholder.unparsed("npc", npcs.name(npc).orElse(npc.toString()))));
         LastSpots spots = new LastSpots(citizens);
-        service.onLost(npc -> spots.dropStock(npc, stock, logger));
+        service.onLost(npc -> {
+            chests.close(npc);
+            spots.dropStock(npc, stock, logger);
+        });
         try {
             logger.info("Loaded " + service.loadAll() + " NPC upkeep(s) and " + stock.loadAll(logger::warning)
                     + " upkeep stock(s); " + settings.profiles().size() + " profile(s), "
@@ -135,7 +147,10 @@ public final class UpkeepFeature implements AutoCloseable {
             try {
                 service.syncTemplates();
                 spots.remember(service.npcs());
+                // Settle from what players just put in open chests, and show them what was eaten.
+                chests.saveAll();
                 service.settle();
+                chests.refresh();
             } catch (RuntimeException e) {
                 logger.log(Level.SEVERE, "NPC upkeep cycles could not be settled", e);
             }
@@ -144,8 +159,19 @@ public final class UpkeepFeature implements AutoCloseable {
         long period = settings.checkEvery().toSeconds() * TICKS_PER_SECOND;
         BukkitTask task = plugin.getServer().getScheduler().runTaskTimer(plugin, check, period, period);
         resources.add(task::cancel);
-        plugin.getServer().getPluginManager().registerEvents(new UpkeepNpcListener(service), plugin);
-        UpkeepCommandSupport support = new UpkeepCommandSupport(service, npcs, citizens::targeted, messenger, clock);
+        resources.add(chests::closeAll);
+        PluginManager events = plugin.getServer().getPluginManager();
+        events.registerEvents(new UpkeepNpcListener(service), plugin);
+        SkysongNpcsApi api = SkysongNpcsApi.get();
+        events.registerEvents(new UpkeepChestListener(plugin, chests,
+                (player, npc) -> UpkeepMenuButton.mayTakeOut(api, player, npc), messenger), plugin);
+        UpkeepText text = new UpkeepText(messenger, clock);
+        try {
+            new UpkeepMenuButton(service, stock, chests, text, messenger).register(plugin, api);
+        } catch (RuntimeException e) {
+            logger.log(Level.WARNING, "The Upkeep button could not be added to the SkysongNPCs menu", e);
+        }
+        UpkeepCommandSupport support = new UpkeepCommandSupport(service, npcs, citizens::targeted, messenger, text);
         return new UpkeepFeature(new Running(service, stock, citizens),
                 List.of(new UpkeepCommand(support, stock, messenger)), resources, logger);
     }
