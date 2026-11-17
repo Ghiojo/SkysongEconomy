@@ -78,6 +78,13 @@ class UpkeepSettingsParserTest {
     }
 
     @Test
+    void readsTheNameLineHeightAndRefusesOneTooFarAway() {
+        assertEquals(UpkeepSettings.DEFAULT_NAME_LINE_HEIGHT, parse("check-every: 30").nameLineHeight());
+        assertEquals(0.5, parse("name-line-height: 0.5").nameLineHeight());
+        assertTrue(problem("name-line-height: 5").contains("name-line-height"));
+    }
+
+    @Test
     void anEmptyFileGivesNobodyAnUpkeep() {
         UpkeepSettings settings = parse("{}");
 

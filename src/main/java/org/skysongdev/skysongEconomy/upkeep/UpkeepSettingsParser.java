@@ -17,6 +17,7 @@ import java.util.function.Predicate;
  * Reads {@code npc-upkeep.yml}:
  * <pre>
  * check-every: 60                      # seconds between settling cycles that are due
+ * name-line-height: 0.2                # blocks above an unmaintained NPC's head for its red line
  * profiles:
  *   guard_rations:
  *     every: 24h                       # one cycle, real time: s, m, h, d, w, such as 1d12h
@@ -69,7 +70,11 @@ public final class UpkeepSettingsParser {
             }
             templates.put(template.toLowerCase(Locale.ROOT), profile);
         }
-        return new UpkeepSettings(Duration.ofSeconds(checkSeconds), profiles, templates);
+        double nameLineHeight = root.number("name-line-height", UpkeepSettings.DEFAULT_NAME_LINE_HEIGHT);
+        if (nameLineHeight < -2 || nameLineHeight > 2) {
+            throw root.error("name-line-height", "must be between -2 and 2 blocks");
+        }
+        return new UpkeepSettings(Duration.ofSeconds(checkSeconds), profiles, templates, nameLineHeight);
     }
 
     private UpkeepProfile profile(String id, ConfigSection section) {

@@ -12,7 +12,7 @@ import java.util.UUID;
 
 /**
  * Finds NPCs in the world through Citizens, which SkysongNPCs is built on: the NPC a player looks
- * at, and where an NPC stands. Only used when Citizens is installed, which it always is with
+ * at, where an NPC stands, and its body in the world. Only used when Citizens is installed, which it always is with
  * SkysongNPCs. Must be used on the server's main thread.
  */
 public final class CitizensNpcs {
@@ -42,6 +42,15 @@ public final class CitizensNpcs {
             return Optional.empty();
         }
         return Optional.ofNullable(found.getStoredLocation()).map(Location::clone);
+    }
+
+    /** @return the NPC's body in the world; empty when Citizens has no such NPC or it is not spawned */
+    public Optional<Entity> entity(UUID npc) {
+        NPC found = registry().getByUniqueId(npc);
+        if (found == null || !found.isSpawned()) {
+            return Optional.empty();
+        }
+        return Optional.ofNullable(found.getEntity());
     }
 
     private static NPCRegistry registry() {

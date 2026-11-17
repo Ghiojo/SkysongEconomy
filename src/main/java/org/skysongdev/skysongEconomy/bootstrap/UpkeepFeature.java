@@ -24,6 +24,7 @@ import org.skysongdev.skysongEconomy.data.database.SqlUpkeepStockRepository;
 import org.skysongdev.skysongEconomy.data.database.StorageException;
 import org.skysongdev.skysongEconomy.events.BukkitUpkeepEvents;
 import org.skysongdev.skysongEconomy.integration.citizens.CitizensNpcs;
+import org.skysongdev.skysongEconomy.integration.citizens.UpkeepNameLines;
 import org.skysongdev.skysongEconomy.integration.skysongitems.UpkeepItemMarks;
 import org.skysongdev.skysongEconomy.integration.skysongnpcs.SkysongNpcsUpkeepAdapter;
 import org.skysongdev.skysongEconomy.integration.skysongnpcs.UpkeepMenuButton;
@@ -57,13 +58,15 @@ import java.util.logging.Logger;
 /**
  * Gives NPCs their upkeep: the profiles in {@code npc-upkeep.yml}, storage of each NPC's upkeep
  * and stock, settling cycles every {@code check-every} seconds, the Upkeep button and chest on
- * the SkysongNPCs menu, the {@code unmaintained} trait on NPC items and its repair, and the
- * {@code /se upkeep} commands. Needs SkysongNPCs (and Citizens, which SkysongNPCs is built on), but not businesses:
+ * the SkysongNPCs menu, the {@code unmaintained} trait on NPC items and its repair, the red line
+ * under unmaintained NPCs' names, and the {@code /se upkeep} commands. Needs SkysongNPCs (and Citizens, which SkysongNPCs is built on), but not businesses:
  * any NPC can have an upkeep. Off without them, or while {@code npc-upkeep.yml} can't be read;
  * saved upkeeps stay saved meanwhile.
  */
 public final class UpkeepFeature implements AutoCloseable {
     private static final long TICKS_PER_SECOND = 20;
+    /** How often the red lines under unmaintained NPCs' names are put back, such as after a chunk reload. */
+    private static final long NAME_LINE_TICKS = 2 * TICKS_PER_SECOND;
 
     private final @Nullable Running running;
     private final List<SubCommand> commands;
@@ -178,6 +181,13 @@ public final class UpkeepFeature implements AutoCloseable {
                 (player, npc) -> UpkeepMenuButton.mayTakeOut(api, player, npc), messenger), plugin);
         events.registerEvents(marks, plugin);
         events.registerEvents(new UpkeepItemListener(plugin, marks), plugin);
+        UpkeepNameLines nameLines = new UpkeepNameLines(service, citizens, messenger.render("upkeep.name-line"),
+                (float) settings.nameLineHeight());
+        events.registerEvents(nameLines, plugin);
+        BukkitTask lineTask = plugin.getServer().getScheduler().runTaskTimer(plugin, nameLines::refresh,
+                NAME_LINE_TICKS, NAME_LINE_TICKS);
+        resources.add(lineTask::cancel);
+        resources.add(nameLines::removeAll);
         UpkeepText text = new UpkeepText(messenger, clock);
         try {
             new UpkeepMenuButton(service, stock, chests, text, messenger).register(plugin, api);

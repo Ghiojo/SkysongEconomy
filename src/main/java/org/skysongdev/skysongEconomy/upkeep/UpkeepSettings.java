@@ -13,13 +13,24 @@ import java.util.Optional;
  * @param profiles   the profiles by id
  * @param templates  the profile id each SkysongNPCs template gives, by lower-case template id;
  *                   every value is a key of {@code profiles}
+ * @param nameLineHeight how far above the top of an unmaintained NPC's head its red line sits, in blocks
  */
-public record UpkeepSettings(Duration checkEvery, Map<String, UpkeepProfile> profiles, Map<String, String> templates) {
+public record UpkeepSettings(Duration checkEvery, Map<String, UpkeepProfile> profiles, Map<String, String> templates,
+                             double nameLineHeight) {
     /** Settled once a minute unless the file says otherwise. */
     public static final Duration DEFAULT_CHECK_EVERY = Duration.ofSeconds(60);
 
+    /** Just above the head, under where the name floats. */
+    public static final double DEFAULT_NAME_LINE_HEIGHT = 0.2;
+
     /** No profiles: nothing has an upkeep. */
-    public static final UpkeepSettings NONE = new UpkeepSettings(DEFAULT_CHECK_EVERY, Map.of(), Map.of());
+    public static final UpkeepSettings NONE = new UpkeepSettings(DEFAULT_CHECK_EVERY, Map.of(), Map.of(),
+            DEFAULT_NAME_LINE_HEIGHT);
+
+    /** Settings with the default name line height. */
+    public UpkeepSettings(Duration checkEvery, Map<String, UpkeepProfile> profiles, Map<String, String> templates) {
+        this(checkEvery, profiles, templates, DEFAULT_NAME_LINE_HEIGHT);
+    }
 
     public UpkeepSettings {
         Objects.requireNonNull(checkEvery, "checkEvery");

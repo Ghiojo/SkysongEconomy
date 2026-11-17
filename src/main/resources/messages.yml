@@ -939,6 +939,8 @@ upkeep:
     unmaintained: "<gray>Unmaintained for <white><since></white>: it eats nothing until it is repaired."
     hint: "<yellow>Click to open its upkeep chest."
   chest-title: "<dark_gray>Upkeep: <npc>"
+  # The line under an unmaintained NPC's name.
+  name-line: "<#e08080>Unmaintained"
   # The trait an unmaintained NPC's item carries (SkysongItems prints the lore line). Use the
   # trait id "unmaintained" in the SkysongCrafting recipe that repairs it. Changes apply after
   # a restart or /si reload.
