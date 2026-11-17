@@ -120,8 +120,15 @@ For an import, "involving" means any item its bundle can deliver; for an export,
 price = truncate( value * (1 + sum of every applying modifier's percent / 100) ), never below 0
 ```
 
-`value` is the ledger expression's result. `ModifiedPrice` keeps the base, the modifiers applied, their total
-percent and the final price, so menus can show how the price was reached.
+`value` is the ledger expression's result. `ModifiedPrice` keeps the base, the modifiers applied, those skipped,
+their total percent and the final price, so menus can show how the price was reached.
+
+### Tax-exempt ledgers
+
+A ledger can list target kinds in `exempt-from` (for example `[global, good-type, item]`). Modifiers of those
+kinds match its trades but are **skipped**, whether they raise or lower the price. Modifiers on the ledger itself
+(`ledger:<id>`) always apply. `PriceModifiers.applying` returns what applies and `skipped` what was ignored. Full
+rules: [Economy and Logistics](06-economy-and-logistics.md#tax-exempt-ledgers).
 
 ### Commands
 

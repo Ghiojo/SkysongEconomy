@@ -21,7 +21,15 @@ public sealed interface ModifierTarget {
     /** @return whether a price of that subject is affected */
     boolean matches(PriceSubject subject);
 
+    /** @return which kind of target this is, e.g. {@link TargetKind#LEDGER} for {@code ledger:<id>} */
+    TargetKind kind();
+
     record Global() implements ModifierTarget {
+        @Override
+        public TargetKind kind() {
+            return TargetKind.GLOBAL;
+        }
+
         @Override
         public String key() {
             return "global";
@@ -36,6 +44,11 @@ public sealed interface ModifierTarget {
     record Business(String businessId) implements ModifierTarget {
         public Business {
             Objects.requireNonNull(businessId, "businessId");
+        }
+
+        @Override
+        public TargetKind kind() {
+            return TargetKind.BUSINESS;
         }
 
         @Override
@@ -55,6 +68,11 @@ public sealed interface ModifierTarget {
         }
 
         @Override
+        public TargetKind kind() {
+            return TargetKind.LEDGER;
+        }
+
+        @Override
         public String key() {
             return "ledger:" + ledgerId;
         }
@@ -71,6 +89,11 @@ public sealed interface ModifierTarget {
         }
 
         @Override
+        public TargetKind kind() {
+            return TargetKind.GOOD_TYPE;
+        }
+
+        @Override
         public String key() {
             return "good-type:" + goodType;
         }
@@ -84,6 +107,11 @@ public sealed interface ModifierTarget {
     record Item(String materialId) implements ModifierTarget {
         public Item {
             Objects.requireNonNull(materialId, "materialId");
+        }
+
+        @Override
+        public TargetKind kind() {
+            return TargetKind.ITEM;
         }
 
         @Override

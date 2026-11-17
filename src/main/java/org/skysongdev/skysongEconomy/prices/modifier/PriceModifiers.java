@@ -144,24 +144,36 @@ public final class PriceModifiers {
         return removed.size();
     }
 
-    /** @return the modifiers that change a price of that subject, in the order they were set */
+    /**
+     * @return the modifiers that change a price of that subject, in the order they were set. Those
+     *         its tax-exempt ledger ignores are left out (see {@link #skipped}).
+     */
     public List<PriceModifier> applying(PriceSubject subject) {
-        Instant now = clock.instant();
-        return byId.values().stream()
-                .filter(modifier -> modifier.isActive(now) && modifier.appliesTo(subject))
-                .toList();
+        return matching(subject).stream().filter(modifier -> !subject.isExemptFrom(modifier.target())).toList();
+    }
+
+    /** @return the modifiers that match that subject but are ignored because its ledger is tax exempt */
+    public List<PriceModifier> skipped(PriceSubject subject) {
+        return matching(subject).stream().filter(modifier -> subject.isExemptFrom(modifier.target())).toList();
     }
 
     /**
      * Applies every matching modifier to a price: {@code value * (1 + sum of percentages / 100)},
-     * truncated, and never below 0.
+     * truncated, and never below 0. Modifiers the subject is exempt from are skipped.
      */
     public ModifiedPrice price(BigDecimal value, PriceSubject subject, PriceSettings settings) {
         List<PriceModifier> applied = applying(subject);
         BigDecimal percent = applied.stream().map(PriceModifier::percent).reduce(BigDecimal.ZERO, BigDecimal::add);
         BigDecimal factor = BigDecimal.ONE.add(percent.divide(HUNDRED, MathContext.DECIMAL64)).max(BigDecimal.ZERO);
         BigDecimal price = settings.truncate(value.multiply(factor));
-        return new ModifiedPrice(value, applied, percent, price);
+        return new ModifiedPrice(value, applied, skipped(subject), percent, price);
+    }
+
+    private List<PriceModifier> matching(PriceSubject subject) {
+        Instant now = clock.instant();
+        return byId.values().stream()
+                .filter(modifier -> modifier.isActive(now) && modifier.appliesTo(subject))
+                .toList();
     }
 
     /** Deletes every expired modifier. */
