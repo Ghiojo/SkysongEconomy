@@ -32,6 +32,11 @@ public final class CachedGoodTypes implements GoodTypes {
         return Set.copyOf(byItem.getOrDefault(materialId, Set.of()));
     }
 
+    /** @return whether at least one item has this good type */
+    public boolean anyItemHas(String goodType) {
+        return byItem.values().stream().anyMatch(types -> types.contains(goodType));
+    }
+
     /** @return false if the item already had this good type */
     public boolean add(String materialId, String goodType) throws SQLException {
         boolean added = repository.add(materialId, goodType);

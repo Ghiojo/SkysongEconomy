@@ -198,7 +198,20 @@ public final class DatabaseSchema {
                     + "chosen_at BIGINT NOT NULL, "
                     + "PRIMARY KEY (business_id, pick_order, effect, npc_uuid), "
                     + "INDEX (npc_uuid), "
-                    + "FOREIGN KEY (business_id) REFERENCES businesses(id) ON DELETE CASCADE) ENGINE=InnoDB");
+                    + "FOREIGN KEY (business_id) REFERENCES businesses(id) ON DELETE CASCADE) ENGINE=InnoDB",
+            // NPC upkeep: one row per NPC that has an upkeep, or that staff left without one on
+            // purpose (profile NULL). state is MAINTAINED or UNMAINTAINED; times are epoch millis.
+            "CREATE TABLE IF NOT EXISTS npc_upkeep ("
+                    + "npc_uuid CHAR(36) PRIMARY KEY NOT NULL, "
+                    + "profile VARCHAR(64) NULL, "
+                    + "set_by_hand BOOLEAN NOT NULL, "
+                    + "state VARCHAR(16) NOT NULL, "
+                    + "next_due BIGINT NOT NULL, "
+                    + "changed_at BIGINT NOT NULL) ENGINE=InnoDB",
+            // The items stocked in an NPC for its upkeep, in Paper's own item format.
+            "CREATE TABLE IF NOT EXISTS npc_upkeep_stock ("
+                    + "npc_uuid CHAR(36) PRIMARY KEY NOT NULL, "
+                    + "items MEDIUMBLOB NOT NULL) ENGINE=InnoDB");
 
     private DatabaseSchema() {
     }

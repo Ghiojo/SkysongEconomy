@@ -1,0 +1,42 @@
+# NPC upkeep: NPCs that need a supply of items every cycle. It needs the SkysongNPCs plugin;
+# without it this file is not used.
+#
+# Only NPCs registered here have an upkeep: those made from a template listed under templates,
+# and those staff give one by hand with /se upkeep set <profile> while looking at them.
+# /se upkeep set none takes it away whatever the template says; /se upkeep set template undoes
+# either.
+#
+# Every cycle the NPC eats its profile's cost from the items players stocked in it. It is all
+# or nothing: if any entry of the cost is short, nothing is taken and the NPC becomes
+# Unmaintained. An unmaintained NPC still works exactly as before (staff decide what it means),
+# but it eats nothing more until it is maintained again: through the NPC item's crafting
+# repair, or /se upkeep mark maintained. Its next cycle then comes one full cycle later.
+# Cycles count real time, also while the server is off and while the NPC is picked up.
+
+# How often, in seconds, cycles that are due are settled.
+check-every: 60
+
+# Named upkeep presets.
+#   every  how long one cycle lasts: a number and a unit (s, m, h, d, w), combinable, like 1d12h
+#   slots  how many slots the NPC's upkeep stock has: 9, 18, 27, 36, 45 or 54 (default 9)
+#   cost   what each cycle eats. Each entry is either
+#            {item: <material_id>, amount: N}        one SkysongItems item, or
+#            {good-type: <category>, amount: N}      any item of an item category (/se good)
+#          Entries are paid in the order written and one item pays only one entry, so list
+#          single items before the categories they belong to.
+profiles: {}
+#  guard_rations:
+#    every: 24h
+#    slots: 18
+#    cost:
+#      - {item: water_flask, amount: 1}
+#      - {good-type: food, amount: 3}
+#  hireling:
+#    every: 3d
+#    cost:
+#      - {item: architite_coin, amount: 5}
+
+# SkysongNPCs template id: profile. Every NPC made from the template follows the profile,
+# business NPCs included (they are made from the template businesses/npcs.yml names).
+templates: {}
+#  business_guard: guard_rations

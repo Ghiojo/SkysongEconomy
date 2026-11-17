@@ -12,6 +12,7 @@ softdepend:
   - PlaceholderAPI
   - CMI
   - SkysongNPCs
+  - Citizens
 
 commands:
   se:
@@ -62,6 +63,9 @@ permissions:
   skysongeconomy.nodes.tend-bypass:
     description: Lets staff plant and take out primers at every farm node, including server-owned businesses' farms
     default: op
+  skysongeconomy.upkeep.admin:
+    description: Allows the /se upkeep commands, to see and change NPC upkeep
+    default: op
   skysongeconomy.*:
     description: Gives access to all SkysongEconomy features
     default: op
@@ -80,3 +84,4 @@ permissions:
       skysongeconomy.modifiers.edit: true
       skysongeconomy.nodes: true
       skysongeconomy.nodes.tend-bypass: true
+      skysongeconomy.upkeep.admin: true
