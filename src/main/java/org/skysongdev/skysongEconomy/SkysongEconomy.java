@@ -7,6 +7,7 @@ import org.skysongdev.skysongEconomy.bootstrap.BusinessFeature;
 import org.skysongdev.skysongEconomy.bootstrap.NodeFeature;
 import org.skysongdev.skysongEconomy.bootstrap.ModuleFeature;
 import org.skysongdev.skysongEconomy.bootstrap.NpcFeature;
+import org.skysongdev.skysongEconomy.bootstrap.UpkeepFeature;
 import org.skysongdev.skysongEconomy.bootstrap.TradeInputs;
 import org.skysongdev.skysongEconomy.commands.SkysongEconomyCommand;
 import org.skysongdev.skysongEconomy.config.ConfigException;
@@ -62,6 +63,7 @@ public final class SkysongEconomy extends JavaPlugin {
     private NodeFeature nodeFeature;
     private ModuleFeature moduleFeature;
     private NpcFeature npcFeature;
+    private UpkeepFeature upkeepFeature;
 
     @Override
     public void onEnable() {
@@ -95,6 +97,9 @@ public final class SkysongEconomy extends JavaPlugin {
                 businessFeature.system(), skysongStats, messenger, npcGateways.map(NpcFeature.Gateways::sheets));
         npcFeature = NpcFeature.start(this, configFiles, databaseSettings(), businessFeature.system(), skysongStats,
                 messenger, npcGateways, moduleFeature);
+        // Any SkysongNPC can have an upkeep, business or not.
+        upkeepFeature = UpkeepFeature.start(this, configFiles, databaseSettings(), importItems, goodTypes, materialIds,
+                messenger);
 
         registerCommands(messenger, materialIds);
     }
@@ -103,6 +108,9 @@ public final class SkysongEconomy extends JavaPlugin {
     public void onDisable() {
         // Gives back anything players put in open menus, such as a primer in a planting slot.
         MenuListener.closeAll(getServer());
+        if (upkeepFeature != null) {
+            upkeepFeature.close();
+        }
         // Nodes, modules and business NPCs listen to businesses, so they close first.
         if (npcFeature != null) {
             npcFeature.close();
@@ -181,6 +189,7 @@ public final class SkysongEconomy extends JavaPlugin {
                 getLogger());
         businessFeature.commands().forEach(executor::register);
         nodeFeature.commands().forEach(executor::register);
+        upkeepFeature.commands().forEach(executor::register);
         command.setExecutor(executor);
     }
 
@@ -227,5 +236,10 @@ public final class SkysongEconomy extends JavaPlugin {
     /** The connection to SkysongNPCs; its gateways are empty when that plugin is not installed. */
     public NpcFeature getNpcFeature() {
         return npcFeature;
+    }
+
+    /** NPC upkeep; its parts are empty when SkysongNPCs is missing or npc-upkeep.yml couldn't be read. */
+    public UpkeepFeature getUpkeepFeature() {
+        return upkeepFeature;
     }
 }
