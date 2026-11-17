@@ -7,7 +7,8 @@
 | Gringotts 3.0.1 | Yes (`depend`) | Money: balances, paying, charging, formatting amounts. The Architite coins are registered as its denominations. | `integration/gringotts/GringottsWallet`, `currency/ArchititeCurrency` |
 | Skysong_Items (1.8.0 on the server) | Yes (`depend`) | Building items from template files, reading the `material_id` tag and other item tags, registering the `node_primer` tag. Only the public API in `org.skysongdev.skysongitems.api` is used. | `items/*`, `listeners/NodeItemTags` |
 | SkysongStats | Yes (`depend`) | Characters (profiles), skills and skill levels, XP, proficiency training, downtime. | `integration/skysongstats/SkysongStatsAdapter` (the only class that calls its API) |
-| SkysongNPCs (API 0.23.0 or newer) | Optional (`softdepend`) | Business NPCs, and letting NPC access name business groups as `economy:<business>/<group>`. Without it the console says "SkysongNPCs is not installed: business NPCs are off" and everything else works. An older SkysongNPCs is refused with a console error that names the API it has. | `integration/skysongnpcs/SkysongNpcsAdapter` (the only class that calls its API), `integration/skysongnpcs/BusinessGroupProvider` |
+| SkysongNPCs (API 0.23.0 or newer; 0.24.0 for the upkeep sheet line) | Optional (`softdepend`) | Business NPCs, NPC upkeep, and letting NPC access name business groups as `economy:<business>/<group>`. Without it the console says "SkysongNPCs is not installed: business NPCs are off" and everything else works. An older SkysongNPCs is refused with a console error that names the API it has. | `integration/skysongnpcs/SkysongNpcsAdapter` (the only class that calls its API), `integration/skysongnpcs/BusinessGroupProvider` |
+| Citizens 2.0.43 | Optional (`softdepend`) | NPC upkeep only: finding the NPC a player looks at, where an NPC stands, and its body for the Unmaintained line under its name. SkysongNPCs needs it anyway. | `integration/citizens/CitizensNpcs`, `integration/citizens/UpkeepNameLines` |
 | PlaceholderAPI | Optional (`softdepend`) | `%skysongeconomy_tokens%` placeholders. | `integration/placeholderapi/TokenExpansion` |
 | CMI | Optional (`softdepend`) | Whether a player is AFK, so shift and training time stops. Called by reflection because CMI has no Maven artifact. | `integration/cmi/CmiAfkCheck` |
 
@@ -111,6 +112,9 @@ while the rest of the plugin runs:
 - "Business modules are off until this is fixed: ..." means `businesses/modules.yml` is broken. Picked modules
   stay saved; the Modules button and the `modules` and `clearmodule` commands are missing until it is fixed. A
   broken file in `modules/` only skips that module, with a warning.
+- "NPC upkeep is off until this is fixed: ..." means `npc-upkeep.yml` is broken. Saved upkeeps and stock stay
+  in the database; the Upkeep button, the item trait sync, the name and sheet lines and `/se upkeep` are missing
+  until it is fixed. Without SkysongNPCs or Citizens, upkeep is off with an info line instead.
 - Smaller files fall back instead of disabling anything: a broken `prices.yml` keeps 1 decimal, a broken
   `menus.yml` uses default icons, a broken `businesses/block.yml` turns business nameplates off, and a broken
   `messages.yml` uses the bundled texts.

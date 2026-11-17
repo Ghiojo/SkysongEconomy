@@ -12,6 +12,7 @@ Other plugins can listen to these like any Bukkit event.
 | `BusinessNpcRemoveEvent` | A business no longer has an NPC and its slot is free. Unless the cause is `REMOVED_ELSEWHERE`, the NPC still exists while this fires and is removed right after | No | `getBusiness()`, `getNpc()`, `getCause()` (`DISMISSED`, `SLOT_LOST`, `BUSINESS_DELETED`, `REMOVED_ELSEWHERE`) |
 | `BusinessModulePickEvent` | A business picked a module; the pick is saved | No | `getBusiness()`, `getPick()` (`ModulePick`: module id, skill, order, time) |
 | `BusinessModuleRemoveEvent` | A business no longer has a module it picked | No | `getBusiness()`, `getPick()`, `getCause()` (`CLEARED`, `PICK_LOST`, `BUSINESS_DELETED`) |
+| `NpcUpkeepChangeEvent` | An NPC became maintained or unmaintained | No | `getNpc()`, `getState()`, `getUpkeep()` (`NpcUpkeep`: profile, state, next cycle), `getCause()` (`CYCLE`, `REPAIR`, `STAFF`) |
 | `NodeHarvestEvent` | Someone harvested at a node: paid and rolled, items handed over right after | No | `getPlayer()`, `getNode()`, `getCharacter()`, `getTier()`, `getPaid()` (`HarvestCost`), `getItems()` |
 
 The shift message is not shown in game; `ShiftStartEvent.getMessage()` is meant for a Discord bridge or similar.
@@ -102,6 +103,20 @@ The unit tests use `FakeSkysongNpcs` (in `src/test`, package `business.npc`), wh
 in memory the way SkysongNPCs' API documents them, with helpers that play the player: `spendPoints`, `spendPick`,
 `promote`, `chooseAbility`, `completeSetup`.
 
+**NPC upkeep** goes through its own small adapter, `SkysongNpcsUpkeepAdapter` (`upkeep/UpkeepNpcs`: every managed
+NPC with its template, `exists`, `name`), checked against the same `REQUIRED_API`. It also uses the API directly for
+the Upkeep menu button (`UpkeepMenuButton`, `menu().registerButton`, `access().may(..., INVENTORY_EDIT)`), NPC items
+(`items().isCurrent`, `storedNpc`), the events `NpcDeleteEvent`, `NpcPickupEvent` and `NpcPlaceEvent`, and the
+sheet footer `skysongeconomy:upkeep` (`UpkeepSheetLine`, `sheets().registerFooter`, API 0.24.0 or newer, skipped
+with a warning on older ones). See [NPC upkeep](14-npc-upkeep.md).
+
+### Citizens: `integration/citizens/CitizensNpcs`
+
+Optional, and only for NPC upkeep. `CitizensNpcs` finds the NPC a player looks at (within 8 blocks), where an NPC
+stands (for dropping its stock when it is removed) and its body in the world (`entity`), which
+`UpkeepNameLines` rides a text display on. It is compiled against `citizens-main` 2.0.43-SNAPSHOT, the same
+SkysongNPCs uses, and never loaded unless Citizens is enabled.
+
 ### Gringotts: `integration/gringotts/GringottsWallet`
 
 The `Wallet` over Gringotts player accounts. See [Currency and money](03-currency-and-money.md).
@@ -119,6 +134,10 @@ Item "properties" are now called **traits** (API 1.4.0, tag `1.2.0`). The old na
 `ItemProperties`, `PropertyDefinition`, `SkysongItemsRegisterEvent.registerProperty`) are deprecated for removal, so
 new code uses `ItemAccess.traits()`, `ItemTraits`, `TraitDefinition` and `registerTrait`. The build compiles with
 `-Xlint:deprecation`, so any use of the old names shows up as a warning.
+
+NPC upkeep registers the printable trait `unmaintained` and the hidden bool tag `upkeep_marked`, and adds or removes
+them with `traits()` and `tags()` (`integration/skysongitems/UpkeepItemMarks`). SkysongItems fires no event when a
+trait is removed, which is why the tag exists; see [NPC upkeep](14-npc-upkeep.md).
 
 ### PlaceholderAPI: `integration/placeholderapi/TokenExpansion`
 
