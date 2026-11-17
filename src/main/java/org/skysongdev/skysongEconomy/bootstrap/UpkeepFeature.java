@@ -24,11 +24,14 @@ import org.skysongdev.skysongEconomy.data.database.SqlUpkeepStockRepository;
 import org.skysongdev.skysongEconomy.data.database.StorageException;
 import org.skysongdev.skysongEconomy.events.BukkitUpkeepEvents;
 import org.skysongdev.skysongEconomy.integration.citizens.CitizensNpcs;
+import org.skysongdev.skysongEconomy.integration.skysongitems.UpkeepItemMarks;
 import org.skysongdev.skysongEconomy.integration.skysongnpcs.SkysongNpcsUpkeepAdapter;
 import org.skysongdev.skysongEconomy.integration.skysongnpcs.UpkeepMenuButton;
 import org.skysongdev.skysongEconomy.integration.skysongnpcs.UpkeepNpcListener;
 import org.skysongdev.skysongEconomy.items.MaterialIdResolver;
 import org.skysongdev.skysongEconomy.listeners.UpkeepChestListener;
+import org.skysongdev.skysongEconomy.listeners.UpkeepItemListener;
+import org.skysongdev.skysongEconomy.messaging.MessageCatalog;
 import org.skysongdev.skysongEconomy.items.SkysongItemFactory;
 import org.skysongdev.skysongEconomy.messaging.Messenger;
 import org.skysongdev.skysongEconomy.upkeep.StockedItems;
@@ -38,6 +41,7 @@ import org.skysongdev.skysongEconomy.upkeep.UpkeepService;
 import org.skysongdev.skysongEconomy.upkeep.UpkeepSettings;
 import org.skysongdev.skysongEconomy.upkeep.UpkeepSettingsParser;
 import org.skysongdev.skysongEconomy.upkeep.UpkeepText;
+import org.skysongdev.skysongitems.api.SkysongItemsApi;
 import org.skysongdev.skysongnpcs.api.SkysongNpcsApi;
 
 import java.time.Clock;
@@ -53,7 +57,8 @@ import java.util.logging.Logger;
 /**
  * Gives NPCs their upkeep: the profiles in {@code npc-upkeep.yml}, storage of each NPC's upkeep
  * and stock, settling cycles every {@code check-every} seconds, the Upkeep button and chest on
- * the SkysongNPCs menu, and the {@code /se upkeep} commands. Needs SkysongNPCs (and Citizens, which SkysongNPCs is built on), but not businesses:
+ * the SkysongNPCs menu, the {@code unmaintained} trait on NPC items and its repair, and the
+ * {@code /se upkeep} commands. Needs SkysongNPCs (and Citizens, which SkysongNPCs is built on), but not businesses:
  * any NPC can have an upkeep. Off without them, or while {@code npc-upkeep.yml} can't be read;
  * saved upkeeps stay saved meanwhile.
  */
@@ -91,10 +96,11 @@ public final class UpkeepFeature implements AutoCloseable {
      * @param items       the Skysong items there are, to check the profiles' {@code item:} entries
      * @param goodTypes   every item's item categories, for {@code good-type:} entries
      * @param materialIds tells which Skysong item a stocked stack is
+     * @param messages    the raw texts of {@code messages.yml}, for the {@code unmaintained} trait SkysongItems prints
      */
     public static UpkeepFeature start(JavaPlugin plugin, YamlFiles configFiles, DatabaseSettings database,
                                       SkysongItemFactory items, CachedGoodTypes goodTypes, MaterialIdResolver materialIds,
-                                      Messenger messenger) {
+                                      Messenger messenger, MessageCatalog messages) {
         Logger logger = plugin.getLogger();
         if (!enabled(plugin, NpcFeature.SKYSONG_NPCS) || !enabled(plugin, CitizensNpcs.CITIZENS)) {
             logger.info(NpcFeature.SKYSONG_NPCS + " or " + CitizensNpcs.CITIZENS + " is not installed: NPC upkeep is off");
@@ -143,6 +149,10 @@ public final class UpkeepFeature implements AutoCloseable {
         } catch (StorageException e) {
             logger.log(Level.SEVERE, "NPC upkeeps could not be loaded from the database", e);
         }
+        SkysongNpcsApi api = SkysongNpcsApi.get();
+        UpkeepItemMarks marks = new UpkeepItemMarks(plugin, service, api.items(), SkysongItemsApi::get,
+                new UpkeepItemMarks.TraitText(messages.text("upkeep.trait.lore"), messages.text("upkeep.trait.name"),
+                        messages.text("upkeep.trait.description")), logger);
         Runnable check = () -> {
             try {
                 service.syncTemplates();
@@ -151,6 +161,8 @@ public final class UpkeepFeature implements AutoCloseable {
                 chests.saveAll();
                 service.settle();
                 chests.refresh();
+                // Items of NPCs that changed state, and items repaired since the last check.
+                plugin.getServer().getOnlinePlayers().forEach(marks::sync);
             } catch (RuntimeException e) {
                 logger.log(Level.SEVERE, "NPC upkeep cycles could not be settled", e);
             }
@@ -162,9 +174,10 @@ public final class UpkeepFeature implements AutoCloseable {
         resources.add(chests::closeAll);
         PluginManager events = plugin.getServer().getPluginManager();
         events.registerEvents(new UpkeepNpcListener(service), plugin);
-        SkysongNpcsApi api = SkysongNpcsApi.get();
         events.registerEvents(new UpkeepChestListener(plugin, chests,
                 (player, npc) -> UpkeepMenuButton.mayTakeOut(api, player, npc), messenger), plugin);
+        events.registerEvents(marks, plugin);
+        events.registerEvents(new UpkeepItemListener(plugin, marks), plugin);
         UpkeepText text = new UpkeepText(messenger, clock);
         try {
             new UpkeepMenuButton(service, stock, chests, text, messenger).register(plugin, api);
