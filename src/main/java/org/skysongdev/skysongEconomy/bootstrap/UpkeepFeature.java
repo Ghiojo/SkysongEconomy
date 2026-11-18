@@ -28,6 +28,7 @@ import org.skysongdev.skysongEconomy.integration.citizens.UpkeepNameLines;
 import org.skysongdev.skysongEconomy.integration.skysongitems.UpkeepItemMarks;
 import org.skysongdev.skysongEconomy.integration.skysongnpcs.SkysongNpcsUpkeepAdapter;
 import org.skysongdev.skysongEconomy.integration.skysongnpcs.UpkeepMenuButton;
+import org.skysongdev.skysongEconomy.integration.skysongnpcs.UpkeepSheetLine;
 import org.skysongdev.skysongEconomy.integration.skysongnpcs.UpkeepNpcListener;
 import org.skysongdev.skysongEconomy.items.MaterialIdResolver;
 import org.skysongdev.skysongEconomy.listeners.UpkeepChestListener;
@@ -58,8 +59,8 @@ import java.util.logging.Logger;
 /**
  * Gives NPCs their upkeep: the profiles in {@code npc-upkeep.yml}, storage of each NPC's upkeep
  * and stock, settling cycles every {@code check-every} seconds, the Upkeep button and chest on
- * the SkysongNPCs menu, the {@code unmaintained} trait on NPC items and its repair, the red line
- * under unmaintained NPCs' names, and the {@code /se upkeep} commands. Needs SkysongNPCs (and Citizens, which SkysongNPCs is built on), but not businesses:
+ * the SkysongNPCs menu, the {@code unmaintained} trait on NPC items and its repair, the red lines
+ * under unmaintained NPCs' names and sheets, and the {@code /se upkeep} commands. Needs SkysongNPCs (and Citizens, which SkysongNPCs is built on), but not businesses:
  * any NPC can have an upkeep. Off without them, or while {@code npc-upkeep.yml} can't be read;
  * saved upkeeps stay saved meanwhile.
  */
@@ -193,6 +194,11 @@ public final class UpkeepFeature implements AutoCloseable {
             new UpkeepMenuButton(service, stock, chests, text, messenger).register(plugin, api);
         } catch (RuntimeException e) {
             logger.log(Level.WARNING, "The Upkeep button could not be added to the SkysongNPCs menu", e);
+        }
+        try {
+            new UpkeepSheetLine(service, messenger.render("upkeep.sheet-line")).register(plugin, api, logger);
+        } catch (RuntimeException e) {
+            logger.log(Level.WARNING, "The Unmaintained line could not be added under SkysongNPCs sheets", e);
         }
         UpkeepCommandSupport support = new UpkeepCommandSupport(service, npcs, citizens::targeted, messenger, text);
         return new UpkeepFeature(new Running(service, stock, citizens),
