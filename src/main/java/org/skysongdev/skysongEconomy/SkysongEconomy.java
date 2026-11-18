@@ -99,7 +99,7 @@ public final class SkysongEconomy extends JavaPlugin {
                 messenger, npcGateways, moduleFeature);
         // Any SkysongNPC can have an upkeep, business or not.
         upkeepFeature = UpkeepFeature.start(this, configFiles, databaseSettings(), importItems, goodTypes, materialIds,
-                messenger);
+                messenger, messages);
 
         registerCommands(messenger, materialIds);
     }
