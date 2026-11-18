@@ -241,6 +241,22 @@ The text is `business.nameplate` in `messages.yml`.
 
 Full examples are in [Nodes](07-nodes.md). File names must be valid ids (lower-case letters, digits, `_`, `-`).
 
+## `npc-upkeep.yml` (`upkeep/UpkeepSettingsParser`)
+
+Only read when SkysongNPCs and Citizens are installed. The bundled file has no profiles, so no NPC has an upkeep
+until you add one. See [NPC upkeep](14-npc-upkeep.md).
+
+| Key | Default | Meaning |
+| --- | --- | --- |
+| `check-every` | `60` | Seconds between settling cycles that are due (1 or more). Also how often item traits are synced and templates applied. |
+| `name-line-height` | `0.2` | Blocks above an unmaintained NPC's head for its red line, between -2 and 2 |
+| `profiles.<id>.every` | required | Cycle length: numbers with units `s`, `m`, `h`, `d`, `w`, combinable (`1d12h`) |
+| `profiles.<id>.slots` | `9` | Size of the Upkeep chest: 9, 18, 27, 36, 45 or 54 |
+| `profiles.<id>.cost` | required | A list of `{item: <material_id>, amount: N}` or `{good-type: <type>, amount: N}`, all paid each cycle, in order |
+| `templates.<template>` | | The profile every NPC from that SkysongNPCs template gets; must name a profile |
+
+Ids that don't exist yet (items, good types) only warn, so the file can be written before the items are.
+
 ## `architite_coins/*.yml` and `items/*.yml`
 
 Skysong_Items templates, in that plugin's own format. `architite_coins/` holds the three coins; `items/` holds one

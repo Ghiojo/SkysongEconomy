@@ -111,6 +111,17 @@ Targets: `global`, `business:<id>`, `ledger:<id>`, `good-type:<type>`, `item:<ma
 | `odds <table> <tier>` | Cost, level, each item's odds, average value |
 | `reload` | Reads the node files again |
 
+## `/se upkeep`: NPC upkeep (all staff)
+
+Commands without an id act on the NPC you look at, within 8 blocks. See [NPC upkeep](14-npc-upkeep.md).
+
+| Command | Does |
+| --- | --- |
+| `list [unmaintained]` | Every NPC with an upkeep: profile, state, next cycle |
+| `info` | The NPC's profile and where it came from, state, cost per cycle, next cycle, cycles the stock covers |
+| `set <profile\|none\|template>` | Gives it a profile by hand, takes its upkeep away, or lets its template decide |
+| `mark <maintained\|unmaintained>` | Sets its state; maintained restarts the timer |
+
 ## Permissions
 
 All are declared in `src/main/resources/plugin.yml`.
@@ -131,6 +142,7 @@ All are declared in `src/main/resources/plugin.yml`.
 | `skysongeconomy.modifiers.edit` | op | `/se modifier add`, `set`, `remove` |
 | `skysongeconomy.nodes` | op | Every `/se node` command, and breaking node blocks |
 | `skysongeconomy.nodes.tend-bypass` | op | Plant and take out primers at every farm node, whatever its owner and groups allow |
+| `skysongeconomy.upkeep.admin` | op | Every `/se upkeep` command |
 | `skysongeconomy.*` | op | All of the above |
 
 Players use most features through menus, not commands: right-click a business block or a node. Those menus check

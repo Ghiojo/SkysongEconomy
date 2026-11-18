@@ -43,6 +43,11 @@ These are known and deliberate to leave for later, or worth fixing when you are 
   reload.
 - **Ledger file removed while selected**: the selection is ignored and takes no slot, but its row stays in the
   database until the business is deleted, so putting the file back selects it again.
+- **NPC upkeep repair relies on SkysongCrafting keeping tags.** The repair is noticed because the item keeps the
+  hidden `upkeep_marked` tag while losing the `unmaintained` trait. A recipe that hands back a fresh item without
+  the item's tags would not repair the NPC (and would lose `npc_id`). Smoke test 12j.4 checks it.
+- **NPC upkeep item traits are synced by sweeps.** SkysongNPCs has no hook for when an NPC item is made, so an item
+  sitting in a chest nobody opens only gets the trait when the chest is next opened.
 - **A failed background write** is logged at SEVERE and not retried; the in-memory state keeps the change, so it
   is lost on restart. Watch the console for "Failed to ...".
 
