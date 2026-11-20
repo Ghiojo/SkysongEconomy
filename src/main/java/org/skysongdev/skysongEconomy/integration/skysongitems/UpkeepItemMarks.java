@@ -12,6 +12,7 @@ import org.skysongdev.skysongEconomy.upkeep.NpcUpkeep;
 import org.skysongdev.skysongEconomy.upkeep.UpkeepEvents;
 import org.skysongdev.skysongEconomy.upkeep.UpkeepService;
 import org.skysongdev.skysongEconomy.upkeep.UpkeepState;
+import org.skysongdev.skysongitems.api.OnTransform;
 import org.skysongdev.skysongitems.api.SkysongItemsApi;
 import org.skysongdev.skysongitems.api.TagType;
 import org.skysongdev.skysongitems.api.TraitDefinition;
@@ -29,6 +30,12 @@ import java.util.logging.Logger;
  * {@code unmaintained} trait, printed in its lore, and taking that trait off (with a
  * SkysongCrafting recipe, or {@code /si trait remove}) repairs the NPC and restarts its timer.
  * See {@link ItemMark} for how a removal is told apart from an item that was never marked.
+ * <p>
+ * Both the trait and its tag stay on the item when it transforms into another form, the same as
+ * SkysongNPCs keeps the NPC it holds: the mark is about the NPC, not the item's form. Since
+ * SkysongItems 1.3.0 a transform drops every other plugin's tags and traits unless they are kept,
+ * which would wipe the mark (and, with only the tag lost, hide a later repair). This needs
+ * SkysongItems API 1.16.0 (tag 1.3.0) or newer, which SkysongNPCs 1.2.0 needs as well.
  * <p>
  * Only an NPC's current item (the one that can place it) counts. Must be used on the server's
  * main thread.
@@ -69,14 +76,14 @@ public final class UpkeepItemMarks implements Listener {
         this.logger = logger;
     }
 
-    /** Registers the trait and its tag each time SkysongItems loads them. */
+    /** Registers the trait and its tag each time SkysongItems loads them, kept through transforms. */
     @EventHandler
     public void onRegister(SkysongItemsRegisterEvent event) {
-        if (!event.registerTag(plugin, MARKED_TAG, TagType.BOOL)) {
+        if (!event.registerTag(plugin, MARKED_TAG, TagType.BOOL, OnTransform.KEEP)) {
             logger.warning("SkysongItems refused the tag " + MARKED_TAG + ": unmaintained NPC items can't be repaired");
         }
         TraitDefinition trait = TraitDefinition.printable(TRAIT, text.lore(), List.of())
-                .name(text.name()).description(text.description()).category("NPC");
+                .name(text.name()).description(text.description()).category("NPC").onTransform(OnTransform.KEEP);
         if (!event.registerTrait(plugin, trait)) {
             logger.warning("SkysongItems refused the trait " + TRAIT + ": unmaintained NPC items won't show it");
         }
