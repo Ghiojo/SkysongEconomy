@@ -137,7 +137,9 @@ new code uses `ItemAccess.traits()`, `ItemTraits`, `TraitDefinition` and `regist
 
 NPC upkeep registers the printable trait `unmaintained` and the hidden bool tag `upkeep_marked`, and adds or removes
 them with `traits()` and `tags()` (`integration/skysongitems/UpkeepItemMarks`). SkysongItems fires no event when a
-trait is removed, which is why the tag exists; see [NPC upkeep](14-npc-upkeep.md).
+trait is removed, which is why the tag exists; see [NPC upkeep](14-npc-upkeep.md). Both are registered with
+`OnTransform.KEEP` (API 1.16.0, tag `1.3.0`): from that version a transform drops every other plugin's tags and traits
+unless they are kept, the same reason SkysongNPCs keeps `npc_id` and `npc_ticket` on its NPC items.
 
 ### PlaceholderAPI: `integration/placeholderapi/TokenExpansion`
 

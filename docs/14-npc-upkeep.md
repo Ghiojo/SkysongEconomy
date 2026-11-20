@@ -124,6 +124,17 @@ Only the **current** item of an NPC counts (`NpcItems.isCurrent`); blueprints an
 This relies on the repair recipe giving back the same item with the trait removed and its other tags kept
 (`npc_id`, `npc_ticket`, `upkeep_marked`). Smoke test 12j.4 checks it.
 
+**Transforms keep the mark.** Since SkysongItems 1.3.0 an item that transforms into another form loses every tag and
+trait the new form doesn't set, unless they were registered to be kept. The trait and the tag are both registered with
+`OnTransform.KEEP`, so an unmaintained NPC item stays marked through its forms, just as SkysongNPCs keeps the NPC it
+holds (`npc_id`, `npc_ticket`). Keeping both together matters: if only the tag were lost the item would be marked
+again, and if only the trait were lost it would look repaired.
+
+**Lore.** SkysongNPCs 1.2.0 writes its own "Holds / Owner" lines through SkysongItems' lore API, and every NPC item is a
+SkysongItems item (a plain `pickup.item` material is turned into one). So the `[Unmaintained]` line can be added to
+any NPC item, and SkysongNPCs' lines stay when adding or removing it makes SkysongItems redraw the lore. With
+`pickup.lore-position: after-traits` (SkysongNPCs' default) the NPC lines sit right under the trait line.
+
 ## The line under the name
 
 `UpkeepNameLines` puts a text display (no armour stand) on every spawned unmaintained NPC, as a passenger so it
