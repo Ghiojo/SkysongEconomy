@@ -14,6 +14,7 @@ import org.skysongdev.skysongEconomy.business.tier.BusinessTiers;
 import org.skysongdev.skysongEconomy.business.tier.TierSettings;
 import org.skysongdev.skysongEconomy.business.type.BusinessType;
 import org.skysongdev.skysongEconomy.business.type.BusinessTypeRegistry;
+import org.skysongdev.skysongEconomy.calendar.FixedCalendar;
 import org.skysongdev.skysongEconomy.character.CharacterRef;
 import org.skysongdev.skysongEconomy.character.DowntimeWallet;
 import org.skysongdev.skysongEconomy.character.SkillLevels;
@@ -33,6 +34,8 @@ import org.skysongdev.skysongEconomy.nodes.NodeTables;
 import org.skysongdev.skysongEconomy.nodes.harvest.Harvest;
 import org.skysongdev.skysongEconomy.nodes.harvest.HarvestPayer;
 import org.skysongdev.skysongEconomy.nodes.harvest.NodeAccess;
+import org.skysongdev.skysongEconomy.nodes.modifiers.CalendarModifier;
+import org.skysongdev.skysongEconomy.nodes.modifiers.NodeModifiers;
 import org.skysongdev.skysongEconomy.tokens.GatheringTokens;
 import org.skysongdev.skysongEconomy.tokens.TokenRepository;
 import org.skysongdev.skysongEconomy.trade.IntRange;
@@ -77,6 +80,8 @@ final class FarmWorld {
     final Set<UUID> bypassing = new HashSet<>();
     final Map<UUID, List<StoredItems>> received = new HashMap<>();
     final List<Harvest> heard = new ArrayList<>();
+    /** The calendar modifier files; the calendar is always on Rana 1, in Vinse'er. */
+    FileRegistry<CalendarModifier> modifierFiles = FileRegistry.empty();
     final Map<String, Planting> savedPlantings = new LinkedHashMap<>();
     final Map<UUID, PrimerReturn> savedReturns = new LinkedHashMap<>();
     final List<String> plantingChanges = new ArrayList<>();
@@ -190,7 +195,8 @@ final class FarmWorld {
             }
         };
         harvester = new FarmHarvester(new FarmHarvester.Dependencies(plots, SETTINGS, nodeAccess,
-                new HarvestPayer(tokens, downtimeWallet, new MapWallet()), levels, heard::add),
+                new HarvestPayer(tokens, downtimeWallet, new MapWallet()), levels, heard::add,
+                new NodeModifiers(() -> modifierFiles, FixedCalendar.on("rana", 1))),
                 new LootRoller(new Random(1)));
         farmers = businesses.create("farmers", "gathering", owner, new BlockPosition("world", 5, 64, 5));
         businesses.hire(farmers, worker);

@@ -9,6 +9,9 @@ import org.skysongdev.skysongEconomy.nodes.NodeOwner;
 import org.skysongdev.skysongEconomy.nodes.NodeSettings;
 import org.skysongdev.skysongEconomy.nodes.NodeTables;
 import org.skysongdev.skysongEconomy.nodes.boost.Booster;
+import org.skysongdev.skysongEconomy.nodes.modifiers.ActiveModifiers;
+import org.skysongdev.skysongEconomy.nodes.modifiers.NodeFacts;
+import org.skysongdev.skysongEconomy.nodes.modifiers.NodeModifiers;
 import org.skysongdev.skysongEconomy.nodes.random.RandomTable;
 import org.skysongdev.skysongEconomy.nodes.random.RandomTier;
 import org.skysongdev.skysongEconomy.trade.ItemAmount;
@@ -33,15 +36,16 @@ public final class RandomHarvester {
     /**
      * What gathering needs.
      *
-     * @param tables   the loaded random tables
-     * @param settings the skill level each tier needs
-     * @param access   who may gather where
-     * @param payer    takes the cost
-     * @param levels   characters' skill levels
-     * @param events   told about each harvest
+     * @param tables    the loaded random tables
+     * @param settings  the skill level each tier needs
+     * @param access    who may gather where
+     * @param payer     takes the cost
+     * @param levels    characters' skill levels
+     * @param events    told about each harvest
+     * @param modifiers the calendar modifiers on today
      */
     public record Dependencies(NodeTables tables, NodeSettings settings, NodeAccess access, HarvestPayer payer,
-                               SkillLevels levels, NodeHarvestEvents events) {
+                               SkillLevels levels, NodeHarvestEvents events, NodeModifiers modifiers) {
         public Dependencies {
             Objects.requireNonNull(tables, "tables");
             Objects.requireNonNull(settings, "settings");
@@ -49,6 +53,7 @@ public final class RandomHarvester {
             Objects.requireNonNull(payer, "payer");
             Objects.requireNonNull(levels, "levels");
             Objects.requireNonNull(events, "events");
+            Objects.requireNonNull(modifiers, "modifiers");
         }
     }
 
@@ -122,7 +127,8 @@ public final class RandomHarvester {
      * @param booster    changes the amounts and rolls of this harvest
      * @return what was paid and rolled, for the caller to hand over
      * @throws NodeException when the node, the tier, the booster, the character's access, level or
-     *                       money refuse it; nothing is charged then
+     *                       money refuse it, or a calendar modifier on today is dormant
+     *                       ({@code node.harvest.dormant}); nothing is charged then
      */
     public Harvest harvest(Node node, CharacterRef character, int tierNumber, Optional<Booster> booster) {
         RandomTable table = table(node);
@@ -134,10 +140,15 @@ public final class RandomHarvester {
         if (!deps.levels().reaches(character, table.skill(), level)) {
             throw new NodeException("node.harvest.low-level", Map.of("level", level, "skill", table.skill()));
         }
+        NodeFacts facts = NodeFacts.random(node.id(), table.id(), table.type());
+        ActiveModifiers active = deps.modifiers().activeFor(facts, tier.tier());
+        active.dormant().ifPresent(dormant -> {
+            throw new NodeException("node.harvest.dormant", Map.of("modifier", dormant.name()));
+        });
         HarvestCost cost = cost(node, tier);
         deps.payer().pay(character, cost);
-        List<ItemAmount> items = roller.roll(tier.output(), Booster.effectOf(booster));
-        Harvest harvest = new Harvest(node, character, tier.tier(), cost, items);
+        List<ItemAmount> items = roller.roll(tier.output(), active.effect().plus(Booster.effectOf(booster)));
+        Harvest harvest = new Harvest(node, character, tier.tier(), cost, items, active.ids());
         deps.events().harvested(harvest);
         return harvest;
     }

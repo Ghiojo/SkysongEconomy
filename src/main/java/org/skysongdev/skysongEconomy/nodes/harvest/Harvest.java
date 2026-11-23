@@ -15,12 +15,15 @@ import java.util.Objects;
  * @param tier      the tier they picked
  * @param paid      what was charged
  * @param items     what they get, each material once; may be empty after an unlucky roll
+ * @param modifiers the ids of the calendar modifiers that changed it; empty when none did
  */
-public record Harvest(Node node, CharacterRef character, int tier, HarvestCost paid, List<ItemAmount> items) {
+public record Harvest(Node node, CharacterRef character, int tier, HarvestCost paid, List<ItemAmount> items,
+                      List<String> modifiers) {
     public Harvest {
         Objects.requireNonNull(node, "node");
         Objects.requireNonNull(character, "character");
         Objects.requireNonNull(paid, "paid");
         items = List.copyOf(items);
+        modifiers = List.copyOf(modifiers);
     }
 }

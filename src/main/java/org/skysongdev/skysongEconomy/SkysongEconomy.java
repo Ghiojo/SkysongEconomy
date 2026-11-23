@@ -71,8 +71,6 @@ public final class SkysongEconomy extends JavaPlugin {
     private UpkeepFeature upkeepFeature;
     private ClaimFeature claimFeature;
     private PierFeature pierFeature;
-    /** The IC calendar, or {@link CalendarClock#NONE} without SkysongCalendar. */
-    private CalendarClock calendar;
 
     @Override
     public void onEnable() {
@@ -94,15 +92,15 @@ public final class SkysongEconomy extends JavaPlugin {
         loadPrices(configFiles);
         MaterialIdResolver materialIds = new MaterialIdResolver(skysongItems.tags());
         Wallet wallet = new GringottsWallet();
-        // The IC calendar, when SkysongCalendar is installed.
-        calendar = CalendarConnection.connect(this);
+        // The IC calendar, when SkysongCalendar is installed; calendar node modifiers follow it.
+        CalendarClock calendar = CalendarConnection.connect(this);
         TradeInputs trade = new TradeInputs(importItems, prices, priceSettings, goodTypes, materialIds);
         // Receiving piers for imports; other plugins manage them through the Piers service.
         pierFeature = PierFeature.start(this, configFiles, databaseSettings(), messenger);
         businessFeature = BusinessFeature.start(this, paths, configFiles, databaseSettings(), skysongStats, wallet, trade,
                 pierFeature.piers(), messenger, messages);
         nodeFeature = NodeFeature.start(this, configFiles, databaseSettings(), businessFeature.system(), skysongStats,
-                wallet, trade, messenger);
+                wallet, trade, calendar, messenger);
         // Module files are checked against SkysongNPCs, and business NPCs need the modules' slots:
         // connect, read the modules, then start the NPC slots.
         Optional<NpcFeature.Gateways> npcGateways = NpcFeature.connect(this, businessFeature.system(), skysongStats);

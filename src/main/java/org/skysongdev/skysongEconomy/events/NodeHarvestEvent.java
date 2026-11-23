@@ -56,6 +56,11 @@ public final class NodeHarvestEvent extends Event {
         return harvest.items();
     }
 
+    /** @return the ids of the calendar modifiers (files in nodes/modifiers) that changed it; empty when none did */
+    public List<String> getModifiers() {
+        return harvest.modifiers();
+    }
+
     @Override
     public @NotNull HandlerList getHandlers() {
         return HANDLERS;
