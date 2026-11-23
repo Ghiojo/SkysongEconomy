@@ -1,12 +1,16 @@
 package org.skysongdev.skysongEconomy.bootstrap;
 
+import net.kyori.adventure.text.minimessage.MiniMessage;
+import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scheduler.BukkitTask;
 import org.jetbrains.annotations.Nullable;
 import org.skysongdev.skysongEconomy.claims.ClaimGateway;
 import org.skysongdev.skysongEconomy.claims.ClaimPrices;
 import org.skysongdev.skysongEconomy.claims.ClaimPricing;
 import org.skysongdev.skysongEconomy.claims.ClaimSales;
+import org.skysongdev.skysongEconomy.claims.SignPriceUpdater;
 import org.skysongdev.skysongEconomy.commands.SubCommand;
 import org.skysongdev.skysongEconomy.commands.claim.ClaimCommand;
 import org.skysongdev.skysongEconomy.data.database.AsyncClaimPriceRepository;
@@ -33,8 +37,8 @@ import java.util.logging.Logger;
 /**
  * Connects SkysongEconomy to SkysongClaims, which is optional, and sells its Claims: asking prices
  * (kept in {@code claim_prices}), Claim modifiers ({@code claim-type:} and {@code claim:} targets,
- * {@code on:claims}), server sales, putting abandoned Claims back on sale, and the
- * {@code /se claim} commands. Without SkysongClaims, or with one too old, everything about Claims
+ * {@code on:claims}), server sales, putting abandoned Claims back on sale, the price on line 4 of
+ * Claim signs, and the {@code /se claim} commands. Without SkysongClaims, or with one too old, everything about Claims
  * stays off and the rest of the plugin works as before.
  * <p>
  * No SkysongClaims class is loaded until SkysongClaims is known to be enabled, so the plugin starts
@@ -43,6 +47,8 @@ import java.util.logging.Logger;
 public final class ClaimFeature implements AutoCloseable {
     /** The SkysongClaims plugin's name, as plugin.yml's {@code softdepend} lists it. */
     public static final String SKYSONG_CLAIMS = "SkysongClaims";
+    /** How often expired modifiers are looked for: once a minute. */
+    private static final long EXPIRY_CHECK_TICKS = 20L * 60;
 
     private final @Nullable ClaimGateway gateway;
     private final @Nullable ClaimSales sales;
@@ -107,17 +113,34 @@ public final class ClaimFeature implements AutoCloseable {
         ClaimSales sales = new ClaimSales(adapter, prices);
         ClaimPricing pricing = new ClaimPricing(adapter, prices, inputs.modifiers().orElse(null), inputs.priceSettings(),
                 Clock.systemUTC());
-        inputs.modifiers().ifPresentOrElse(modifiers -> modifiers.addTargetCheck(pricing::checkTarget),
-                () -> logger.info("Businesses are disabled, so there are no price modifiers: Claims cost their asking price"));
+        SignPriceUpdater signs = new SignPriceUpdater(adapter, sales, pricing, signText(inputs), logger::warning);
+        sales.addListener(signs::refresh);
+        inputs.prices().addListener(signs::refreshListed);
+        inputs.modifiers().ifPresentOrElse(modifiers -> {
+            modifiers.addTargetCheck(pricing::checkTarget);
+            modifiers.addListener(signs);
+            // Expired modifiers are removed (and their signs updated) within a minute.
+            BukkitTask expiry = plugin.getServer().getScheduler().runTaskTimer(plugin, modifiers::purgeExpired,
+                    EXPIRY_CHECK_TICKS, EXPIRY_CHECK_TICKS);
+            resources.add(expiry::cancel);
+        }, () -> logger.info("Businesses are disabled, so there are no price modifiers: Claims cost their asking price"));
         try {
             logger.info("Loaded " + prices.loadAll(logger::warning) + " Claim price(s)");
             sales.reconcile(logger::info);
         } catch (StorageException e) {
             logger.log(Level.SEVERE, "Claim prices could not be loaded from the database", e);
         }
-        plugin.getServer().getPluginManager().registerEvents(new ClaimChangeListener(sales, pricing, logger), plugin);
+        signs.redrawAll();
+        plugin.getServer().getPluginManager().registerEvents(new ClaimChangeListener(sales, pricing, signs, logger), plugin);
         return new ClaimFeature(adapter, sales, pricing,
                 List.of(new ClaimCommand(sales, pricing, adapter, inputs.wallet(), inputs.messenger())), resources, logger);
+    }
+
+    /** Sign line 4: {@code claims.sign-price}, or {@code claims.sign-price-raised} when modifiers add to it. */
+    private static SignPriceUpdater.SignText signText(Inputs inputs) {
+        return quote -> MiniMessage.miniMessage().serialize(inputs.messenger().render(
+                quote.isModified() ? "claims.sign-price-raised" : "claims.sign-price",
+                Placeholder.unparsed("price", inputs.wallet().format(quote.total()))));
     }
 
     private static ClaimFeature off(Logger logger) {

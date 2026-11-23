@@ -935,6 +935,10 @@ claims:
   list-entry-broken: "<gray>- <white><claim></white> <dark_gray>(<type>)</dark_gray>: <red>price can't be worked out"
   list-empty: "<gray>No Claims are for sale."
   modifiers-off: "<red>Businesses are disabled, so there are no price modifiers."
+  # Line 4 of a Claim sign while SkysongEconomy has it on sale: what a buyer pays. Signs fit about 15 characters.
+  sign-price: "<gold><price>"
+  # The same, when modifiers raise the price above the asking price.
+  sign-price-raised: "<gold><price> <red>↑"
 
 # NPC upkeep (npc-upkeep.yml). Lines about one NPC can use <npc> (its name), <profile>, <state>
 # (the maintained or unmaintained word below) and <next> (time left until its next cycle).
