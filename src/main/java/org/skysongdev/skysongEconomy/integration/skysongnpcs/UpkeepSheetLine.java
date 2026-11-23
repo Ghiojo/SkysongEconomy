@@ -2,6 +2,7 @@ package org.skysongdev.skysongEconomy.integration.skysongnpcs;
 
 import net.kyori.adventure.text.Component;
 import org.bukkit.plugin.Plugin;
+import org.skysongdev.skysongEconomy.integration.ApiVersion;
 import org.skysongdev.skysongEconomy.upkeep.UpkeepService;
 import org.skysongdev.skysongnpcs.api.SkysongNpcsApi;
 

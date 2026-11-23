@@ -64,7 +64,8 @@ nodes feature and other plugins use it to reach businesses.
 | Package | What it holds |
 | --- | --- |
 | *(root)* | `SkysongEconomy`, the plugin class. |
-| `bootstrap` | `BusinessFeature`, `NodeFeature`, `BusinessSystem`, `TradeInputs`: wiring only, no rules. |
+| `bootstrap` | `BusinessFeature`, `NodeFeature`, `ModuleFeature`, `NpcFeature`, `UpkeepFeature`, `ClaimFeature`, `BusinessSystem`, `TradeInputs`: wiring only, no rules. |
+| `claims` | Selling SkysongClaims Claims: `ClaimGateway` (what the rules need from SkysongClaims), `ClaimView`, `OwnershipAnswer`. See [Claims](15-claims.md). |
 | `business` | `Business` (state), `BusinessService` (rules), `BusinessRepository`, `BusinessChangeListener`, `BusinessException`, `Hire`, `SkillPick`, `TierChange`, `BlockPosition`, `BusinessBlockGuard`. |
 | `business.type` | Business types from `businesses/types.yml`. |
 | `business.tier` | Tier settings from `businesses/tiers.yml`. |

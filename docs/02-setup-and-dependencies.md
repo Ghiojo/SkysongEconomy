@@ -9,6 +9,7 @@
 | SkysongStats | Yes (`depend`) | Characters (profiles), skills and skill levels, XP, proficiency training, downtime. | `integration/skysongstats/SkysongStatsAdapter` (the only class that calls its API) |
 | SkysongNPCs (API 0.23.0 or newer; 0.24.0 for the upkeep sheet line) | Optional (`softdepend`) | Business NPCs, NPC upkeep, and letting NPC access name business groups as `economy:<business>/<group>`. Without it the console says "SkysongNPCs is not installed: business NPCs are off" and everything else works. An older SkysongNPCs is refused with a console error that names the API it has. | `integration/skysongnpcs/SkysongNpcsAdapter` (the only class that calls its API), `integration/skysongnpcs/BusinessGroupProvider` |
 | Citizens 2.0.43 | Optional (`softdepend`) | NPC upkeep only: finding the NPC a player looks at, where an NPC stands, and its body for the Unmaintained line under its name. SkysongNPCs needs it anyway. | `integration/citizens/CitizensNpcs`, `integration/citizens/UpkeepNameLines` |
+| SkysongClaims (API 1.0.0 or newer) | Optional (`softdepend`) | Pricing, selling and buying its Claims, and the price on line 4 of Claim signs. Without it the console says "SkysongClaims is not installed: Claim sales are off" and everything else works. An older SkysongClaims is refused with a console error that names the API it has. | `integration/skysongclaims/SkysongClaimsAdapter` (the only class that calls its API) |
 | PlaceholderAPI | Optional (`softdepend`) | `%skysongeconomy_tokens%` placeholders. | `integration/placeholderapi/TokenExpansion` |
 | CMI | Optional (`softdepend`) | Whether a player is AFK, so shift and training time stops. Called by reflection because CMI has no Maven artifact. | `integration/cmi/CmiAfkCheck` |
 
@@ -27,7 +28,8 @@ Dependencies in `build.gradle` are all `compileOnly`, because the plugins above 
 - `com.github.Ghiojo:Skysong-Special-Items:1.3.0` (API 1.16.0), `com.github.Ghiojo:SkysongStats:1.4.0` and
   `com.github.Ghiojo:SkysongNPCs:1.2.0` (API 0.25.0) from JitPack. SkysongNPCs 1.2.0 itself needs Skysong_Items
   built from tag 1.3.0 or newer, and so does NPC upkeep (its item mark is kept through transforms).
-  Ghiojo repositories are always `com.github.Ghiojo:<RepoName>:<tag>`, with no `:api` module.
+  `com.github.Ghiojo:SkysongClaims:1.0.0` (API 1.0.0; JitPack publishes its `api` module under the repository's
+  name) is also from JitPack. Ghiojo repositories are always `com.github.Ghiojo:<RepoName>:<tag>`, with no `:api` module.
 - `me.clip:placeholderapi:2.11.6` from repo.extendedclip.com
 
 Tests use JUnit 5 and SnakeYAML only.

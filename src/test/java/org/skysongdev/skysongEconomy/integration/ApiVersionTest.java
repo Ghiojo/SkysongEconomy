@@ -1,4 +1,4 @@
-package org.skysongdev.skysongEconomy.integration.skysongnpcs;
+package org.skysongdev.skysongEconomy.integration;
 
 import org.junit.jupiter.api.Test;
 

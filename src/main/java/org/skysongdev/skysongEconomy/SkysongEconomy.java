@@ -4,6 +4,7 @@ import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.skysongdev.skysongEconomy.bootstrap.BusinessFeature;
+import org.skysongdev.skysongEconomy.bootstrap.ClaimFeature;
 import org.skysongdev.skysongEconomy.bootstrap.NodeFeature;
 import org.skysongdev.skysongEconomy.bootstrap.ModuleFeature;
 import org.skysongdev.skysongEconomy.bootstrap.NpcFeature;
@@ -64,6 +65,7 @@ public final class SkysongEconomy extends JavaPlugin {
     private ModuleFeature moduleFeature;
     private NpcFeature npcFeature;
     private UpkeepFeature upkeepFeature;
+    private ClaimFeature claimFeature;
 
     @Override
     public void onEnable() {
@@ -100,6 +102,8 @@ public final class SkysongEconomy extends JavaPlugin {
         // Any SkysongNPC can have an upkeep, business or not.
         upkeepFeature = UpkeepFeature.start(this, configFiles, databaseSettings(), importItems, goodTypes, materialIds,
                 messenger, messages);
+        // SkysongClaims' Claims: priced, put on sale and bought.
+        claimFeature = ClaimFeature.start(this);
 
         registerCommands(messenger, materialIds);
     }
@@ -108,6 +112,9 @@ public final class SkysongEconomy extends JavaPlugin {
     public void onDisable() {
         // Gives back anything players put in open menus, such as a primer in a planting slot.
         MenuListener.closeAll(getServer());
+        if (claimFeature != null) {
+            claimFeature.close();
+        }
         if (upkeepFeature != null) {
             upkeepFeature.close();
         }
@@ -241,5 +248,10 @@ public final class SkysongEconomy extends JavaPlugin {
     /** NPC upkeep; its parts are empty when SkysongNPCs is missing or npc-upkeep.yml couldn't be read. */
     public UpkeepFeature getUpkeepFeature() {
         return upkeepFeature;
+    }
+
+    /** Claim sales; its parts are empty when SkysongClaims is missing or too old. */
+    public ClaimFeature getClaimFeature() {
+        return claimFeature;
     }
 }
