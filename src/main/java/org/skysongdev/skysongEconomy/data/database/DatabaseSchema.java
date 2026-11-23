@@ -247,7 +247,29 @@ public final class DatabaseSchema {
                     + "claim_id VARCHAR(64) NOT NULL, "
                     + "amount DECIMAL(19, 4) NOT NULL, "
                     + "sold_at BIGINT NOT NULL, "
-                    + "PRIMARY KEY (sale_id, account_uuid)) ENGINE=InnoDB");
+                    + "PRIMARY KEY (sale_id, account_uuid)) ENGINE=InnoDB",
+            // Piers plugins created (source = the plugin), and changes made to piers from piers.yml
+            // (source = config, name NULL so the file's name, icon and description stay). description and
+            // data are JSON; loss_chance NULL keeps the file's.
+            "CREATE TABLE IF NOT EXISTS piers ("
+                    + "id VARCHAR(64) PRIMARY KEY NOT NULL, "
+                    + "source VARCHAR(64) NOT NULL, "
+                    + "name VARCHAR(255) NULL, "
+                    + "icon VARCHAR(64) NULL, "
+                    + "description TEXT NULL, "
+                    + "open BOOLEAN NOT NULL DEFAULT TRUE, "
+                    + "data TEXT NOT NULL, "
+                    + "loss_chance DECIMAL(7, 4) NULL, "
+                    + "created_at BIGINT NOT NULL) ENGINE=InnoDB",
+            // Loss modifiers set through the API or /se pier modifier; tag NULL counts for every shipment.
+            "CREATE TABLE IF NOT EXISTS pier_loss_modifiers ("
+                    + "pier_id VARCHAR(64) NOT NULL, "
+                    + "modifier_id VARCHAR(64) NOT NULL, "
+                    + "amount DECIMAL(19, 4) NOT NULL, "
+                    + "percent BOOLEAN NOT NULL, "
+                    + "tag VARCHAR(64) NULL, "
+                    + "set_at BIGINT NOT NULL, "
+                    + "PRIMARY KEY (pier_id, modifier_id)) ENGINE=InnoDB");
 
     private DatabaseSchema() {
     }

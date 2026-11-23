@@ -1,0 +1,31 @@
+# Receiving piers: where imports are unloaded. Whoever orders an import picks one of the open
+# piers, and can't change it afterwards. Every pier takes every import.
+#
+# Other plugins can add their own piers, and open or close these, set their data, loss chance and
+# loss modifiers, through the API (or staff with /se pier). Those changes are saved in the
+# database, not in this file, and survive /se pier reload. Names, icons and descriptions of the
+# piers below only come from this file.
+#
+# With no piers at all (here or from a plugin), imports work without them.
+piers:
+  harbour:
+    name: "<aqua>Harbour Pier"
+    icon: OAK_BOAT
+    description:
+      - "<gray>The main docks. Busy, well watched."
+  smugglers_cove:
+    name: "<dark_gray>Smugglers' Cove"
+    icon: DARK_OAK_BOAT
+    description:
+      - "<gray>Quiet water below the cliffs."
+    # Optional. Settings for other plugins; SkysongEconomy ignores them.
+    data:
+      faction: corsairs
+    # Optional. Percent chance (0 to 100) that a shipment collected here is lost. Default 0.
+    loss-chance: 0
+    # Optional. Raise or lower the chance. "+5" adds 5 points, "+10%" raises it by a tenth of
+    # itself; negative amounts lower it. Flat points are added first, then the percentages, and
+    # the result stays within 0 to 100. Give a tag to count only for shipments carrying it.
+    # loss-modifiers:
+    #   rough_waters: "+3"
+    #   patrols: {amount: "+10%", tag: contraband}
