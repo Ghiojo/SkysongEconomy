@@ -51,16 +51,30 @@ See [Economy and Logistics](06-economy-and-logistics.md#ledgers) for a full exam
 | Key | Meaning |
 | --- | --- |
 | `name`, `icon`, `description` | Ledger button: MiniMessage name, Minecraft material (default `PAPER`), MiniMessage lines |
-| `exempt-from` | Optional list of modifier target kinds (`global`, `business`, `good-type`, `item`) its trades ignore; see [tax-exempt ledgers](06-economy-and-logistics.md#tax-exempt-ledgers) |
+| `exempt-from` | Optional list of modifier target kinds (`global`, `business`, `good-type`, `item`, `pier`) its trades ignore; see [tax-exempt ledgers](06-economy-and-logistics.md#tax-exempt-ledgers) |
+| `tags` | Optional list of tags put on every shipment of its imports, such as `contraband`; see [Import piers](16-import-piers.md#tags) |
 | `imports.<id>.name`, `icon`, `lore` | The import's button |
 | `imports.<id>.contents` | List of `{item, amount}` and `{rolls, from: [{item, weight, amount}]}` |
 | `imports.<id>.prices.<delivery time>` | Price expression per delivery time offered |
+| `imports.<id>.tags` | Optional tags added to the ledger's for this import's shipments |
 | `exports.<id>.name`, `icon`, `lore` | The export's button |
 | `exports.<id>.item` or `good-type` | What it buys (exactly one) |
 | `exports.<id>.batch` | Items per sale, 1 or more (default 1) |
 | `exports.<id>.price` | Price expression for one batch |
 
 Amounts are a number or `"min-max"`.
+
+## `piers.yml` (`trade/pier/PierSettingsParser`)
+
+Read on start and by `/se pier reload`. A broken pier or loss modifier is skipped with a warning. See
+[Import piers](16-import-piers.md).
+
+| Key | Meaning |
+| --- | --- |
+| `piers.<id>.name`, `icon`, `description` | MiniMessage name (default the id), Minecraft material (default `PAPER`), MiniMessage lines |
+| `piers.<id>.data` | Optional free-form values for other plugins (nested keys become `a.b`) |
+| `piers.<id>.loss-chance` | Optional percent, 0 to 100 (default 0), that a shipment collected there is lost |
+| `piers.<id>.loss-modifiers.<id>` | Optional: `"+5"` (points) or `"+10%"`, or `{amount: "+5", tag: contraband}` to count only for that tag |
 
 ## `businesses/types.yml` (`business/type/BusinessTypesParser`)
 

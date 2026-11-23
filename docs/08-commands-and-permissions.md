@@ -137,6 +137,20 @@ usually a plain number. See [Claims](15-claims.md).
 | `list` | `skysongeconomy.claims.admin` | Every Claim SkysongEconomy has on sale, with its price |
 | `buy [claim]` | `skysongeconomy.claims.buy` | Shows what the Claim (named, or the one you stand in) costs and buys it when you confirm. The Buy button on a Claim sign does the same |
 
+## `/se pier`: receiving piers (all staff)
+
+Permission `skysongeconomy.piers.admin`. See [Import piers](16-import-piers.md).
+
+| Command | What it does |
+| --- | --- |
+| `list` | Every pier, open or closed, with its loss chance for untagged cargo and where it comes from |
+| `info <pier>` | State, source, base and final chance, every loss modifier, every data value |
+| `open <pier>` / `close <pier>` | Lets new orders pick it, or stops them. Shipments on their way still arrive |
+| `chance <pier> <percent>` | Sets the base loss chance, 0 to 100 |
+| `modifier set <pier> <modifier> <amount> [tag]` | Adds or replaces a loss modifier: `+5` points, `+10%` a tenth of the chance; with a tag, only for that cargo |
+| `modifier remove <pier> <modifier>` | Removes one set by a command or plugin (one from `piers.yml` can only be replaced) |
+| `reload` | Reads `piers.yml` again; changes made by commands and plugins stay |
+
 ## Permissions
 
 All are declared in `src/main/resources/plugin.yml`.
@@ -161,6 +175,7 @@ All are declared in `src/main/resources/plugin.yml`.
 | `skysongeconomy.claims.admin` | op | `/se claim price` and `list`, and `sell`/`unsell` on any Claim for the server |
 | `skysongeconomy.claims.buy` | everyone | `/se claim buy` and the Buy button on Claim signs |
 | `skysongeconomy.claims.sell` | everyone | `/se claim sell` and `unsell` on your own Claims, and the Sell button on Claim signs |
+| `skysongeconomy.piers.admin` | op | Every `/se pier` command |
 | `skysongeconomy.*` | op | All of the above |
 
 Players use most features through menus, not commands: right-click a business block or a node. Those menus check

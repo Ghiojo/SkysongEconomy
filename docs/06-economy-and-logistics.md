@@ -41,12 +41,14 @@ icon: ENDER_CHEST                         # Minecraft material, default PAPER
 description:
   - "<gray>Goods nobody asks questions about."
 exempt-from: [global, good-type, item]    # optional: makes the ledger tax exempt (see below)
+tags: [contraband]                        # optional: put on every shipment of its imports (see Import piers)
 
 imports:
   steel_weapons:                          # import id, unique in this ledger
     name: "<white>Crate of steel weapons"
     icon: IRON_SWORD
     lore: ["<gray>Straight from the forges, no marks."]
+    tags: [weapons]                       # optional: added to the ledger's tags for this import
     contents:
       - {item: steel_sword, amount: 2}          # a fixed amount
       - {item: steel_spear, amount: "1-3"}      # a random amount, both ends included
@@ -133,10 +135,13 @@ it (`trade/delivery/DeliveryService.order`). Ordering needs:
 - E&L, and the ledger selected;
 - the owner, or a group with `order-imports`;
 - a free delivery slot (`imports` for the level);
+- whenever there are piers, an open **receiving pier** chosen with the Pier button (see [Import piers](16-import-piers.md));
+- no listener cancelling `ShipmentOrderEvent`;
 - enough money: the **orderer's own balance** pays.
 
 The items are **rolled when the import is ordered** and saved with the delivery, so changing or removing the ledger
-afterwards doesn't change what arrives. Orders can't be cancelled.
+afterwards doesn't change what arrives. Orders can't be cancelled, and their pier can't be changed. The delivery
+also keeps its ledger's and import's `tags`.
 
 ## Slots: collecting deliveries
 
@@ -144,10 +149,15 @@ The **Slots** button shows each delivery on the way (with its arrival time), eac
 Clicking a ready one collects it: whoever ordered it, the owner, or anyone in a group with `order-imports` may. The
 items go into the inventory and whatever doesn't fit drops at the player's feet. Collecting frees the slot.
 
+Collecting is when the shipment reaches its pier: the pier's loss chance is rolled and other plugins may seize it
+or change what it brings (`ShipmentArriveEvent`). A seized shipment hands over nothing and isn't refunded; see
+[Import piers](16-import-piers.md#collecting-the-shipment-reaches-its-pier).
+
 When a business is deleted, every delivery is refunded to whoever paid for it.
 
 Deliveries are saved in `business_deliveries`; their `items` column is written like `steel_sword:2;steel_spear:3`
-(`trade/delivery/ItemListCodec`).
+(`trade/delivery/ItemListCodec`), `pier_id` holds the chosen pier and `tags` is written like `contraband,weapons`
+(`trade/delivery/TagListCodec`).
 
 ## Exports
 
@@ -166,7 +176,8 @@ both:    price = truncate(value * (1 + sum of applying modifiers' percent / 100)
 ```
 
 The `PriceSubject` that modifiers match on carries the direction (import or export), the business id, the ledger
-id, the material ids involved, their good types and the ledger's `exempt-from` kinds.
+id, the material ids involved, their good types, the ledger's `exempt-from` kinds and, for an import once a pier is
+chosen, the pier id (for `pier:<id>` modifiers).
 
 ## Tax-exempt ledgers
 

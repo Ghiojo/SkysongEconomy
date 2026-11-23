@@ -14,6 +14,10 @@ Other plugins can listen to these like any Bukkit event.
 | `BusinessModuleRemoveEvent` | A business no longer has a module it picked | No | `getBusiness()`, `getPick()`, `getCause()` (`CLEARED`, `PICK_LOST`, `BUSINESS_DELETED`) |
 | `NpcUpkeepChangeEvent` | An NPC became maintained or unmaintained | No | `getNpc()`, `getState()`, `getUpkeep()` (`NpcUpkeep`: profile, state, next cycle), `getCause()` (`CYCLE`, `REPAIR`, `STAFF`) |
 | `ClaimPurchaseEvent` (in `api/claims`) | A Claim was bought: money taken, owner added, sale recorded | No | `getSale()` (`ClaimSale`: Claim, buyer, asking price, each modifier's share, total paid). See [Claims](15-claims.md#claimpurchaseevent) |
+| `PierChangeEvent` (in `api/piers`) | A pier was created, changed or removed (also on `/se pier reload`) | No | `getBefore()`, `getAfter()`, `getPierId()`. See [Import piers](16-import-piers.md#the-api-apipiers) |
+| `ShipmentOrderEvent` (in `api/piers`) | An import is about to be ordered; nothing paid yet | Yes: nothing is paid, the player sees `getCancelMessage()` or the default | `getShipment()`, `getPier()`, `getPlayer()`, `setCancelMessage(...)` |
+| `ShipmentArriveEvent` (in `api/piers`) | A delivery is being collected, right after its pier's loss roll | Yes: cancelled = seized (lost, no refund); starts cancelled when the roll lost it | `getShipment()`, `getPier()`, `getCollector()`, `getLossChance()`, `getRoll()`, `isLostByRoll()`, `getItems()`/`setItems(...)`, `setSeizeMessage(...)` |
+| `ShipmentCollectedEvent` (in `api/piers`) | The shipment was handed over or seized; slot freed | No | `getShipment()`, `getPier()`, `getCollector()`, `getOutcome()`, `getItems()`, `getLossChance()`, `isLostByRoll()` |
 | `NodeHarvestEvent` | Someone harvested at a node: paid and rolled, items handed over right after | No | `getPlayer()`, `getNode()`, `getCharacter()`, `getTier()`, `getPaid()` (`HarvestCost`), `getItems()` |
 
 The shift message is not shown in game; `ShiftStartEvent.getMessage()` is meant for a Discord bridge or similar.
@@ -36,6 +40,7 @@ Get the plugin instance (`(SkysongEconomy) Bukkit.getPluginManager().getPlugin("
 | `getBusinessFeature().system()` | `Optional<BusinessSystem>`, empty when businesses are disabled |
 | `getNodeFeature().nodes()` | `Optional<NodeService>`, empty when nodes are disabled |
 | `getModuleFeature().modules()` | `Optional<BusinessModules>`: the modules each business picked (`of`, `has`, `groups`, `pool`, `pick`, `clear`) and every module file with its effects (`module`, `modules`); empty when businesses are disabled or `businesses/modules.yml` can't be read |
+| `getPierFeature().piers()` | `PierService`, which implements `api.piers.Piers`. Other plugins should rather `Bukkit.getServicesManager().load(Piers.class)` |
 | `getClaimFeature().gateway()` | `Optional<ClaimGateway>`: the way into SkysongClaims, empty when it is not installed or too old |
 | `getClaimFeature().pricing()` | `Optional<ClaimPricing>`: what a Claim costs with its modifiers (`quote`), and Claim type modifiers (`setTypeModifier`, `removeTypeModifier`, `modifiersOf`) |
 | `getClaimFeature().sales()` | `Optional<ClaimSales>`: Claim asking prices (`prices()`), server sales (`sell`, `unsell`, `listed`), empty whenever `gateway()` is |
