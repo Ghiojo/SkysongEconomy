@@ -6,6 +6,7 @@ import org.skysongdev.skysongEconomy.business.BlockPosition;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -21,16 +22,18 @@ class NodeTest {
         assertTrue(node.displayName().isEmpty());
         assertTrue(node.owningBusiness().isEmpty());
         assertEquals(Optional.of(BLOCK), node.position());
+        assertTrue(node.modifiersEnabled(), "calendar modifiers apply until staff turn them off");
     }
 
     @Test
     void aSnapshotRestoresTheSameNode() {
         NodeSnapshot snapshot = new NodeSnapshot("field", NodeKind.FARM, "crop", 4,
-                new NodeOwner.Business("farmers"), "North field", null);
+                new NodeOwner.Business("farmers"), "North field", null, false);
 
         Node node = Node.restore(snapshot);
 
         assertEquals(snapshot, node.snapshot());
+        assertFalse(node.modifiersEnabled());
         assertEquals(Optional.of("farmers"), node.owningBusiness());
     }
 

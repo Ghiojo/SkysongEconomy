@@ -12,8 +12,9 @@ import java.util.function.Supplier;
 
 /**
  * Finds the calendar modifiers on for a harvest: the loaded files whose window holds today's IC
- * date and whose target names the node and tier. It reads the date and the loaded files on every
- * call, so a reload or a new day applies at once. Without a calendar nothing is ever on.
+ * date and whose target names the node and tier, unless staff turned modifiers off for the node.
+ * It reads the date and the loaded files on every call, so a reload or a new day applies at once.
+ * Without a calendar nothing is ever on.
  */
 public final class NodeModifiers {
     /** No modifiers: harvests are never changed. */
@@ -37,8 +38,14 @@ public final class NodeModifiers {
         return today.isEmpty() ? ActiveModifiers.NONE : activeFor(node, tier, today.get());
     }
 
-    /** @return the modifiers that would hit a harvest at {@code tier} on that node on {@code day} */
+    /**
+     * @return the modifiers that would hit a harvest at {@code tier} on that node on {@code day};
+     *         none when the node has them turned off
+     */
     public ActiveModifiers activeFor(NodeFacts node, int tier, CalendarDay day) {
+        if (!node.enabled()) {
+            return ActiveModifiers.NONE;
+        }
         return new ActiveModifiers(activeOn(day).stream().filter(modifier -> modifier.target().matches(node, tier))
                 .toList());
     }

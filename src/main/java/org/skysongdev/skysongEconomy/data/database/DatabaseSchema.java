@@ -284,7 +284,9 @@ public final class DatabaseSchema {
             new String[] {"claim_sales", "seller_paid_later", "BOOLEAN NOT NULL DEFAULT FALSE"},
             // The receiving pier picked for an import, and its tags; NULL / empty for imports from before piers.
             new String[] {"business_deliveries", "pier_id", "VARCHAR(64) NULL"},
-            new String[] {"business_deliveries", "tags", "VARCHAR(255) NOT NULL DEFAULT ''"});
+            new String[] {"business_deliveries", "tags", "VARCHAR(255) NOT NULL DEFAULT ''"},
+            // Whether calendar node modifiers apply; every node from before them does.
+            new String[] {"nodes", "modifiers_enabled", "BOOLEAN NOT NULL DEFAULT TRUE"});
 
     /**
      * Columns that became optional after their table first shipped: table, column, new

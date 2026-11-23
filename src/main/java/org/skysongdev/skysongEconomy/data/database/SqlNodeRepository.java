@@ -45,7 +45,7 @@ public final class SqlNodeRepository implements NodeRepository {
                     continue;
                 }
                 nodes.add(new NodeSnapshot(rows.getString("id"), kind, rows.getString("source"), rows.getInt("tier"),
-                        owner, rows.getString("display_name"), readPosition(rows)));
+                        owner, rows.getString("display_name"), readPosition(rows), rows.getBoolean("modifiers_enabled")));
             }
         } catch (SQLException e) {
             throw new StorageException("Failed to load nodes", e);
@@ -56,12 +56,12 @@ public final class SqlNodeRepository implements NodeRepository {
     @Override
     public void save(NodeSnapshot node) {
         try (PreparedStatement statement = connections.getConnection().prepareStatement(
-                "INSERT INTO nodes (id, kind, source, tier, owner_kind, owner_business, display_name, world, x, y, z) "
-                        + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE "
+                "INSERT INTO nodes (id, kind, source, tier, owner_kind, owner_business, display_name, world, x, y, z, "
+                        + "modifiers_enabled) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE "
                         + "kind = VALUES(kind), source = VALUES(source), tier = VALUES(tier), "
                         + "owner_kind = VALUES(owner_kind), owner_business = VALUES(owner_business), "
                         + "display_name = VALUES(display_name), world = VALUES(world), "
-                        + "x = VALUES(x), y = VALUES(y), z = VALUES(z)")) {
+                        + "x = VALUES(x), y = VALUES(y), z = VALUES(z), modifiers_enabled = VALUES(modifiers_enabled)")) {
             statement.setString(1, node.id());
             statement.setString(2, node.kind().key());
             statement.setString(3, node.source());
@@ -69,6 +69,7 @@ public final class SqlNodeRepository implements NodeRepository {
             writeOwner(statement, node.owner());
             statement.setString(7, node.displayName());
             writePosition(statement, node.position());
+            statement.setBoolean(12, node.modifiers());
             statement.executeUpdate();
         } catch (SQLException e) {
             throw new StorageException("Failed to save the node " + node.id(), e);

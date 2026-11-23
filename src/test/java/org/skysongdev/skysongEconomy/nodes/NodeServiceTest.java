@@ -77,6 +77,18 @@ class NodeServiceTest {
     }
 
     @Test
+    void calendarModifiersCanBeTurnedOffAndOnAgainAndAreSaved() {
+        Node node = nodes.create("greenhouse", NodeKind.RANDOM, "mine", BLOCK);
+
+        nodes.setModifiersEnabled(node, false);
+        assertFalse(node.modifiersEnabled());
+        assertFalse(repository.saved.get("greenhouse").modifiers());
+
+        nodes.setModifiersEnabled(node, true);
+        assertTrue(repository.saved.get("greenhouse").modifiers());
+    }
+
+    @Test
     void aFarmNodeStartsUnownedBecauseItCantBePublic() {
         Node node = nodes.create("field", NodeKind.FARM, "crop", BLOCK);
 

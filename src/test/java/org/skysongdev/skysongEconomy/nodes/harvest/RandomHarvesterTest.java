@@ -217,6 +217,20 @@ class RandomHarvesterTest {
     }
 
     @Test
+    void aNodeWithModifiersTurnedOffIgnoresThem() {
+        Node node = businessNode(3);
+        tokens.add(miner, 5);
+        miningLevels.put(miner, "novice");
+        modifierFiles = new FileRegistry<>(List.of(winterOnMining("frozen", "dormant")));
+        nodes.setModifiersEnabled(node, false);
+
+        Harvest harvest = harvester.harvest(node, miner, 2);
+
+        assertEquals(List.of(new ItemAmount("coal", 5)), harvest.items());
+        assertEquals(List.of(), harvest.modifiers());
+    }
+
+    @Test
     void withoutModifiersTheHarvestListsNone() {
         Node node = businessNode(1);
         tokens.add(miner, 5);
