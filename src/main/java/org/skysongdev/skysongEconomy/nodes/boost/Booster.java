@@ -1,6 +1,6 @@
 package org.skysongdev.skysongEconomy.nodes.boost;
 
-import org.skysongdev.skysongEconomy.loot.YieldAdjuster;
+import org.skysongdev.skysongEconomy.loot.YieldEffect;
 import org.skysongdev.skysongEconomy.nodes.NodeException;
 
 import java.util.Locale;
@@ -15,7 +15,7 @@ import java.util.Optional;
  *               farm type's id, such as {@code crop}; from the {@code node_booster_type} tag
  * @param effect what it changes, from the {@code node_booster_effect} tag
  */
-public record Booster(String type, BoosterEffect effect) {
+public record Booster(String type, YieldEffect effect) {
     public Booster {
         type = Objects.requireNonNull(type, "type").strip().toLowerCase(Locale.ROOT);
         Objects.requireNonNull(effect, "effect");
@@ -39,7 +39,7 @@ public record Booster(String type, BoosterEffect effect) {
     }
 
     /** @return what a harvest's booster changes; nothing without one */
-    public static YieldAdjuster effectOf(Optional<Booster> booster) {
-        return booster.<YieldAdjuster>map(Booster::effect).orElse(YieldAdjuster.NONE);
+    public static YieldEffect effectOf(Optional<Booster> booster) {
+        return booster.map(Booster::effect).orElse(YieldEffect.NONE);
     }
 }

@@ -28,7 +28,7 @@ import org.skysongdev.skysongEconomy.nodes.NodeService;
 import org.skysongdev.skysongEconomy.nodes.NodeSettings;
 import org.skysongdev.skysongEconomy.nodes.NodeTables;
 import org.skysongdev.skysongEconomy.nodes.boost.Booster;
-import org.skysongdev.skysongEconomy.nodes.boost.BoosterEffect;
+import org.skysongdev.skysongEconomy.loot.YieldEffect;
 import org.skysongdev.skysongEconomy.nodes.random.RandomTable;
 import org.skysongdev.skysongEconomy.nodes.random.RandomTier;
 import org.skysongdev.skysongEconomy.tokens.GatheringTokens;
@@ -170,7 +170,7 @@ class RandomHarvesterTest {
 
         assertEquals("mining", harvester.boosterType(node));
         Harvest harvest = harvester.harvest(node, miner, 2,
-                Optional.of(new Booster("mining", BoosterEffect.parse("min+20%; max+20%; min+1; max+1"))));
+                Optional.of(new Booster("mining", YieldEffect.parse("min+20%; max+20%; min+1; max+1"))));
 
         assertEquals(List.of(new ItemAmount("coal", 7)), harvest.items(), "5 + 20% + 1");
     }
@@ -181,7 +181,7 @@ class RandomHarvesterTest {
         tokens.add(miner, 5);
 
         assertEquals("node.booster.wrong-type", refusal(() -> harvester.harvest(node, miner, 1,
-                Optional.of(new Booster("crop", BoosterEffect.parse("max+1"))))));
+                Optional.of(new Booster("crop", YieldEffect.parse("max+1"))))));
         assertEquals(5, tokens.balance(miner));
         assertTrue(heard.isEmpty());
     }

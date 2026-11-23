@@ -1,6 +1,7 @@
 package org.skysongdev.skysongEconomy.nodes.boost;
 
 import org.junit.jupiter.api.Test;
+import org.skysongdev.skysongEconomy.loot.YieldEffect;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -9,7 +10,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class BoosterTest {
     @Test
     void matchesItsTypeIgnoringCaseAndSpaces() {
-        Booster booster = new Booster(" Mining ", BoosterEffect.NONE);
+        Booster booster = new Booster(" Mining ", YieldEffect.NONE);
         assertEquals("mining", booster.type());
         assertTrue(booster.worksOn("mining"));
         assertTrue(booster.worksOn("MINING "));

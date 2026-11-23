@@ -3,8 +3,8 @@ package org.skysongdev.skysongEconomy.loot;
 import org.skysongdev.skysongEconomy.trade.IntRange;
 
 /**
- * Changes amounts and roll counts while a {@link LootOutput} is rolled, which is how booster
- * items take effect.
+ * Changes amounts, roll counts and chances while a {@link LootOutput} is rolled, which is how
+ * booster items and calendar node modifiers take effect. {@link YieldEffect} is the one they use.
  */
 public interface YieldAdjuster {
     /** Changes nothing. */
@@ -25,4 +25,12 @@ public interface YieldAdjuster {
 
     /** @return how many times to roll a group the table rolls {@code rolls} times; 0 or more */
     int rolls(int rolls);
+
+    /**
+     * @return the percent to roll a chance item at whose table says {@code percent}, from 0 to
+     *         100; unchanged unless overridden
+     */
+    default double chance(double percent) {
+        return percent;
+    }
 }

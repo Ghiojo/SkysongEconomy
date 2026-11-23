@@ -255,12 +255,13 @@ A booster is an item that makes harvests give more. It carries two SkysongItems 
 | `node_booster_type` | What it works on: a random table's `type` (such as `mining`), or a farm type's id (such as `crop`) |
 | `node_booster_effect` | What it changes, such as `min+1; max+25%; rolls+1` |
 
-Each part of the effect is `min`, `max` or `rolls`, then `+` or `-` and a whole number; `min` and `max` can end
-in `%`. `min` and `max` change the amounts of every item of the harvest (guaranteed, chance and rolled), `rolls`
-changes the number of rolls of every roll line. Chance odds don't change. Percent applies before flat, results are
-truncated, nothing goes below 0, a minimum above the maximum is lowered to it, and several parts on the same thing
-add up (`nodes/boost/BoosterEffect`, which is a `loot/YieldAdjuster` that `LootRoller.roll(output, adjuster)`
-applies).
+Each part of the effect is `min`, `max`, `rolls` or `chance`, then `+` or `-` and a whole number; `min` and `max`
+can end in `%`, `chance` must. `min` and `max` change the amounts of every item of the harvest (guaranteed, chance
+and rolled), `rolls` changes the number of rolls of every roll line, and `chance` changes every chance item's
+percent by that percent of itself (`chance-50%` turns 20% into 10%; it stays between 0 and 100%). Weights in loot
+groups never change. Percent applies before flat, results are truncated, nothing goes below 0, a minimum above the
+maximum is lowered to it, and several parts on the same thing add up (`loot/YieldEffect`, which is a
+`loot/YieldAdjuster` that `LootRoller.roll(output, adjuster)` and `LootOdds.of(output, adjuster)` apply).
 
 Both node menus have a booster slot (`menu.booster` in `nodes/settings.yml` is its empty icon). It is a real
 [input slot](12-messages-and-menus.md#input-slots): the player drags one booster in, and each harvest they click
