@@ -128,6 +128,15 @@ public final class ClaimSales {
         changed(claim.id());
     }
 
+    /**
+     * A Claim SkysongEconomy had on sale was bought: it comes off sale. Its price stays saved, so it
+     * goes back on sale at that price if its owners ever leave.
+     */
+    public void sold(String claimId) {
+        claims.find(claimId).filter(this::isOurs).ifPresent(claim -> claims.setForSale(claim.id(), false));
+        changed(claimId);
+    }
+
     /** @return every Claim SkysongEconomy has on sale */
     public List<ClaimView> listed() {
         return claims.all().stream().filter(this::isOurs).toList();

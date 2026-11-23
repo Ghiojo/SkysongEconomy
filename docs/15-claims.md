@@ -13,7 +13,7 @@ The full agreed design is in the project's design file `claims-integration-desig
 | Claim prices and server listings (`/se claim price`, `sell`, `unsell`, `list`) | **Done** |
 | Claim modifiers (`claim-type:`, `claim:`, `on:claims`, flat amounts) | **Done** |
 | The price on sign line 4 | **Done** |
-| Buying, and `ClaimPurchaseEvent` | Not yet |
+| Buying, and `ClaimPurchaseEvent` | **Done** |
 | Player resale | Not yet |
 
 ## Connecting
@@ -126,6 +126,58 @@ kept in memory. What makes it write again:
 
 If a Claim on sale has a price that can't be worked out (it names an item whose base value was removed), its line
 is left blank and the console says why.
+
+## Buying
+
+Players buy a Claim SkysongEconomy has on sale with the **Buy** button in the Claim sign's menu (shown only on Claims
+we sell, with what it costs) or `/se claim buy [claim]` (the Claim named, or the one they stand in). Permission
+`skysongeconomy.claims.buy`, default everyone. Buying uses the business menus, so it is off while businesses are
+disabled (the console says so).
+
+Both open a confirmation listing the Claim's type, the seller, the asking price, each modifier and its share, the
+total, the player's balance, and the character that will own it. On **Confirm** (`claims/ClaimPurchases.buy`):
+
+1. The Claim is quoted again. If it is no longer on sale, or the total differs from what the player saw, nothing
+   happens; a changed price is shown and the confirmation opens again.
+2. SkysongClaims is asked whether the character may own it (`canOwn`: type limits, slots, unknown character).
+3. The total is taken from the player (`claims.buy.no-money` otherwise).
+4. The character is made an owner. If SkysongClaims refuses at this point, the money is given back; if even that
+   fails, the console logs a SEVERE line so staff can pay it back by hand.
+5. The Claim comes off sale (line 4 is cleared) but keeps its price, so it goes back on sale at that price if its
+   owners ever leave.
+6. The sale is recorded in `claim_sales` and `ClaimPurchaseEvent` is fired.
+
+A server sale pays nobody: the money leaves the economy. A plugin that wants to keep part of it listens to the event.
+
+## `ClaimPurchaseEvent`
+
+`org.skysongdev.skysongEconomy.api.claims` is the package other plugins compile against
+(`compileOnly 'com.github.Ghiojo:SkysongEconomy:<tag>'`, `softdepend: [SkysongEconomy]`). `ClaimPurchaseEvent` fires on
+the main thread after a sale is done and recorded, and can't be cancelled. `getSale()` gives a `ClaimSale`:
+
+| Component | What it is |
+| --- | --- |
+| `id` | The sale's number in `claim_sales`, counting up from 1 |
+| `claimId`, `claimTypeId` | The Claim, and its type when bought |
+| `buyer` | The `CharacterRef` that owns it now; `buyer().player()` is the account that paid |
+| `askingPrice` | The Claim's own price (in a resale, what the seller receives) |
+| `modifiers` | Each `AppliedModifier`: `id`, `key` (such as `district_tax`), `target` (`claim-type:house`), `kind` (`percent` or `flat`), `value`, `share` (money), `displayName` |
+| `modifierTotal` | The sum of the shares, never negative |
+| `paid` | What the buyer paid: `askingPrice + modifierTotal` |
+| `at` | When |
+
+A treasury keeping a district tax:
+
+```java
+@EventHandler
+public void onClaimPurchase(ClaimPurchaseEvent event) {
+    for (AppliedModifier modifier : event.getSale().modifiers()) {
+        if (modifier.key().equals("district_tax")) {
+            treasury.store(modifier.share());
+        }
+    }
+}
+```
 
 ## The gateway
 

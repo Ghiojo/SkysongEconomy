@@ -217,7 +217,20 @@ public final class DatabaseSchema {
                     + "claim_id VARCHAR(64) PRIMARY KEY NOT NULL, "
                     + "expression VARCHAR(255) NOT NULL, "
                     + "set_by VARCHAR(64) NOT NULL, "
-                    + "set_at BIGINT NOT NULL) ENGINE=InnoDB");
+                    + "set_at BIGINT NOT NULL) ENGINE=InnoDB",
+            // Every Claim bought, as ClaimPurchaseEvent reported it; modifiers is a JSON list of each modifier's share.
+            "CREATE TABLE IF NOT EXISTS claim_sales ("
+                    + "id BIGINT PRIMARY KEY NOT NULL, "
+                    + "claim_id VARCHAR(64) NOT NULL, "
+                    + "claim_type VARCHAR(64) NOT NULL, "
+                    + "buyer_uuid CHAR(36) NOT NULL, "
+                    + "buyer_profile VARCHAR(64) NOT NULL, "
+                    + "asking_price DECIMAL(19, 4) NOT NULL, "
+                    + "modifier_total DECIMAL(19, 4) NOT NULL, "
+                    + "paid DECIMAL(19, 4) NOT NULL, "
+                    + "modifiers TEXT NOT NULL, "
+                    + "sold_at BIGINT NOT NULL, "
+                    + "INDEX claim_sales_claim (claim_id)) ENGINE=InnoDB");
 
     private DatabaseSchema() {
     }

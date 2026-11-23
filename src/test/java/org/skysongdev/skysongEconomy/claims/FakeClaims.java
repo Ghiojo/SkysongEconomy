@@ -27,6 +27,8 @@ public final class FakeClaims implements ClaimGateway {
     private final Set<CharacterRef> unknown = new HashSet<>();
     private final Map<String, String> priceLines = new HashMap<>();
     private int priceLineWrites;
+    /** When set, the next {@link #addOwner} gives this answer and adds no one, as if things changed after {@link #canOwn}. */
+    public OwnershipAnswer refuseNextOwner;
 
     private static final class Stored {
         final String id;
@@ -145,6 +147,11 @@ public final class FakeClaims implements ClaimGateway {
 
     @Override
     public OwnershipAnswer addOwner(String claimId, CharacterRef character) {
+        if (refuseNextOwner != null) {
+            OwnershipAnswer refused = refuseNextOwner;
+            refuseNextOwner = null;
+            return refused;
+        }
         OwnershipAnswer answer = canOwn(character, claimId);
         if (answer == OwnershipAnswer.OK) {
             require(claimId).owners.add(character);

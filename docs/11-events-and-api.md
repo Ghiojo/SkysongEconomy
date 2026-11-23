@@ -13,6 +13,7 @@ Other plugins can listen to these like any Bukkit event.
 | `BusinessModulePickEvent` | A business picked a module; the pick is saved | No | `getBusiness()`, `getPick()` (`ModulePick`: module id, skill, order, time) |
 | `BusinessModuleRemoveEvent` | A business no longer has a module it picked | No | `getBusiness()`, `getPick()`, `getCause()` (`CLEARED`, `PICK_LOST`, `BUSINESS_DELETED`) |
 | `NpcUpkeepChangeEvent` | An NPC became maintained or unmaintained | No | `getNpc()`, `getState()`, `getUpkeep()` (`NpcUpkeep`: profile, state, next cycle), `getCause()` (`CYCLE`, `REPAIR`, `STAFF`) |
+| `ClaimPurchaseEvent` (in `api/claims`) | A Claim was bought: money taken, owner added, sale recorded | No | `getSale()` (`ClaimSale`: Claim, buyer, asking price, each modifier's share, total paid). See [Claims](15-claims.md#claimpurchaseevent) |
 | `NodeHarvestEvent` | Someone harvested at a node: paid and rolled, items handed over right after | No | `getPlayer()`, `getNode()`, `getCharacter()`, `getTier()`, `getPaid()` (`HarvestCost`), `getItems()` |
 
 The shift message is not shown in game; `ShiftStartEvent.getMessage()` is meant for a Discord bridge or similar.

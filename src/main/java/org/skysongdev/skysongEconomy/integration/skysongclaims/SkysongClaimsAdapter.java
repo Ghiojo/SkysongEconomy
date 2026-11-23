@@ -1,9 +1,11 @@
 package org.skysongdev.skysongEconomy.integration.skysongclaims;
 
 import net.kyori.adventure.text.minimessage.MiniMessage;
+import org.bukkit.Location;
 import org.bukkit.plugin.Plugin;
 import org.skysongdev.skysongClaims.api.ClaimInfo;
 import org.skysongdev.skysongClaims.api.ClaimOwner;
+import org.skysongdev.skysongClaims.api.MenuButton;
 import org.skysongdev.skysongClaims.api.OwnershipCheck;
 import org.skysongdev.skysongClaims.api.SkysongClaimsApi;
 import org.skysongdev.skysongEconomy.character.CharacterRef;
@@ -65,6 +67,16 @@ public final class SkysongClaimsAdapter implements ClaimGateway {
     @Override
     public List<ClaimView> all() {
         return api.claims().all().stream().map(SkysongClaimsAdapter::view).toList();
+    }
+
+    /** @return the Claim at that spot, if any */
+    public Optional<ClaimView> at(Location location) {
+        return api.claims().at(location).map(SkysongClaimsAdapter::view);
+    }
+
+    /** Adds a button to every Claim sign's menu, or replaces SkysongEconomy's button with that id. */
+    public void addMenuButton(String id, MenuButton button) {
+        api.signs().addMenuButton(plugin, id, button);
     }
 
     @Override

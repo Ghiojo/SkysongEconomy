@@ -2,11 +2,14 @@ package org.skysongdev.skysongEconomy.commands.claim;
 
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
+import org.bukkit.Location;
 import org.bukkit.command.CommandSender;
+import org.jetbrains.annotations.Nullable;
 import org.skysongdev.skysongEconomy.claims.ClaimGateway;
 import org.skysongdev.skysongEconomy.claims.ClaimPricing;
 import org.skysongdev.skysongEconomy.claims.ClaimSales;
 import org.skysongdev.skysongEconomy.claims.ClaimView;
+import org.skysongdev.skysongEconomy.gui.claim.ClaimBuyScreens;
 import org.skysongdev.skysongEconomy.messaging.Messenger;
 import org.skysongdev.skysongEconomy.messaging.RefusedException;
 import org.skysongdev.skysongEconomy.money.Wallet;
@@ -15,6 +18,8 @@ import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
+import java.util.function.Function;
 
 /** What the /se claim commands share: the services, and turning amounts and Claims into message placeholders. */
 final class ClaimCommandSupport {
@@ -23,13 +28,19 @@ final class ClaimCommandSupport {
     final ClaimGateway claims;
     final Wallet wallet;
     final Messenger messenger;
+    /** The buying confirmation, or {@code null} when menus are off because businesses are disabled. */
+    final @Nullable ClaimBuyScreens buying;
+    final Function<Location, Optional<ClaimView>> claimAt;
 
-    ClaimCommandSupport(ClaimSales sales, ClaimPricing pricing, ClaimGateway claims, Wallet wallet, Messenger messenger) {
+    ClaimCommandSupport(ClaimSales sales, ClaimPricing pricing, ClaimGateway claims, Wallet wallet, Messenger messenger,
+                        @Nullable ClaimBuyScreens buying, Function<Location, Optional<ClaimView>> claimAt) {
         this.sales = sales;
         this.pricing = pricing;
         this.claims = claims;
         this.wallet = wallet;
         this.messenger = messenger;
+        this.buying = buying;
+        this.claimAt = claimAt;
     }
 
     /** @return {@code <claim>}: the Claim's id */

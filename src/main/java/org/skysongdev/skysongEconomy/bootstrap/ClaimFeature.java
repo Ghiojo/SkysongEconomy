@@ -6,19 +6,28 @@ import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
 import org.jetbrains.annotations.Nullable;
+import org.skysongdev.skysongEconomy.api.claims.ClaimPurchaseEvent;
+import org.skysongdev.skysongEconomy.character.CharacterDirectory;
 import org.skysongdev.skysongEconomy.claims.ClaimGateway;
 import org.skysongdev.skysongEconomy.claims.ClaimPrices;
 import org.skysongdev.skysongEconomy.claims.ClaimPricing;
+import org.skysongdev.skysongEconomy.claims.ClaimPurchases;
+import org.skysongdev.skysongEconomy.claims.ClaimSaleRepository;
 import org.skysongdev.skysongEconomy.claims.ClaimSales;
 import org.skysongdev.skysongEconomy.claims.SignPriceUpdater;
 import org.skysongdev.skysongEconomy.commands.SubCommand;
 import org.skysongdev.skysongEconomy.commands.claim.ClaimCommand;
 import org.skysongdev.skysongEconomy.data.database.AsyncClaimPriceRepository;
+import org.skysongdev.skysongEconomy.data.database.AsyncClaimSaleRepository;
 import org.skysongdev.skysongEconomy.data.database.BackgroundWriter;
 import org.skysongdev.skysongEconomy.data.database.ConnectionProvider;
 import org.skysongdev.skysongEconomy.data.database.DatabaseSettings;
 import org.skysongdev.skysongEconomy.data.database.SqlClaimPriceRepository;
+import org.skysongdev.skysongEconomy.data.database.SqlClaimSaleRepository;
 import org.skysongdev.skysongEconomy.data.database.StorageException;
+import org.skysongdev.skysongEconomy.gui.MenuTheme;
+import org.skysongdev.skysongEconomy.gui.claim.ClaimBuyScreens;
+import org.skysongdev.skysongEconomy.integration.skysongclaims.BuyButton;
 import org.skysongdev.skysongEconomy.integration.skysongclaims.ClaimChangeListener;
 import org.skysongdev.skysongEconomy.integration.skysongclaims.SkysongClaimsAdapter;
 import org.skysongdev.skysongEconomy.messaging.Messenger;
@@ -38,7 +47,7 @@ import java.util.logging.Logger;
  * Connects SkysongEconomy to SkysongClaims, which is optional, and sells its Claims: asking prices
  * (kept in {@code claim_prices}), Claim modifiers ({@code claim-type:} and {@code claim:} targets,
  * {@code on:claims}), server sales, putting abandoned Claims back on sale, the price on line 4 of
- * Claim signs, and the {@code /se claim} commands. Without SkysongClaims, or with one too old, everything about Claims
+ * Claim signs, buying Claims, and the {@code /se claim} commands. Without SkysongClaims, or with one too old, everything about Claims
  * stays off and the rest of the plugin works as before.
  * <p>
  * No SkysongClaims class is loaded until SkysongClaims is known to be enabled, so the plugin starts
@@ -76,10 +85,14 @@ public final class ClaimFeature implements AutoCloseable {
      * @param priceSettings how many decimals prices keep
      * @param modifiers     the price modifiers, which businesses keep; empty when businesses are disabled,
      *                      and then Claims cost their asking price
-     * @param wallet        players' money, to show amounts
+     * @param wallet        players' money, to show amounts and pay for Claims
+     * @param characters    players' characters, which own Claims
+     * @param menus         the menu look, which businesses keep; empty when businesses are disabled, and
+     *                      then Claims can't be bought
      */
     public record Inputs(DatabaseSettings database, PriceDatabase prices, PriceSettings priceSettings,
-                         Optional<PriceModifiers> modifiers, Wallet wallet, Messenger messenger) {
+                         Optional<PriceModifiers> modifiers, Wallet wallet, CharacterDirectory characters,
+                         Optional<MenuTheme> menus, Messenger messenger) {
     }
 
     /**
@@ -132,8 +145,40 @@ public final class ClaimFeature implements AutoCloseable {
         }
         signs.redrawAll();
         plugin.getServer().getPluginManager().registerEvents(new ClaimChangeListener(sales, pricing, signs, logger), plugin);
-        return new ClaimFeature(adapter, sales, pricing,
-                List.of(new ClaimCommand(sales, pricing, adapter, inputs.wallet(), inputs.messenger())), resources, logger);
+        ClaimBuyScreens buying = startBuying(plugin, inputs, adapter, sales, pricing,
+                new AsyncClaimSaleRepository(new SqlClaimSaleRepository(connections), writer));
+        return new ClaimFeature(adapter, sales, pricing, List.of(new ClaimCommand(sales, pricing, adapter, inputs.wallet(),
+                inputs.messenger(), buying, adapter::at)), resources, logger);
+    }
+
+    /**
+     * Lets players buy Claims: the Buy button on Claim signs and the confirmation. Every purchase
+     * fires {@link ClaimPurchaseEvent}.
+     *
+     * @return the confirmation screens, or {@code null} when buying is off (no menus, or past sales
+     *         can't be read, which would reuse their numbers)
+     */
+    private static @Nullable ClaimBuyScreens startBuying(JavaPlugin plugin, Inputs inputs, SkysongClaimsAdapter adapter,
+                                                         ClaimSales sales, ClaimPricing pricing,
+                                                         ClaimSaleRepository saleRecords) {
+        Logger logger = plugin.getLogger();
+        if (inputs.menus().isEmpty()) {
+            logger.warning("Buying Claims is off: it uses the business menus, and businesses are disabled");
+            return null;
+        }
+        ClaimPurchases purchases = new ClaimPurchases(adapter, sales, pricing, inputs.wallet(), saleRecords,
+                sale -> plugin.getServer().getPluginManager().callEvent(new ClaimPurchaseEvent(sale)), logger::severe,
+                Clock.systemUTC());
+        try {
+            purchases.load();
+        } catch (StorageException e) {
+            logger.log(Level.SEVERE, "Buying Claims is off: past Claim sales could not be read from the database", e);
+            return null;
+        }
+        ClaimBuyScreens screens = new ClaimBuyScreens(purchases, adapter, inputs.characters(), inputs.wallet(),
+                inputs.menus().get(), inputs.messenger());
+        adapter.addMenuButton(BuyButton.ID, new BuyButton(screens));
+        return screens;
     }
 
     /** Sign line 4: {@code claims.sign-price}, or {@code claims.sign-price-raised} when modifiers add to it. */
