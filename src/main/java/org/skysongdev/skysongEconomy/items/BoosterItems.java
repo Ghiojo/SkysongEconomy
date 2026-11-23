@@ -5,7 +5,7 @@ import org.bukkit.inventory.ItemStack;
 import org.skysongdev.skysongEconomy.listeners.NodeItemTags;
 import org.skysongdev.skysongEconomy.nodes.NodeException;
 import org.skysongdev.skysongEconomy.nodes.boost.Booster;
-import org.skysongdev.skysongEconomy.nodes.boost.BoosterEffect;
+import org.skysongdev.skysongEconomy.loot.YieldEffect;
 import org.skysongdev.skysongitems.api.ItemCharges;
 import org.skysongdev.skysongitems.api.ItemTags;
 
@@ -51,9 +51,9 @@ public final class BoosterItems {
             return Optional.empty();
         }
         String effectText = tags.getString(item, NodeItemTags.BOOSTER_EFFECT).orElse("");
-        BoosterEffect effect;
+        YieldEffect effect;
         try {
-            effect = BoosterEffect.parse(effectText);
+            effect = YieldEffect.parse(effectText);
         } catch (IllegalArgumentException broken) {
             logger.warning("The booster " + materialIds.fromItem(item).orElse(item.getType().name()) + " has a "
                     + NodeItemTags.BOOSTER_EFFECT + " of '" + effectText + "' that can't be read: " + broken.getMessage());

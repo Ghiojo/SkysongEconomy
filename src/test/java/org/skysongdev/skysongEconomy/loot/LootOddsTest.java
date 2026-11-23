@@ -81,6 +81,22 @@ class LootOddsTest {
     }
 
     @Test
+    void anAdjusterChangesAmountsChancesAndRollCounts() {
+        LootGroup half = new LootGroup("half", List.of(
+                new WeightedEntry(item("tin", 2, 2), 1),
+                new WeightedEntry(new LootEntry.Nothing(), 1)));
+        LootOutput output = new LootOutput(List.of(item("wheat", 2, 4)),
+                List.of(new ChanceItem(item("golden_seed", 1, 1), 40)),
+                List.of(new GroupRolls(IntRange.exactly(2), half)));
+
+        List<ItemOdds> all = LootOdds.of(output, YieldEffect.parse("max-50%; chance-50%; rolls+1"));
+
+        assertEquals(2, odds(all, "wheat").averageAmount(), EXACT, "max 4 halves to 2, so 2-4 becomes 2-2");
+        assertEquals(0.2, odds(all, "golden_seed").chance(), EXACT);
+        assertEquals(1 - Math.pow(0.5, 3), odds(all, "tin").chance(), EXACT, "three rolls instead of two");
+    }
+
+    @Test
     void theAverageValueLeavesOutUnpricedItems() {
         List<ItemOdds> odds = List.of(new ItemOdds("coal", 1, 3), new ItemOdds("ruby", 0.1, 0.5), new ItemOdds("dust", 1, 9));
         Map<String, BigDecimal> prices = Map.of("coal", new BigDecimal("2"), "ruby", new BigDecimal("40"));

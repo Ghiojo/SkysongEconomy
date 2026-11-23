@@ -31,7 +31,7 @@ public final class LootRoller {
             give(item, adjuster, totals);
         }
         for (ChanceItem chance : output.chances()) {
-            if (random.nextDouble() * 100 < chance.percent()) {
+            if (random.nextDouble() * 100 < adjuster.chance(chance.percent())) {
                 give(chance.item(), adjuster, totals);
             }
         }

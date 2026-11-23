@@ -98,4 +98,18 @@ class LootRollerTest {
         LootOutput output = new LootOutput(List.of(), List.of(), List.of(new GroupRolls(IntRange.exactly(3), only(item("stone", 1)))));
         assertEquals(List.of(), roller.roll(output, minusTen));
     }
+
+    @Test
+    void adjusterChangesChances() {
+        LootOutput certain = new LootOutput(List.of(), List.of(new ChanceItem(item("golden_seed", 1), 100)), List.of());
+
+        assertEquals(List.of(), roller.roll(certain, YieldEffect.parse("chance-100%")));
+
+        LootOutput half = new LootOutput(List.of(), List.of(new ChanceItem(item("golden_seed", 1), 50)), List.of());
+        int hits = 0;
+        for (int i = 0; i < 8000; i++) {
+            hits += roller.roll(half, YieldEffect.parse("chance-50%")).size();
+        }
+        assertTrue(hits > 1800 && hits < 2200, "hit " + hits + " times out of 8000 at 25%");
+    }
 }

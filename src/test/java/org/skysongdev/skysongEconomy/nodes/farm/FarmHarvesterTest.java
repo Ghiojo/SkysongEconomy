@@ -4,7 +4,7 @@ import org.junit.jupiter.api.Test;
 import org.skysongdev.skysongEconomy.config.FileRegistry;
 import org.skysongdev.skysongEconomy.messaging.RefusedException;
 import org.skysongdev.skysongEconomy.nodes.boost.Booster;
-import org.skysongdev.skysongEconomy.nodes.boost.BoosterEffect;
+import org.skysongdev.skysongEconomy.loot.YieldEffect;
 import org.skysongdev.skysongEconomy.nodes.harvest.Harvest;
 import org.skysongdev.skysongEconomy.nodes.harvest.HarvestCost;
 import org.skysongdev.skysongEconomy.trade.ItemAmount;
@@ -45,11 +45,11 @@ class FarmHarvesterTest {
 
         assertEquals("crop", harvester.boosterType(world.field));
         assertEquals("node.booster.wrong-type", refusal(() -> harvester.harvest(world.field, world.worker, 2,
-                Optional.of(new Booster("pen", BoosterEffect.parse("max+1"))))));
+                Optional.of(new Booster("pen", YieldEffect.parse("max+1"))))));
         assertEquals(5, world.tokens.balance(world.worker), "nothing was charged");
 
         Harvest harvest = harvester.harvest(world.field, world.worker, 2,
-                Optional.of(new Booster("crop", BoosterEffect.parse("min-2; max-2"))));
+                Optional.of(new Booster("crop", YieldEffect.parse("min-2; max-2"))));
         assertEquals(List.of(new ItemAmount("wheat", 3)), harvest.items());
     }
 

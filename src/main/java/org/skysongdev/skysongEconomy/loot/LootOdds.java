@@ -1,5 +1,7 @@
 package org.skysongdev.skysongEconomy.loot;
 
+import org.skysongdev.skysongEconomy.trade.IntRange;
+
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -23,20 +25,29 @@ public final class LootOdds {
 
     /** @return every item the output can give, most likely first */
     public static List<ItemOdds> of(LootOutput output) {
+        return of(output, YieldAdjuster.NONE);
+    }
+
+    /**
+     * @param adjuster what changes the harvest, such as a booster or calendar modifiers; its
+     *                 changed amounts, chances and roll counts are the ones counted
+     * @return every item the output can give, most likely first
+     */
+    public static List<ItemOdds> of(LootOutput output, YieldAdjuster adjuster) {
         Map<String, Tally> tallies = new LinkedHashMap<>();
         for (LootEntry.Item item : output.guaranteed()) {
-            tallies.computeIfAbsent(item.materialId(), id -> new Tally()).add(0, average(item));
+            tallies.computeIfAbsent(item.materialId(), id -> new Tally()).add(0, average(item, adjuster));
         }
         for (ChanceItem chance : output.chances()) {
-            double probability = chance.percent() / 100;
+            double probability = adjuster.chance(chance.percent()) / 100;
             tallies.computeIfAbsent(chance.item().materialId(), id -> new Tally())
-                    .add(1 - probability, probability * average(chance.item()));
+                    .add(1 - probability, probability * average(chance.item(), adjuster));
         }
         for (GroupRolls rolls : output.rolls()) {
             Map<String, PerRoll> perRoll = new LinkedHashMap<>();
-            flatten(rolls.group(), 1, perRoll);
-            int min = rolls.count().min();
-            int max = rolls.count().max();
+            flatten(rolls.group(), 1, perRoll, adjuster);
+            int min = Math.max(0, adjuster.rolls(rolls.count().min()));
+            int max = Math.max(min, adjuster.rolls(rolls.count().max()));
             double averageTimes = (min + max) / 2.0;
             perRoll.forEach((id, odds) -> tallies.computeIfAbsent(id, key -> new Tally())
                     .add(averageMiss(1 - odds.chance, min, max), averageTimes * odds.amount));
@@ -80,7 +91,7 @@ public final class LootOdds {
     }
 
     /** Adds every item one roll on {@code group} can land on, each scaled by {@code share}. */
-    private static void flatten(LootGroup group, double share, Map<String, PerRoll> into) {
+    private static void flatten(LootGroup group, double share, Map<String, PerRoll> into, YieldAdjuster adjuster) {
         double total = group.totalWeight();
         for (WeightedEntry weighted : group.entries()) {
             double chance = share * weighted.weight() / total;
@@ -88,9 +99,9 @@ public final class LootOdds {
                 case LootEntry.Item item -> {
                     PerRoll odds = into.computeIfAbsent(item.materialId(), id -> new PerRoll());
                     odds.chance += chance;
-                    odds.amount += chance * average(item);
+                    odds.amount += chance * average(item, adjuster);
                 }
-                case LootEntry.Group nested -> flatten(nested.group(), chance, into);
+                case LootEntry.Group nested -> flatten(nested.group(), chance, into, adjuster);
                 case LootEntry.Nothing ignored -> {
                 }
             }
@@ -106,8 +117,9 @@ public final class LootOdds {
         return sum / (max - min + 1);
     }
 
-    private static double average(LootEntry.Item item) {
-        return (item.amount().min() + item.amount().max()) / 2.0;
+    private static double average(LootEntry.Item item, YieldAdjuster adjuster) {
+        IntRange amount = adjuster.amount(item.amount());
+        return (amount.min() + amount.max()) / 2.0;
     }
 
     /** One item's odds on a single roll. */
