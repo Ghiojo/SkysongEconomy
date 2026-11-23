@@ -4,8 +4,9 @@ This folder explains every part of the SkysongEconomy plugin: what each feature 
 configured, and how the code behind it is organised. It is written so that someone who has never seen the
 code can maintain and extend it.
 
-The documentation describes the code on `master` as of 2026-11-23 (after the import piers PRs #64 to #67), which
-includes node boosters, business NPCs, business modules, NPC upkeep, SkysongClaims and import piers.
+The documentation describes the code on `master` as of 2026-11-23 (after the calendar node modifier PRs #69 to #74),
+which includes node boosters, calendar node modifiers (SkysongCalendar), business NPCs, business modules, NPC upkeep,
+SkysongClaims and import piers.
 
 ## Reading order
 
@@ -24,7 +25,7 @@ If you are new to the code, read these in order:
 | [Businesses](05-businesses.md) | Business types, tiers, owners (including `#server`), workers, skill picks, access groups, the vault, shifts, training, Gathering Tokens, the business menu, business NPCs (slots, what an NPC receives, who may use them), modules and their effects |
 | [Economy and Logistics](06-economy-and-logistics.md) | Trade ledgers, imports and deliveries, exports, slots |
 | [Import piers](16-import-piers.md) | Receiving piers, choosing one per import, loss chance and loss modifiers, tags, the Piers API and shipment events, `/se pier` |
-| [Nodes](07-nodes.md) | Random nodes, farm nodes, loot groups, primers, harvest costs, boosters, `/se node` |
+| [Nodes](07-nodes.md) | Random nodes, farm nodes, loot groups, primers, harvest costs, boosters, calendar modifiers (seasons, dates, festival), `/se node` |
 | [Claims](15-claims.md) | SkysongClaims Claims: connecting to SkysongClaims (prices, sales and sign prices are being built) |
 | [NPC upkeep](14-npc-upkeep.md) | Items NPCs eat every cycle, the Upkeep chest, Unmaintained (name line, sheet line, menu, item trait), the crafting repair, `/se upkeep` |
 
@@ -35,7 +36,7 @@ If you are new to the code, read these in order:
 | [Commands and permissions](08-commands-and-permissions.md) | Every `/se` command and every permission node |
 | [Configuration reference](09-configuration-reference.md) | Every config file and folder, key by key |
 | [Database](10-database.md) | Every table, and how data is loaded and saved |
-| [Events, API and integrations](11-events-and-api.md) | Bukkit events, what other plugins can call, PlaceholderAPI, CMI, SkysongStats, SkysongNPCs, SkysongItems |
+| [Events, API and integrations](11-events-and-api.md) | Bukkit events, what other plugins can call, PlaceholderAPI, CMI, SkysongStats, SkysongNPCs, SkysongCalendar, SkysongItems |
 | [Messages and menus](12-messages-and-menus.md) | `messages.yml`, `menus.yml`, the menu framework and its input slots |
 | [Testing, known gaps and how-tos](13-testing-and-maintenance.md) | Unit tests, what isn't tested, known follow-ups, recipes for common changes |
 

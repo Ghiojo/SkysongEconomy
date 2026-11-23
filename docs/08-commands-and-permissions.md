@@ -106,9 +106,11 @@ Targets: `global`, `business:<id>`, `ledger:<id>`, `good-type:<type>`, `item:<ma
 | `setowner <id> <business\|#public>` | Gives it to a business, or makes a random node public |
 | `settable <id> <table or type>` | Switches its random table or farm type |
 | `rename <id> <name...\|#reset>` | Its own name (MiniMessage), or back to the table's |
+| `setmodifiers <id> <on\|off>` | Whether [calendar modifiers](07-nodes.md#calendar-modifiers-nodesmodifiersidyml) apply to it |
 | `info [id]` | Details; without an id, the node you look at |
 | `list [business]` | Every node, or a business's |
-| `odds <table> <tier>` | Cost, level, each item's odds, average value |
+| `odds <table> <tier> [when]` | Cost, level, each item's odds, average value; with `when` (`today`, a season, a day like `Rana 10`, `festival`) the calendar modifiers on then are counted |
+| `modifiers [id]` | Today's IC date and the calendar modifiers on, or the ones on one node (needs SkysongCalendar) |
 | `reload` | Reads the node files again |
 
 ## `/se upkeep`: NPC upkeep (all staff)
