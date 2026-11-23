@@ -16,7 +16,9 @@ public enum TargetKind {
     /** Every SkysongClaims Claim of one type, such as {@code claim-type:house}. */
     CLAIM_TYPE("claim-type"),
     /** One SkysongClaims Claim, such as {@code claim:rose_house}. */
-    CLAIM("claim");
+    CLAIM("claim"),
+    /** Imports sent to one receiving pier, such as {@code pier:harbour}. */
+    PIER("pier");
 
     private final String key;
 

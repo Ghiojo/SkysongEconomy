@@ -927,7 +927,7 @@ prices:
     removed: "<green>Removed modifier <white><id></white> (<yellow><amount></yellow> on <white><target></white>)."
     not-found: "<red>There is no price modifier <yellow><id></yellow>. See /se modifier list."
     exists: "<red><yellow><target></yellow> already has a <yellow><type></yellow> modifier (<id>). Use /se modifier set to replace it."
-    invalid-target: '<red><yellow><target></yellow> isn''t a target. Use global, business:\<id>, ledger:\<id>, good-type:\<type>, item:\<material_id>, claim-type:\<type> or claim:\<claim>.'
+    invalid-target: '<red><yellow><target></yellow> isn''t a target. Use global, business:\<id>, ledger:\<id>, good-type:\<type>, item:\<material_id>, pier:\<pier>, claim-type:\<type> or claim:\<claim>.'
     invalid-type: "<red><yellow><type></yellow> isn't a valid type. Use up to <max> lowercase letters, digits and _, like port_tax."
     invalid-percent: "<red><yellow><percent>%</yellow> isn't a valid percentage. Use a number from <min> to <max> other than 0, like +10% or -5%."
     invalid-amount: "<red><yellow><amount></yellow> isn't an amount. Write a percentage with %, like +10%, or a flat amount for Claims, like +50."
@@ -937,6 +937,8 @@ prices:
     not-a-claim-target: "<red>Claim modifiers go on global, claim-type:\\<type> or claim:\\<claim>, not <yellow><target></yellow>."
     claim-discount: "<red>Claim modifiers can only raise a price, so <yellow><amount></yellow> must be positive."
     unknown-claim-type: "<red>SkysongClaims has no Claim type <yellow><type></yellow>."
+    unknown-pier: "<red>There is no pier <yellow><pier></yellow>."
+    pier-imports-only: "<red>Only imports go to a pier, so a modifier on <yellow><target></yellow> must apply to imports."
     unknown-claim: "<red>SkysongClaims has no Claim <yellow><claim></yellow>."
     invalid-name: "<red>The display name can be at most <max> characters."
     invalid-duration: "<red><yellow><duration></yellow> isn't a valid time. Use something like 30m, 12h, 7d or 1d12h."

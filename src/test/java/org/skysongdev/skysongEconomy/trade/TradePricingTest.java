@@ -52,6 +52,17 @@ class TradePricingTest {
     }
 
     @Test
+    void pierModifiersOnlyApplyToImportsSentThere() {
+        modifier("harbour_dues", "pier:harbour", "10");
+
+        assertEquals(0, new BigDecimal("56").compareTo(price().price()), "no pier chosen yet");
+        assertEquals(0, new BigDecimal("61.6").compareTo(trade.pricing.quote(trade.shop, TradeFixture.SMUGGLERS, TradeFixture.CRATE,
+                TradeFixture.EXPRESS, "harbour").price().price()));
+        assertEquals(0, new BigDecimal("56").compareTo(trade.pricing.quote(trade.shop, TradeFixture.SMUGGLERS, TradeFixture.CRATE,
+                TradeFixture.EXPRESS, "cove").price().price()));
+    }
+
+    @Test
     void aTaxExemptLedgerPassesItsExemptionsToTheModifiers() {
         Ledger exempt = new Ledger("smugglers", "Smugglers", "CHEST", List.of(), Map.of("crate", TradeFixture.CRATE),
                 Map.of(), Set.of(TargetKind.GLOBAL));

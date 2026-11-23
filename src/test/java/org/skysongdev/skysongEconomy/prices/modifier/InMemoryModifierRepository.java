@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Map;
 
 /** Keeps modifiers in a map, for tests. */
-final class InMemoryModifierRepository implements ModifierRepository {
+public final class InMemoryModifierRepository implements ModifierRepository {
     final Map<String, PriceModifier> saved = new LinkedHashMap<>();
 
     @Override

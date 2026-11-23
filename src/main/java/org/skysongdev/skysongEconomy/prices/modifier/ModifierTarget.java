@@ -9,8 +9,8 @@ import java.util.regex.Pattern;
 
 /**
  * What a modifier is attached to. Written as {@code global}, {@code business:<id>},
- * {@code ledger:<id>}, {@code good-type:<type>}, {@code item:<material_id>}, or for SkysongClaims
- * Claims {@code claim-type:<type>} and {@code claim:<claim id>}.
+ * {@code ledger:<id>}, {@code good-type:<type>}, {@code item:<material_id>}, {@code pier:<id>} (imports
+ * sent to that receiving pier), or for SkysongClaims Claims {@code claim-type:<type>} and {@code claim:<claim id>}.
  */
 public sealed interface ModifierTarget {
     /** Every price. */
@@ -170,6 +170,28 @@ public sealed interface ModifierTarget {
         }
     }
 
+    /** Imports sent to one receiving pier. */
+    record Pier(String pierId) implements ModifierTarget {
+        public Pier {
+            Objects.requireNonNull(pierId, "pierId");
+        }
+
+        @Override
+        public TargetKind kind() {
+            return TargetKind.PIER;
+        }
+
+        @Override
+        public String key() {
+            return "pier:" + pierId;
+        }
+
+        @Override
+        public boolean matches(PriceSubject subject) {
+            return pierId.equals(subject.pierId());
+        }
+    }
+
     /**
      * Reads a target, ignoring case.
      *
@@ -201,6 +223,9 @@ public sealed interface ModifierTarget {
                 }
                 case "claim" -> {
                     return new Claim(value);
+                }
+                case "pier" -> {
+                    return new Pier(value);
                 }
                 default -> {
                     // Reported below.

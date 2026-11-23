@@ -96,6 +96,7 @@ import org.skysongdev.skysongEconomy.trade.LedgerRegistry;
 import org.skysongdev.skysongEconomy.trade.LedgerSelections;
 import org.skysongdev.skysongEconomy.trade.TradePricing;
 import org.skysongdev.skysongEconomy.trade.delivery.DeliveryService;
+import org.skysongdev.skysongEconomy.trade.pier.PierPriceModifiers;
 import org.skysongdev.skysongEconomy.trade.pier.PierService;
 import org.skysongdev.skysongEconomy.events.BukkitShipmentEvents;
 
@@ -204,6 +205,7 @@ public final class BusinessFeature implements AutoCloseable {
         // Deliveries are refunded before the business's other rows go.
         businesses.addListener(deliveries);
         piers.connectShipments(deliveries::inbound);
+        PierPriceModifiers.connect(piers, modifiers);
 
         FloatingNames nameplates = new FloatingNames(nameplateSettings(configFiles, logger));
         businesses.addListener(new BusinessNameplates(nameplates, messenger));

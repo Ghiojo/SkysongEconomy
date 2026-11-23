@@ -17,10 +17,11 @@ import java.util.Set;
  *                    never {@link TargetKind#LEDGER}, because modifiers on the ledger always apply
  * @param claimId     the SkysongClaims Claim being bought, or {@code null} for a trade
  * @param claimTypeId that Claim's type, or {@code null} for a trade
+ * @param pierId      the receiving pier an import is sent to, or {@code null} when none is chosen (yet)
  */
 public record PriceSubject(TradeDirection direction, @Nullable String businessId, @Nullable String ledgerId,
                            Set<String> materialIds, Set<String> goodTypes, Set<TargetKind> exemptFrom,
-                           @Nullable String claimId, @Nullable String claimTypeId) {
+                           @Nullable String claimId, @Nullable String claimTypeId, @Nullable String pierId) {
     public PriceSubject {
         Objects.requireNonNull(direction, "direction");
         materialIds = Set.copyOf(materialIds);
@@ -34,7 +35,13 @@ public record PriceSubject(TradeDirection direction, @Nullable String businessId
     /** A trade, which may ignore some modifiers because its ledger is tax exempt. */
     public PriceSubject(TradeDirection direction, @Nullable String businessId, @Nullable String ledgerId,
                         Set<String> materialIds, Set<String> goodTypes, Set<TargetKind> exemptFrom) {
-        this(direction, businessId, ledgerId, materialIds, goodTypes, exemptFrom, null, null);
+        this(direction, businessId, ledgerId, materialIds, goodTypes, exemptFrom, null, null, null);
+    }
+
+    /** @return the same trade, sent to that receiving pier ({@code null} for none) */
+    public PriceSubject toPier(@Nullable String pier) {
+        return new PriceSubject(direction, businessId, ledgerId, materialIds, goodTypes, exemptFrom, claimId, claimTypeId,
+                pier);
     }
 
     /** A trade that ignores no modifiers. */
@@ -51,7 +58,7 @@ public record PriceSubject(TradeDirection direction, @Nullable String businessId
      */
     public static PriceSubject claim(String claimId, String claimTypeId) {
         return new PriceSubject(TradeDirection.CLAIM, null, null, Set.of(), Set.of(), Set.of(),
-                Objects.requireNonNull(claimId, "claimId"), Objects.requireNonNull(claimTypeId, "claimTypeId"));
+                Objects.requireNonNull(claimId, "claimId"), Objects.requireNonNull(claimTypeId, "claimTypeId"), null);
     }
 
     /** @return whether a modifier on that target is ignored for this trade, even though it matches */
