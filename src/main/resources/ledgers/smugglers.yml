@@ -16,12 +16,18 @@ description:
 # item. Modifiers aimed at this ledger (ledger:smugglers) always apply. Leave it out for a normal ledger.
 exempt-from: [global, good-type, item]
 
+# Optional. Labels put on every shipment of this ledger's imports, for other plugins to read (for
+# example a plugin whose guards catch contraband at piers). An import can add its own with tags too.
+tags: [contraband]
+
 imports:
   steel_weapons:
     name: "<white>Crate of steel weapons"
     icon: IRON_SWORD
     lore:
       - "<gray>Straight from the forges, no marks."
+    # Optional. Added to the ledger's tags for this import's shipments.
+    tags: [weapons]
     contents:
       # A fixed amount of an item.
       - {item: steel_sword, amount: 2}

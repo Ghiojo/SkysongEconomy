@@ -4,6 +4,7 @@ import org.skysongdev.skysongEconomy.character.CharacterRef;
 import org.skysongdev.skysongEconomy.trade.delivery.Delivery;
 import org.skysongdev.skysongEconomy.trade.delivery.DeliveryRepository;
 import org.skysongdev.skysongEconomy.trade.delivery.ItemListCodec;
+import org.skysongdev.skysongEconomy.trade.delivery.TagListCodec;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -11,6 +12,7 @@ import java.sql.SQLException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -37,7 +39,8 @@ public final class SqlDeliveryRepository implements DeliveryRepository {
                         ItemListCodec.decode(rows.getString("items")),
                         new CharacterRef(UUID.fromString(rows.getString("player_uuid")), rows.getString("profile")),
                         rows.getBigDecimal("price"), Instant.ofEpochMilli(rows.getLong("ordered_at")),
-                        Instant.ofEpochMilli(rows.getLong("arrives_at"))));
+                        Instant.ofEpochMilli(rows.getLong("arrives_at")), Optional.ofNullable(rows.getString("pier_id")),
+                        TagListCodec.decode(rows.getString("tags"))));
             }
             return deliveries;
         } catch (SQLException e) {
@@ -49,7 +52,8 @@ public final class SqlDeliveryRepository implements DeliveryRepository {
     public void save(Delivery delivery) {
         try (PreparedStatement statement = connections.getConnection().prepareStatement(
                 "INSERT INTO business_deliveries (id, business_id, ledger_id, import_id, delivery_time_id, items, "
-                        + "player_uuid, profile, price, ordered_at, arrives_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")) {
+                        + "player_uuid, profile, price, ordered_at, arrives_at, pier_id, tags) "
+                        + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")) {
             statement.setString(1, delivery.id());
             statement.setString(2, delivery.businessId());
             statement.setString(3, delivery.ledgerId());
@@ -61,6 +65,8 @@ public final class SqlDeliveryRepository implements DeliveryRepository {
             statement.setBigDecimal(9, delivery.price());
             statement.setLong(10, delivery.orderedAt().toEpochMilli());
             statement.setLong(11, delivery.arrivesAt().toEpochMilli());
+            statement.setString(12, delivery.pierId().orElse(null));
+            statement.setString(13, TagListCodec.encode(delivery.tags()));
             statement.executeUpdate();
         } catch (SQLException e) {
             throw new StorageException("Failed to save delivery " + delivery.id(), e);

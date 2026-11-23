@@ -94,7 +94,7 @@ public final class SkysongEconomy extends JavaPlugin {
         // Receiving piers for imports; other plugins manage them through the Piers service.
         pierFeature = PierFeature.start(this, configFiles, databaseSettings(), messenger);
         businessFeature = BusinessFeature.start(this, paths, configFiles, databaseSettings(), skysongStats, wallet, trade,
-                messenger, messages);
+                pierFeature.piers(), messenger, messages);
         nodeFeature = NodeFeature.start(this, configFiles, databaseSettings(), businessFeature.system(), skysongStats,
                 wallet, trade, messenger);
         // Module files are checked against SkysongNPCs, and business NPCs need the modules' slots:

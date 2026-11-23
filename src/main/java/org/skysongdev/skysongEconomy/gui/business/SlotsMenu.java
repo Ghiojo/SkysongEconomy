@@ -4,6 +4,7 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
+import org.skysongdev.skysongEconomy.api.piers.Piers;
 import org.skysongdev.skysongEconomy.business.Business;
 import org.skysongdev.skysongEconomy.business.BusinessException;
 import org.skysongdev.skysongEconomy.character.CharacterRef;
@@ -35,7 +36,7 @@ import java.util.Optional;
 final class SlotsMenu extends BorderedMenu {
     /** What the Slots window needs. */
     record Screens(BusinessMenus menus, DeliveryService deliveries, EconomyLogisticsSettings settings,
-                   LedgerRegistry ledgers, SkysongItemFactory items, Messenger messenger, Clock clock) {
+                   LedgerRegistry ledgers, Piers piers, SkysongItemFactory items, Messenger messenger, Clock clock) {
     }
 
     private final Screens screens;
@@ -75,6 +76,8 @@ final class SlotsMenu extends BorderedMenu {
         lore.add(Component.empty());
         lore.add(screens.messenger().render("business.slots.menu.ordered-by",
                 Placeholder.unparsed("character", delivery.orderedBy().profile())));
+        delivery.pierId().ifPresent(pierId -> lore.add(screens.messenger().render("business.slots.menu.pier",
+                Placeholder.parsed("pier", pierName(pierId)))));
         Component name = screens.messenger().renderText(importName(delivery));
         if (!delivery.isReady(screens.clock().instant())) {
             lore.add(screens.messenger().render("business.slots.menu.arrives", Placeholder.unparsed("duration",
@@ -83,6 +86,11 @@ final class SlotsMenu extends BorderedMenu {
         }
         lore.add(screens.messenger().render("business.slots.menu.ready"));
         return MenuButton.of(theme.item(Material.CHEST_MINECART, name, lore), click -> collect(click.player(), delivery));
+    }
+
+    /** @return the pier's MiniMessage name, or its id when it is gone */
+    private String pierName(String pierId) {
+        return screens.piers().find(pierId).map(pier -> pier.details().displayName()).orElse(pierId);
     }
 
     /** @return the import's name from its ledger, or its id when the ledger or import is gone */

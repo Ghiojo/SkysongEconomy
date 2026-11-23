@@ -6,10 +6,10 @@ import java.util.List;
 import java.util.Map;
 
 /** Keeps saved piers in maps, so tests can look at what would be in the database. */
-final class InMemoryPierRepository implements PierRepository {
-    final Map<String, Row> piers = new LinkedHashMap<>();
+public final class InMemoryPierRepository implements PierRepository {
+    public final Map<String, Row> piers = new LinkedHashMap<>();
     /** By pier id + ":" + modifier id. */
-    final Map<String, ModifierRow> modifiers = new LinkedHashMap<>();
+    public final Map<String, ModifierRow> modifiers = new LinkedHashMap<>();
 
     @Override
     public List<Row> loadPiers() {

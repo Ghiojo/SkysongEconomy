@@ -1,5 +1,9 @@
 package org.skysongdev.skysongEconomy.trade.delivery;
 
+import org.jetbrains.annotations.Nullable;
+import org.skysongdev.skysongEconomy.api.piers.Pier;
+import org.skysongdev.skysongEconomy.api.piers.Piers;
+import org.skysongdev.skysongEconomy.api.piers.Shipment;
 import org.skysongdev.skysongEconomy.business.Business;
 import org.skysongdev.skysongEconomy.business.BusinessChangeListener;
 import org.skysongdev.skysongEconomy.business.BusinessException;
@@ -25,6 +29,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.random.RandomGenerator;
@@ -36,15 +41,21 @@ import java.util.random.RandomGenerator;
  * it has arrived; collecting frees its slot.
  * <p>
  * Ordering needs Economy and Logistics, the ledger selected, the owner or a group allowed to
- * order imports, and a free delivery slot. The orderer's own balance pays, and orders can't be
- * cancelled. Deliveries stay when their ledger is removed or the business loses slots; only new
+ * order imports, a free delivery slot and, whenever there are piers, an open receiving pier. Then
+ * {@link ShipmentEvents#ordering} lets other plugins stop it. The orderer's own balance pays, and
+ * orders can't be cancelled; their pier can't be changed. Deliveries stay when their ledger is removed or the business loses slots; only new
  * orders wait for a free slot. A deleted business refunds every delivery to whoever paid for it.
  * Kept in memory and saved right away; use it on the main thread.
  */
 public final class DeliveryService implements BusinessChangeListener {
-    /** What ordering needs from the rest of the plugin. */
+    /**
+     * What ordering needs from the rest of the plugin.
+     *
+     * @param piers  the receiving piers; with none, imports are ordered without one
+     * @param events lets other plugins stop orders
+     */
     public record Dependencies(EconomyLogisticsSettings settings, LedgerSelections selections, AccessService access,
-                               TradePricing pricing, Wallet wallet) {
+                               TradePricing pricing, Wallet wallet, Piers piers, ShipmentEvents events) {
     }
 
     private final Dependencies deps;
@@ -79,6 +90,23 @@ public final class DeliveryService implements BusinessChangeListener {
         return List.copyOf(byBusiness.getOrDefault(business.id(), List.of()));
     }
 
+    /**
+     * @return every delivery sent to that pier that hasn't been collected, of every business,
+     *         soonest arrival first
+     */
+    public List<Shipment> inbound(String pierId) {
+        return byBusiness.values().stream().flatMap(List::stream)
+                .filter(delivery -> delivery.pierId().filter(pierId::equals).isPresent())
+                .sorted(Comparator.comparing(Delivery::arrivesAt))
+                .map(Shipments::of)
+                .toList();
+    }
+
+    /** @return whether orders must pick a pier: whenever there is any pier, open or closed */
+    public boolean needsPier() {
+        return !deps.piers().all().isEmpty();
+    }
+
     /** @return how many more imports the business can order now */
     public int freeSlots(Business business) {
         return Math.max(0, deps.settings().limits(business).imports() - deliveries(business).size());
@@ -93,10 +121,14 @@ public final class DeliveryService implements BusinessChangeListener {
      * Orders an import: charges the character and books a delivery slot.
      *
      * @param ledger the ledger to order from, which the business must have selected
-     * @throws BusinessException when ordering isn't allowed now or the character can't pay
+     * @param pierId the receiving pier; required whenever {@link #needsPier()}, ignored otherwise
+     * @throws BusinessException when ordering isn't allowed now, the pier is missing or closed, or
+     *                           the character can't pay
+     * @throws OrderCancelledException when another plugin cancelled it
      * @throws org.skysongdev.skysongEconomy.prices.PriceException when the import can't be priced
      */
-    public Delivery order(Business business, CharacterRef character, Ledger ledger, ImportOffer offer, DeliveryTime time) {
+    public Delivery order(Business business, CharacterRef character, Ledger ledger, ImportOffer offer, DeliveryTime time,
+                          @Nullable String pierId) {
         if (!deps.settings().enabled(business)) {
             throw new BusinessException("business.ledgers.not-enabled", Map.of("business", business.displayName()));
         }
@@ -110,17 +142,42 @@ public final class DeliveryService implements BusinessChangeListener {
             throw new BusinessException("business.imports.no-free-slot",
                     Map.of("max", String.valueOf(deps.settings().limits(business).imports())));
         }
+        Optional<Pier> pier = pier(pierId);
         ImportQuote quote = deps.pricing().quote(business, ledger, offer, time);
+        Instant now = clock.instant();
+        Delivery delivery = new Delivery(UUID.randomUUID().toString(), business.id(), ledger.id(), offer.id(), time.id(),
+                offer.contents().roll(random), character, quote.price().price(), now, now.plus(time.duration()),
+                pier.map(Pier::id), ledger.shipmentTags(offer));
+        ShipmentEvents.Verdict verdict = deps.events().ordering(Shipments.of(delivery));
+        if (verdict.cancelled()) {
+            throw new OrderCancelledException(verdict.message());
+        }
         if (!deps.wallet().withdraw(character.player(), quote.price().price())) {
             throw new BusinessException("business.imports.cannot-afford",
                     Map.of("price", deps.wallet().format(quote.price().price())));
         }
-        Instant now = clock.instant();
-        Delivery delivery = new Delivery(UUID.randomUUID().toString(), business.id(), ledger.id(), offer.id(), time.id(),
-                offer.contents().roll(random), character, quote.price().price(), now, now.plus(time.duration()));
         byBusiness.computeIfAbsent(business.id(), id -> new ArrayList<>()).add(delivery);
         repository.save(delivery);
         return delivery;
+    }
+
+    /**
+     * @return the open pier an order goes to; empty when there are no piers
+     * @throws BusinessException when piers exist and none was picked, or it is gone or closed
+     */
+    private Optional<Pier> pier(@Nullable String pierId) {
+        if (!needsPier()) {
+            return Optional.empty();
+        }
+        if (pierId == null) {
+            throw new BusinessException("business.imports.choose-pier");
+        }
+        Pier pier = deps.piers().find(pierId)
+                .orElseThrow(() -> new BusinessException("business.imports.pier-gone", Map.of("pier", pierId)));
+        if (!pier.open()) {
+            throw new BusinessException("business.imports.pier-closed", Map.of("pier", pier.id()));
+        }
+        return Optional.of(pier);
     }
 
     /**

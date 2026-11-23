@@ -14,6 +14,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
@@ -24,11 +25,13 @@ import java.util.function.Predicate;
  * icon: ENDER_CHEST
  * description: ["<gray>Goods nobody asks questions about."]
  * exempt-from: [global, good-type, item]       # optional: modifier kinds its trades ignore
+ * tags: [contraband]                           # optional: put on every shipment of its imports
  * imports:
  *   steel_weapons:
  *     name: "<white>Crate of steel weapons"
  *     icon: IRON_SWORD
  *     lore: ["<gray>Fresh from the forges."]
+ *     tags: [weapons]                            # optional: added to the ledger's for this import
  *     contents:
  *       - {item: steel_sword, amount: 2}         # fixed
  *       - {item: steel_spear, amount: "1-3"}     # random amount
@@ -89,7 +92,7 @@ public final class LedgerParser {
             }
         }
         return new Ledger(id, root.requireString("name"), icon(root), root.strings("description"), imports, exports,
-                exemptFrom(root));
+                exemptFrom(root), tags(root));
     }
 
     /**
@@ -135,7 +138,8 @@ public final class LedgerParser {
         if (prices.isEmpty()) {
             throw section.error("prices", "must set a price for at least one delivery time");
         }
-        return new ImportOffer(id, section.string("name", id), icon(section), section.strings("lore"), new Bundle(parts), prices);
+        return new ImportOffer(id, section.string("name", id), icon(section), section.strings("lore"), new Bundle(parts), prices,
+                tags(section));
     }
 
     private BundlePart item(ConfigSection part) {
@@ -193,6 +197,18 @@ public final class LedgerParser {
         } catch (PriceException e) {
             throw section.error(key, "is not a valid price (" + raw + "): " + e.placeholders().getOrDefault("problem", e.messageKey()));
         }
+    }
+
+    /** @return {@code tags}, stripped and in lower case, blank ones left out */
+    private static Set<String> tags(ConfigSection section) {
+        Set<String> tags = new TreeSet<>();
+        for (String tag : section.strings("tags")) {
+            String clean = tag.strip().toLowerCase(Locale.ROOT);
+            if (!clean.isEmpty()) {
+                tags.add(clean);
+            }
+        }
+        return tags;
     }
 
     private static String icon(ConfigSection section) {

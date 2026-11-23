@@ -96,6 +96,8 @@ import org.skysongdev.skysongEconomy.trade.LedgerRegistry;
 import org.skysongdev.skysongEconomy.trade.LedgerSelections;
 import org.skysongdev.skysongEconomy.trade.TradePricing;
 import org.skysongdev.skysongEconomy.trade.delivery.DeliveryService;
+import org.skysongdev.skysongEconomy.trade.pier.PierService;
+import org.skysongdev.skysongEconomy.events.BukkitShipmentEvents;
 
 import java.security.SecureRandom;
 import java.time.Clock;
@@ -137,10 +139,11 @@ public final class BusinessFeature implements AutoCloseable {
      * @param database the database to keep businesses in; the feature opens its own connection
      * @param wallet   players' money, for pay and vaults
      * @param trade    what Economy and Logistics needs: items, prices and good types
+     * @param piers    the receiving piers imports are sent to; deliveries are connected to them here
      */
     public static BusinessFeature start(JavaPlugin plugin, PluginPaths paths, YamlFiles configFiles,
                                         DatabaseSettings database, SkysongStatsAdapter skysongStats, Wallet wallet,
-                                        TradeInputs trade, Messenger messenger, MessageCatalog messages) {
+                                        TradeInputs trade, PierService piers, Messenger messenger, MessageCatalog messages) {
         Logger logger = plugin.getLogger();
         Settings settings;
         try {
@@ -181,7 +184,7 @@ public final class BusinessFeature implements AutoCloseable {
                 new AsyncModifierRepository(new SqlModifierRepository(connections), writer), Clock.systemUTC());
         TradePricing pricing = new TradePricing(trade.prices(), modifiers, trade.priceSettings(), trade.goodTypes());
         DeliveryService deliveries = new DeliveryService(new DeliveryService.Dependencies(settings.economyLogistics(),
-                ledgerSelections, access, pricing, wallet),
+                ledgerSelections, access, pricing, wallet, piers, new BukkitShipmentEvents(events, piers)),
                 new AsyncDeliveryRepository(new SqlDeliveryRepository(connections), writer), Clock.systemUTC(),
                 new SecureRandom(), logger::warning);
         ExportService exports = new ExportService(settings.economyLogistics(), ledgerSelections, access, pricing,
@@ -200,6 +203,7 @@ public final class BusinessFeature implements AutoCloseable {
         businesses.addListener(ledgerSelections);
         // Deliveries are refunded before the business's other rows go.
         businesses.addListener(deliveries);
+        piers.connectShipments(deliveries::inbound);
 
         FloatingNames nameplates = new FloatingNames(nameplateSettings(configFiles, logger));
         businesses.addListener(new BusinessNameplates(nameplates, messenger));
@@ -227,12 +231,12 @@ public final class BusinessFeature implements AutoCloseable {
         menus.addEntry(new TrainEntry(menus, training, activities, skysongStats, wallet, messenger));
         menus.addEntry(new VaultEntry(menus, vaults, messenger));
         menus.addEntry(new SkillPicksEntry(menus, businesses, skysongStats, messenger));
-        menus.addEntry(new ImportsEntry(menus, ledgerSelections, deliveries, pricing, settings.economyLogistics(), wallet,
-                messenger));
+        menus.addEntry(new ImportsEntry(menus, ledgerSelections, deliveries, pricing, settings.economyLogistics(), piers,
+                wallet, messenger));
         menus.addEntry(new ExportsEntry(menus, ledgerSelections, exports, settings.economyLogistics(), trade.materialIds(),
                 wallet, messenger));
-        menus.addEntry(new SlotsEntry(menus, deliveries, settings.economyLogistics(), ledgers, trade.items(), messenger,
-                Clock.systemUTC()));
+        menus.addEntry(new SlotsEntry(menus, deliveries, settings.economyLogistics(), ledgers, piers, trade.items(),
+                messenger, Clock.systemUTC()));
         menus.addEntry(new LedgersEntry(menus, ledgers, ledgerSelections, settings.economyLogistics(), wallet, messenger));
         events.registerEvents(new BusinessInteractListener(businesses, menus), plugin);
 

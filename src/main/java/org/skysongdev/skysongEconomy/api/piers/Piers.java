@@ -38,6 +38,12 @@ public interface Piers {
     }
 
     /**
+     * @return every shipment sent to that pier that hasn't been collected yet, on its way or
+     *         waiting, soonest arrival first; empty when businesses are disabled
+     */
+    List<Shipment> inbound(String pierId);
+
+    /**
      * Creates a pier owned by a plugin. It starts open, with no data, a 0% loss chance and no modifiers.
      *
      * @param owner the creating plugin's name ({@code plugin.getName()}), kept as the pier's {@link Pier#source()}

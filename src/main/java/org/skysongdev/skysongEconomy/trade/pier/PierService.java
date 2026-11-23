@@ -6,6 +6,7 @@ import org.skysongdev.skysongEconomy.api.piers.Pier;
 import org.skysongdev.skysongEconomy.api.piers.PierDetails;
 import org.skysongdev.skysongEconomy.api.piers.PierException;
 import org.skysongdev.skysongEconomy.api.piers.Piers;
+import org.skysongdev.skysongEconomy.api.piers.Shipment;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -19,6 +20,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 /**
  * Every receiving pier: the ones in {@code piers.yml}, merged with what was changed on them through
@@ -41,6 +43,8 @@ public final class PierService implements Piers {
     private final Map<String, PierRepository.Row> rows = new LinkedHashMap<>();
     /** Modifiers set through the API or commands, by pier id, then modifier id. */
     private final Map<String, Map<String, LossModifier>> modifiers = new HashMap<>();
+    /** Finds the shipments sent to a pier; none until {@link #connectShipments} is called. */
+    private Function<String, List<Shipment>> shipments = id -> List.of();
 
     /**
      * @param settings what {@code piers.yml} holds
@@ -60,6 +64,16 @@ public final class PierService implements Piers {
         repository.loadModifiers().forEach(row -> modifiers.computeIfAbsent(row.pierId(), id -> new LinkedHashMap<>())
                 .put(row.modifier().id(), row.modifier()));
         warnAboutClashes();
+    }
+
+    /**
+     * Lets {@link #inbound} see shipments. Called by the business system once deliveries exist,
+     * since they are built after piers.
+     *
+     * @param shipments the shipments sent to a pier id that haven't been collected, soonest first
+     */
+    public void connectShipments(Function<String, List<Shipment>> shipments) {
+        this.shipments = Objects.requireNonNull(shipments, "shipments");
     }
 
     /** Tells {@code listener} about every later change, including reloads. */
@@ -102,6 +116,11 @@ public final class PierService implements Piers {
     @Override
     public Optional<Pier> find(String id) {
         return id == null ? Optional.empty() : view(id.strip().toLowerCase(Locale.ROOT));
+    }
+
+    @Override
+    public List<Shipment> inbound(String pierId) {
+        return find(pierId).map(pier -> shipments.apply(pier.id())).orElse(List.of());
     }
 
     @Override

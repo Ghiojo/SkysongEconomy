@@ -3,6 +3,8 @@ package org.skysongdev.skysongEconomy.trade;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
+import org.skysongdev.skysongEconomy.api.piers.PierDetails;
+import org.skysongdev.skysongEconomy.api.piers.Shipment;
 import org.skysongdev.skysongEconomy.business.BusinessException;
 import org.skysongdev.skysongEconomy.business.access.AccessGroup;
 import org.skysongdev.skysongEconomy.business.access.Permission;
@@ -10,6 +12,11 @@ import org.skysongdev.skysongEconomy.character.CharacterRef;
 import org.skysongdev.skysongEconomy.trade.delivery.Delivery;
 import org.skysongdev.skysongEconomy.trade.delivery.DeliveryRepository;
 import org.skysongdev.skysongEconomy.trade.delivery.DeliveryService;
+import org.skysongdev.skysongEconomy.trade.delivery.OrderCancelledException;
+import org.skysongdev.skysongEconomy.trade.delivery.ShipmentEvents;
+import org.skysongdev.skysongEconomy.trade.pier.InMemoryPierRepository;
+import org.skysongdev.skysongEconomy.trade.pier.PierService;
+import org.skysongdev.skysongEconomy.trade.pier.PierSettings;
 
 import java.math.BigDecimal;
 import java.time.Clock;
@@ -18,6 +25,7 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Random;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -29,19 +37,36 @@ class DeliveryServiceTest {
     private final TradeFixture trade = new TradeFixture();
     private final InMemoryDeliveries repository = new InMemoryDeliveries();
     private final List<String> warnings = new ArrayList<>();
+    private final PierService piers = new PierService(PierSettings.NONE, new InMemoryPierRepository(), warnings::add);
+    /** Every shipment ordering reported, and what to answer. */
+    private final List<Shipment> ordering = new ArrayList<>();
+    private ShipmentEvents.Verdict verdict = ShipmentEvents.Verdict.ALLOW;
+    private final ShipmentEvents events = shipment -> {
+        ordering.add(shipment);
+        return verdict;
+    };
     private DeliveryService deliveries;
+
+    private DeliveryService.Dependencies dependencies() {
+        return new DeliveryService.Dependencies(trade.settings, trade.selections, trade.access, trade.pricing,
+                trade.wallet, piers, events);
+    }
 
     @BeforeEach
     void setUp() {
-        deliveries = new DeliveryService(new DeliveryService.Dependencies(trade.settings, trade.selections, trade.access,
-                trade.pricing, trade.wallet), repository, trade.clock, new Random(3), warnings::add);
+        deliveries = new DeliveryService(dependencies(), repository, trade.clock, new Random(3), warnings::add);
         trade.businesses.addListener(deliveries);
         deliveries.loadAll();
         trade.wallet.balances.put(TradeFixture.OWNER.player(), new BigDecimal("500"));
     }
 
     private Delivery order(CharacterRef character) {
-        return deliveries.order(trade.shop, character, TradeFixture.SMUGGLERS, TradeFixture.CRATE, TradeFixture.EXPRESS);
+        return deliveries.order(trade.shop, character, TradeFixture.SMUGGLERS, TradeFixture.CRATE, TradeFixture.EXPRESS, null);
+    }
+
+    private Delivery orderTo(String pierId) {
+        return deliveries.order(trade.shop, TradeFixture.OWNER, TradeFixture.SMUGGLERS, TradeFixture.CRATE,
+                TradeFixture.EXPRESS, pierId);
     }
 
     private static String refusal(Executable action) {
@@ -117,8 +142,7 @@ class DeliveryServiceTest {
     }
 
     private DeliveryService at(Instant now) {
-        DeliveryService later = new DeliveryService(new DeliveryService.Dependencies(trade.settings, trade.selections,
-                trade.access, trade.pricing, trade.wallet), repository, Clock.fixed(now, ZoneOffset.UTC),
+        DeliveryService later = new DeliveryService(dependencies(), repository, Clock.fixed(now, ZoneOffset.UTC),
                 new Random(3), warnings::add);
         later.loadAll();
         return later;
@@ -161,6 +185,58 @@ class DeliveryServiceTest {
     }
 
     /** Keeps deliveries in a list. */
+    @Test
+    void withoutPiersImportsAreOrderedWithoutOne() {
+        Delivery delivery = order(TradeFixture.OWNER);
+
+        assertFalse(deliveries.needsPier());
+        assertEquals(Optional.empty(), delivery.pierId());
+        assertEquals(List.of(delivery.id()), ordering.stream().map(Shipment::id).toList());
+    }
+
+    @Test
+    void withPiersAnOpenPierMustBeChosen() {
+        piers.create("SkysongPolitics", "harbour", new PierDetails("Harbour", "OAK_BOAT", List.of()));
+        piers.create("SkysongPolitics", "cove", new PierDetails("Cove", "OAK_BOAT", List.of()));
+        piers.setOpen("cove", false);
+
+        assertTrue(deliveries.needsPier());
+        assertEquals("business.imports.choose-pier", refusal(() -> order(TradeFixture.OWNER)));
+        assertEquals("business.imports.pier-closed", refusal(() -> orderTo("cove")));
+        assertEquals("business.imports.pier-gone", refusal(() -> orderTo("moon")));
+        assertTrue(deliveries.deliveries(trade.shop).isEmpty());
+        assertEquals(0, new BigDecimal("500").compareTo(trade.wallet.balance(TradeFixture.OWNER.player())), "nothing paid");
+
+        Delivery delivery = orderTo("HARBOUR");
+        assertEquals(Optional.of("harbour"), delivery.pierId());
+        assertEquals(Optional.of("harbour"), ordering.get(0).pierId());
+    }
+
+    @Test
+    void aCancelledOrderChargesNothingAndBooksNoSlot() {
+        verdict = ShipmentEvents.Verdict.cancel("<red>The harbour is blockaded.");
+
+        OrderCancelledException cancelled = assertThrows(OrderCancelledException.class, () -> order(TradeFixture.OWNER));
+
+        assertEquals(Optional.of("<red>The harbour is blockaded."), cancelled.reason());
+        assertEquals(0, new BigDecimal("500").compareTo(trade.wallet.balance(TradeFixture.OWNER.player())));
+        assertTrue(deliveries.deliveries(trade.shop).isEmpty());
+        assertTrue(repository.saved.isEmpty());
+    }
+
+    @Test
+    void listsWhatIsHeadingToAPier() {
+        piers.create("SkysongPolitics", "harbour", new PierDetails("Harbour", "OAK_BOAT", List.of()));
+        piers.create("SkysongPolitics", "cove", new PierDetails("Cove", "OAK_BOAT", List.of()));
+        piers.connectShipments(deliveries::inbound);
+        Delivery first = orderTo("harbour");
+        orderTo("cove");
+
+        assertEquals(List.of(first.id()), piers.inbound("Harbour").stream().map(Shipment::id).toList());
+        assertEquals(TradeFixture.SMUGGLERS.shipmentTags(TradeFixture.CRATE), piers.inbound("harbour").get(0).tags());
+        assertTrue(piers.inbound("moon").isEmpty());
+    }
+
     private static final class InMemoryDeliveries implements DeliveryRepository {
         final List<Delivery> saved = new ArrayList<>();
 

@@ -2,6 +2,7 @@ package org.skysongdev.skysongEconomy.gui.business;
 
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.Material;
+import org.skysongdev.skysongEconomy.api.piers.Piers;
 import org.skysongdev.skysongEconomy.business.Business;
 import org.skysongdev.skysongEconomy.gui.MenuButton;
 import org.skysongdev.skysongEconomy.messaging.Messenger;
@@ -21,8 +22,8 @@ public final class ImportsEntry implements MainMenuEntry {
     private final ImportScreens screens;
 
     public ImportsEntry(BusinessMenus menus, LedgerSelections selections, DeliveryService deliveries, TradePricing pricing,
-                        EconomyLogisticsSettings settings, Wallet wallet, Messenger messenger) {
-        this.screens = new ImportScreens(menus, selections, deliveries, pricing, settings, wallet, messenger);
+                        EconomyLogisticsSettings settings, Piers piers, Wallet wallet, Messenger messenger) {
+        this.screens = new ImportScreens(menus, selections, deliveries, pricing, settings, piers, wallet, messenger);
     }
 
     @Override

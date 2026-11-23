@@ -2,6 +2,7 @@ package org.skysongdev.skysongEconomy.gui.business;
 
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.Material;
+import org.skysongdev.skysongEconomy.api.piers.Piers;
 import org.skysongdev.skysongEconomy.business.Business;
 import org.skysongdev.skysongEconomy.gui.MenuButton;
 import org.skysongdev.skysongEconomy.items.SkysongItemFactory;
@@ -21,8 +22,8 @@ public final class SlotsEntry implements MainMenuEntry {
     private final SlotsMenu.Screens screens;
 
     public SlotsEntry(BusinessMenus menus, DeliveryService deliveries, EconomyLogisticsSettings settings,
-                      LedgerRegistry ledgers, SkysongItemFactory items, Messenger messenger, Clock clock) {
-        this.screens = new SlotsMenu.Screens(menus, deliveries, settings, ledgers, items, messenger, clock);
+                      LedgerRegistry ledgers, Piers piers, SkysongItemFactory items, Messenger messenger, Clock clock) {
+        this.screens = new SlotsMenu.Screens(menus, deliveries, settings, ledgers, piers, items, messenger, clock);
     }
 
     @Override
