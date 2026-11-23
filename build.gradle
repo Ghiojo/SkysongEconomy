@@ -52,6 +52,8 @@ dependencies {
     }
     // Optional: selling Claims. Provided at runtime by the SkysongClaims plugin, when it is installed.
     compileOnly 'com.github.Ghiojo:SkysongClaims:1.0.0'
+    // Optional: the IC calendar's seasons and dates. Provided at runtime by the SkysongCalendar plugin, when it is installed.
+    compileOnly 'com.github.Ghiojo:SkysongCalendar:1.0.0'
     // Optional: the Gathering Token placeholders, when PlaceholderAPI is installed.
     compileOnly 'me.clip:placeholderapi:2.11.6'
 
