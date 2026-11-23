@@ -2,6 +2,7 @@ package org.skysongdev.skysongEconomy.gui.business;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
+import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.skysongdev.skysongEconomy.api.piers.Piers;
@@ -111,9 +112,19 @@ final class SlotsMenu extends BorderedMenu {
         }
         try {
             boolean[] dropped = {false};
-            screens.deliveries().collect(business, character.get(), delivery, items -> dropped[0] = give(player, items));
-            screens.messenger().send(player, dropped[0] ? "business.slots.collected-dropped" : "business.slots.collected",
-                    Placeholder.parsed("import", importName(delivery)));
+            DeliveryService.Collection collection = screens.deliveries().collect(business, character.get(), delivery,
+                    items -> dropped[0] = give(player, items));
+            TagResolver names = TagResolver.resolver(Placeholder.parsed("import", importName(delivery)),
+                    Placeholder.parsed("pier", delivery.pierId().map(this::pierName).orElse("")));
+            if (collection.seized()) {
+                collection.seizeMessage().ifPresentOrElse(
+                        reason -> screens.messenger().send(player, "piers.seized-reason", names,
+                                Placeholder.parsed("reason", reason)),
+                        () -> screens.messenger().send(player, "piers.seized", names));
+            } else {
+                screens.messenger().send(player, dropped[0] ? "business.slots.collected-dropped" : "business.slots.collected",
+                        names);
+            }
         } catch (BusinessException refusal) {
             screens.messenger().send(player, refusal);
         } catch (IllegalArgumentException missingItem) {

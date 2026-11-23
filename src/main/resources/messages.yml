@@ -1108,4 +1108,9 @@ piers:
   modifier-removed: "<green>Removed the loss modifier <white><modifier></white> from <name><green>."
   modifier-none: "<gray><name> <gray>has no loss modifier <modifier> set by a command or plugin."
   reloaded: "<green>Reloaded piers.yml: <white><count></white> pier(s)."
+  # Collecting a delivery that was lost at its pier (by its loss chance, or seized by another
+  # plugin). <import> and <pier> are its names (<pier> is empty for imports without a pier).
+  seized: "<red>Your cargo was seized! <gray>(<import><gray>)"
+  # When the plugin that seized it gave a reason: <reason> is its text.
+  seized-reason: "<red>Your cargo was seized! <gray><reason>"
   reload-warnings: "<yellow><count> problem(s) in piers.yml, see the console."

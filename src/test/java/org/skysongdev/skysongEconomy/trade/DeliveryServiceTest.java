@@ -4,7 +4,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
 import org.skysongdev.skysongEconomy.api.piers.PierDetails;
+import org.skysongdev.skysongEconomy.api.piers.LossModifier;
 import org.skysongdev.skysongEconomy.api.piers.Shipment;
+import org.skysongdev.skysongEconomy.api.piers.ShipmentItem;
 import org.skysongdev.skysongEconomy.business.BusinessException;
 import org.skysongdev.skysongEconomy.business.access.AccessGroup;
 import org.skysongdev.skysongEconomy.business.access.Permission;
@@ -27,6 +29,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
+import java.util.function.Function;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -41,9 +44,27 @@ class DeliveryServiceTest {
     /** Every shipment ordering reported, and what to answer. */
     private final List<Shipment> ordering = new ArrayList<>();
     private ShipmentEvents.Verdict verdict = ShipmentEvents.Verdict.ALLOW;
-    private final ShipmentEvents events = shipment -> {
-        ordering.add(shipment);
-        return verdict;
+    /** Every arrival reported, what listeners make of it, and every collection reported. */
+    private final List<ShipmentEvents.Arrival> arrivals = new ArrayList<>();
+    private Function<ShipmentEvents.Arrival, ShipmentEvents.Outcome> listeners = ShipmentEvents.Arrival::asRolled;
+    private final List<ShipmentEvents.Outcome> collected = new ArrayList<>();
+    private final ShipmentEvents events = new ShipmentEvents() {
+        @Override
+        public Verdict ordering(Shipment shipment) {
+            ordering.add(shipment);
+            return verdict;
+        }
+
+        @Override
+        public Outcome arriving(Arrival arrival) {
+            arrivals.add(arrival);
+            return listeners.apply(arrival);
+        }
+
+        @Override
+        public void collected(Arrival arrival, Outcome outcome) {
+            collected.add(outcome);
+        }
     };
     private DeliveryService deliveries;
 
@@ -235,6 +256,109 @@ class DeliveryServiceTest {
         assertEquals(List.of(first.id()), piers.inbound("Harbour").stream().map(Shipment::id).toList());
         assertEquals(TradeFixture.SMUGGLERS.shipmentTags(TradeFixture.CRATE), piers.inbound("harbour").get(0).tags());
         assertTrue(piers.inbound("moon").isEmpty());
+    }
+
+    /** Orders to a new pier with that loss chance, and returns a service an hour after it arrived. */
+    private DeliveryService orderedToPierWithChance(String chance) {
+        piers.create("SkysongPolitics", "harbour", new PierDetails("Harbour", "OAK_BOAT", List.of()));
+        piers.setLossChance("harbour", new BigDecimal(chance));
+        Delivery delivery = orderTo("harbour");
+        return at(delivery.arrivesAt().plus(Duration.ofHours(1)));
+    }
+
+    private Delivery only(DeliveryService service) {
+        return service.deliveries(trade.shop).get(0);
+    }
+
+    @Test
+    void collectingWithoutAPierNeverLosesTheShipment() {
+        Delivery delivery = order(TradeFixture.OWNER);
+        DeliveryService later = at(delivery.arrivesAt());
+        List<ItemAmount> given = new ArrayList<>();
+
+        DeliveryService.Collection collection = later.collect(trade.shop, TradeFixture.OWNER, delivery, given::addAll);
+
+        assertFalse(collection.seized());
+        assertEquals(delivery.items(), given);
+        assertEquals(0, BigDecimal.ZERO.compareTo(arrivals.get(0).lossChance()));
+        assertEquals(Optional.empty(), arrivals.get(0).pier());
+        assertEquals(1, collected.size());
+    }
+
+    @Test
+    void aCertainLossSeizesTheShipmentWithoutARefund() {
+        DeliveryService later = orderedToPierWithChance("100");
+        Delivery delivery = only(later);
+        BigDecimal paid = trade.wallet.balance(TradeFixture.OWNER.player());
+        List<ItemAmount> given = new ArrayList<>();
+
+        DeliveryService.Collection collection = later.collect(trade.shop, TradeFixture.OWNER, delivery, given::addAll);
+
+        assertTrue(collection.seized());
+        assertTrue(collection.items().isEmpty());
+        assertTrue(given.isEmpty(), "nothing is handed over");
+        assertTrue(later.deliveries(trade.shop).isEmpty(), "the slot is free");
+        assertTrue(repository.saved.isEmpty());
+        assertEquals(paid, trade.wallet.balance(TradeFixture.OWNER.player()), "no refund");
+        assertTrue(arrivals.get(0).lostByRoll());
+        assertTrue(collected.get(0).seized());
+    }
+
+    @Test
+    void lossModifiersCountWhenTheShipmentArrives() {
+        DeliveryService later = orderedToPierWithChance("0");
+        piers.setLossModifier("harbour", new LossModifier("guards", new BigDecimal("100"), false));
+
+        assertTrue(later.collect(trade.shop, TradeFixture.OWNER, only(later), items -> { }).seized());
+        assertEquals(0, new BigDecimal("100").compareTo(arrivals.get(0).lossChance()));
+    }
+
+    @Test
+    void listenersCanSaveALostShipment() {
+        DeliveryService later = orderedToPierWithChance("100");
+        Delivery delivery = only(later);
+        listeners = arrival -> new ShipmentEvents.Outcome(false, arrival.items(), Optional.empty());
+        List<ItemAmount> given = new ArrayList<>();
+
+        assertFalse(later.collect(trade.shop, TradeFixture.OWNER, delivery, given::addAll).seized());
+        assertEquals(delivery.items(), given);
+    }
+
+    @Test
+    void listenersCanSeizeASafeShipmentWithTheirOwnMessage() {
+        DeliveryService later = orderedToPierWithChance("0");
+        listeners = arrival -> new ShipmentEvents.Outcome(true, arrival.items(), Optional.of("Caught by the guard"));
+
+        DeliveryService.Collection collection = later.collect(trade.shop, TradeFixture.OWNER, only(later), items -> { });
+
+        assertTrue(collection.seized());
+        assertFalse(arrivals.get(0).lostByRoll());
+        assertEquals(Optional.of("Caught by the guard"), collection.seizeMessage());
+    }
+
+    @Test
+    void listenersCanChangeWhatIsHandedOver() {
+        DeliveryService later = orderedToPierWithChance("0");
+        listeners = arrival -> new ShipmentEvents.Outcome(false, List.of(new ShipmentItem("sword", 1)), Optional.empty());
+        List<ItemAmount> given = new ArrayList<>();
+
+        later.collect(trade.shop, TradeFixture.OWNER, only(later), given::addAll);
+
+        assertEquals(List.of(new ItemAmount("sword", 1)), given);
+    }
+
+    @Test
+    void aShipmentLeftEmptyFreesItsSlotWithoutHandingOverAnything() {
+        DeliveryService later = orderedToPierWithChance("0");
+        listeners = arrival -> new ShipmentEvents.Outcome(false, List.of(), Optional.empty());
+        boolean[] handedOver = {false};
+
+        DeliveryService.Collection collection = later.collect(trade.shop, TradeFixture.OWNER, only(later),
+                items -> handedOver[0] = true);
+
+        assertFalse(collection.seized());
+        assertFalse(handedOver[0]);
+        assertTrue(later.deliveries(trade.shop).isEmpty());
     }
 
     private static final class InMemoryDeliveries implements DeliveryRepository {
