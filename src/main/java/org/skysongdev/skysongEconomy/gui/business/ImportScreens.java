@@ -3,6 +3,7 @@ package org.skysongdev.skysongEconomy.gui.business;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.entity.Player;
+import org.skysongdev.skysongEconomy.api.piers.Piers;
 import org.skysongdev.skysongEconomy.business.Business;
 import org.skysongdev.skysongEconomy.messaging.Messenger;
 import org.skysongdev.skysongEconomy.money.Wallet;
@@ -26,16 +27,18 @@ final class ImportScreens {
     final DeliveryService deliveries;
     final TradePricing pricing;
     final EconomyLogisticsSettings settings;
+    final Piers piers;
     final Wallet wallet;
     final Messenger messenger;
 
     ImportScreens(BusinessMenus menus, LedgerSelections selections, DeliveryService deliveries, TradePricing pricing,
-                  EconomyLogisticsSettings settings, Wallet wallet, Messenger messenger) {
+                  EconomyLogisticsSettings settings, Piers piers, Wallet wallet, Messenger messenger) {
         this.menus = menus;
         this.selections = selections;
         this.deliveries = deliveries;
         this.pricing = pricing;
         this.settings = settings;
+        this.piers = piers;
         this.wallet = wallet;
         this.messenger = messenger;
     }

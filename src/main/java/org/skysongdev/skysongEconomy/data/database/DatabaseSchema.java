@@ -281,7 +281,10 @@ public final class DatabaseSchema {
             new String[] {"price_modifiers", "kind", "VARCHAR(16) NOT NULL DEFAULT 'percent'"},
             // Who sold a Claim: added with player resale; earlier sales were all server sales.
             new String[] {"claim_sales", "seller", "TEXT NULL"},
-            new String[] {"claim_sales", "seller_paid_later", "BOOLEAN NOT NULL DEFAULT FALSE"});
+            new String[] {"claim_sales", "seller_paid_later", "BOOLEAN NOT NULL DEFAULT FALSE"},
+            // The receiving pier picked for an import, and its tags; NULL / empty for imports from before piers.
+            new String[] {"business_deliveries", "pier_id", "VARCHAR(64) NULL"},
+            new String[] {"business_deliveries", "tags", "VARCHAR(255) NOT NULL DEFAULT ''"});
 
     /**
      * Columns that became optional after their table first shipped: table, column, new

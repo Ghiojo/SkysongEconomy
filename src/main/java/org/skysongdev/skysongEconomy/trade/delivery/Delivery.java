@@ -7,6 +7,8 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 
 /**
  * An ordered import, filling one delivery slot of its business until it is collected. Its items
@@ -20,10 +22,12 @@ import java.util.Objects;
  * @param orderedBy      the character who ordered and paid
  * @param price          what they paid
  * @param arrivesAt      when it can be collected; real time, so it also passes while offline
+ * @param pierId         the receiving pier picked when it was ordered; empty when there were no piers
+ * @param tags           its ledger's and import's tags when it was ordered
  */
 public record Delivery(String id, String businessId, String ledgerId, String importId, String deliveryTimeId,
                        List<ItemAmount> items, CharacterRef orderedBy, BigDecimal price, Instant orderedAt,
-                       Instant arrivesAt) {
+                       Instant arrivesAt, Optional<String> pierId, Set<String> tags) {
     public Delivery {
         Objects.requireNonNull(id, "id");
         Objects.requireNonNull(businessId, "businessId");
@@ -35,6 +39,8 @@ public record Delivery(String id, String businessId, String ledgerId, String imp
         Objects.requireNonNull(price, "price");
         Objects.requireNonNull(orderedAt, "orderedAt");
         Objects.requireNonNull(arrivesAt, "arrivesAt");
+        Objects.requireNonNull(pierId, "pierId");
+        tags = Set.copyOf(tags);
     }
 
     /** @return whether it has arrived */

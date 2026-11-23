@@ -193,6 +193,14 @@ business:
     time-not-offered: "<red>That import can't be delivered with that delivery time."
     no-character: "<red>You need an active character to order imports."
     ordered: "<green>Ordered <import><green> for <white><price></white>. It arrives in <white><duration></white> (<time><green>)."
+    ordered-pier: "<green>Ordered <import><green> for <white><price></white>. It arrives at <pier> <green>in <white><duration></white> (<time><green>)."
+    choose-pier: "<red>Choose a receiving pier for this import first."
+    pier-gone: "<red>The pier <yellow><pier></yellow> doesn't exist any more. Choose another one."
+    pier-closed: "<red>The pier <yellow><pier></yellow> is closed. Choose another one."
+    # When another plugin stops an order without giving its own reason.
+    order-cancelled: "<red>This import can't be ordered right now."
+    # When it gives one: <reason> is its text.
+    order-cancelled-reason: "<red><reason>"
     button:
       name: "<gold>Imports"
       lore:
@@ -242,7 +250,31 @@ business:
     confirm:
       title: "Order this import?"
       time: "<gray>Delivery: <time> <gray>(<white><duration></white><gray>)"
-      final: "<red>Orders can't be cancelled."
+      pier: "<gray>Receiving pier: <pier>"
+      no-pier: "<red>No receiving pier chosen yet."
+      final: "<red>Orders can't be cancelled, and the pier can't be changed."
+    # The button under the import in the confirmation, and the list of piers it opens.
+    pier:
+      chosen:
+        name: "<gold>Pier: <pier>"
+        lore:
+          - "<gray>Where this import is unloaded."
+          - "<yellow>Click to choose another pier."
+      none:
+        name: "<red>Choose a receiving pier"
+        lore:
+          - "<gray>Every import is unloaded at a pier."
+          - "<gray>You can't change it after ordering."
+          - "<yellow>Click to choose."
+      menu:
+        title: "Receiving pier"
+        header:
+          name: "<gold>Receiving piers"
+          lore:
+            - "<gray>Choose where this import is unloaded."
+            - "<gray>Closed piers aren't listed."
+        selected: "<green>▶ Chosen"
+        click: "<yellow>Click to choose this pier."
   slots:
     gone: "<red>That delivery was already collected."
     not-ready: "<red>That delivery arrives in <white><duration></white>."
@@ -273,6 +305,7 @@ business:
           - "<gray>Order an import to fill it."
       item: "<white><amount></white> <gray>×</gray> <white><item></white>"
       ordered-by: "<gray>Ordered by <white><character></white>"
+      pier: "<gray>Arriving at <pier>"
       arrives: "<yellow>Arrives in <white><duration></white>"
       ready: "<green>Ready! Click to collect."
   exports:

@@ -7,6 +7,7 @@ import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.Nullable;
+import org.skysongdev.skysongEconomy.api.piers.Pier;
 import org.skysongdev.skysongEconomy.business.Business;
 import org.skysongdev.skysongEconomy.character.CharacterRef;
 import org.skysongdev.skysongEconomy.gui.ConfirmMenu;
@@ -21,6 +22,7 @@ import org.skysongdev.skysongEconomy.trade.ImportOffer;
 import org.skysongdev.skysongEconomy.trade.ImportQuote;
 import org.skysongdev.skysongEconomy.trade.Ledger;
 import org.skysongdev.skysongEconomy.trade.delivery.Delivery;
+import org.skysongdev.skysongEconomy.trade.delivery.OrderCancelledException;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -29,7 +31,8 @@ import java.util.Optional;
 /**
  * Every import of the business's selected ledgers, priced for the delivery time chosen in the
  * right column. Clicking an import asks for confirmation with its contents, delivery time,
- * price and modifiers, then orders it.
+ * price and modifiers, and, whenever there are piers, a button to choose its receiving pier,
+ * which must be chosen before it can be ordered. Then it is ordered.
  */
 final class ImportsMenu extends PagedMenu<ImportsMenu.Choice> {
     /** One import, with the ledger it comes from. */
@@ -90,7 +93,7 @@ final class ImportsMenu extends PagedMenu<ImportsMenu.Choice> {
             return MenuButton.display(icon);
         }
         ImportQuote ordered = quote.get();
-        return MenuButton.of(icon, click -> confirm(click.player(), ordered));
+        return MenuButton.of(icon, click -> confirm(click.player(), ordered, Optional.empty()));
     }
 
     @Override
@@ -124,22 +127,54 @@ final class ImportsMenu extends PagedMenu<ImportsMenu.Choice> {
         }
     }
 
-    private void confirm(Player player, ImportQuote quote) {
+    /**
+     * Asks to confirm the order, with a button to choose its receiving pier whenever there are piers.
+     *
+     * @param pierId the pier chosen so far, if any
+     */
+    private void confirm(Player player, ImportQuote quote, Optional<String> pierId) {
+        Optional<Pier> pier = pierId.flatMap(screens.piers::find).filter(Pier::open);
+        boolean needsPier = screens.deliveries.needsPier();
         List<Component> lore = new ArrayList<>(screens.contents(quote.offer().contents()));
         lore.add(Component.empty());
         lore.add(screens.messenger.render("business.imports.confirm.time", Placeholder.parsed("time", quote.deliveryTime().displayName()),
                 Placeholder.unparsed("duration", Durations.format(quote.deliveryTime().duration()))));
+        if (needsPier) {
+            lore.add(pier.map(chosen -> screens.messenger.render("business.imports.confirm.pier", pierName(chosen)))
+                    .orElseGet(() -> screens.messenger.render("business.imports.confirm.no-pier")));
+        }
         lore.addAll(screens.price(quote.price()));
         lore.add(Component.empty());
         lore.add(screens.messenger.render("business.imports.confirm.final"));
-        new ConfirmMenu(theme, theme.title("business.imports.confirm.title"),
+        ConfirmMenu menu = new ConfirmMenu(theme, theme.title("business.imports.confirm.title"),
                 theme.item(LedgerScreens.material(quote.offer().icon()), screens.messenger.renderText(quote.offer().displayName()), lore),
-                click -> order(click.player(), quote),
-                click -> open(click.player())).open(player);
+                click -> order(click.player(), quote, pier),
+                click -> open(click.player()));
+        if (needsPier) {
+            menu.withExtra(pierButton(quote, pier));
+        }
+        menu.open(player);
     }
 
-    private void order(Player player, ImportQuote quote) {
+    /** The confirmation's pier button: shows the chosen pier, and opens the list of piers. */
+    private MenuButton pierButton(ImportQuote quote, Optional<Pier> pier) {
+        Optional<String> chosen = pier.map(Pier::id);
+        ItemStack icon = pier.map(chosenPier -> theme.item(LedgerScreens.material(chosenPier.details().icon()),
+                        "business.imports.pier.chosen.name", "business.imports.pier.chosen.lore", pierName(chosenPier)))
+                .orElseGet(() -> theme.item(Material.BARRIER, "business.imports.pier.none.name",
+                        "business.imports.pier.none.lore"));
+        return MenuButton.of(icon, click -> new PierMenu(screens, chosen,
+                (player, picked) -> confirm(player, quote, Optional.of(picked.id())),
+                player -> confirm(player, quote, chosen)).open(click.player()));
+    }
+
+    private void order(Player player, ImportQuote quote, Optional<Pier> pier) {
         Business business = context.business();
+        if (screens.deliveries.needsPier() && pier.isEmpty()) {
+            screens.messenger.send(player, "business.imports.choose-pier");
+            confirm(player, quote, Optional.empty());
+            return;
+        }
         Optional<CharacterRef> character = screens.menus.context(player, business).character();
         if (character.isEmpty()) {
             screens.messenger.send(player, "business.imports.no-character");
@@ -147,16 +182,30 @@ final class ImportsMenu extends PagedMenu<ImportsMenu.Choice> {
         }
         try {
             Delivery delivery = screens.deliveries.order(business, character.get(), quote.ledger(), quote.offer(),
-                    quote.deliveryTime());
-            screens.messenger.send(player, "business.imports.ordered",
-                    Placeholder.parsed("import", quote.offer().displayName()),
+                    quote.deliveryTime(), pier.map(Pier::id).orElse(null));
+            TagResolver details = TagResolver.resolver(Placeholder.parsed("import", quote.offer().displayName()),
                     Placeholder.unparsed("price", screens.wallet.format(delivery.price())),
                     Placeholder.parsed("time", quote.deliveryTime().displayName()),
                     Placeholder.unparsed("duration", Durations.format(quote.deliveryTime().duration())));
+            if (pier.isPresent()) {
+                screens.messenger.send(player, "business.imports.ordered-pier", details, pierName(pier.get()));
+            } else {
+                screens.messenger.send(player, "business.imports.ordered", details);
+            }
+        } catch (OrderCancelledException cancelled) {
+            cancelled.reason().ifPresentOrElse(
+                    reason -> screens.messenger.send(player, "business.imports.order-cancelled-reason",
+                            Placeholder.parsed("reason", reason)),
+                    () -> screens.messenger.send(player, cancelled));
         } catch (RefusedException refusal) {
             screens.messenger.send(player, refusal);
         }
         screens.open(player, business);
+    }
+
+    /** @return {@code <pier>}: the pier's MiniMessage name */
+    private static TagResolver pierName(Pier pier) {
+        return Placeholder.parsed("pier", pier.details().displayName());
     }
 
     @Override

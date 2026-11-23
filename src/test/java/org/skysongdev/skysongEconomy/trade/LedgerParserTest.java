@@ -43,7 +43,29 @@ class LedgerParserTest {
             assertEquals(List.of("express", "regular", "slow"), List.copyOf(weapons.prices().keySet()));
             assertEquals(new ExportOffer.Target.Item("steel_ingot"), ledger.exportOffer("steel_ingots").orElseThrow().target());
             assertEquals(new ExportOffer.Target.GoodType("weapon"), ledger.exportOffer("any_weapon").orElseThrow().target());
+            assertEquals(Set.of("contraband", "weapons"), ledger.shipmentTags(weapons));
         }
+    }
+
+    @Test
+    void readsTagsOfTheLedgerAndItsImports() {
+        Ledger ledger = parse("""
+                name: Test
+                tags: [" Contraband ", ""]
+                imports:
+                  crate:
+                    contents: [{item: steel_sword}]
+                    prices: {express: "10"}
+                    tags: [weapons, contraband]
+                  plain:
+                    contents: [{item: steel_sword}]
+                    prices: {express: "10"}
+                """);
+
+        assertEquals(Set.of("contraband"), ledger.tags());
+        assertEquals(Set.of("contraband", "weapons"), ledger.shipmentTags(ledger.importOffer("crate").orElseThrow()));
+        assertEquals(Set.of("contraband"), ledger.shipmentTags(ledger.importOffer("plain").orElseThrow()));
+        assertEquals(Set.of(), parse("name: Untagged").tags());
     }
 
     @Test

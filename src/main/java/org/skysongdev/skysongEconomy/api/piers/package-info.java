@@ -1,6 +1,8 @@
 /**
  * What other plugins can compile against to work with import piers: {@link
- * org.skysongdev.skysongEconomy.api.piers.Piers} to read and manage piers, and the events about them.
+ * org.skysongdev.skysongEconomy.api.piers.Piers} to read and manage piers and see the
+ * {@link org.skysongdev.skysongEconomy.api.piers.Shipment shipments} heading to them, and the events
+ * about them, such as {@link org.skysongdev.skysongEconomy.api.piers.ShipmentOrderEvent}.
  * <p>
  * Every import a business orders is sent to one receiving pier. A pier has a loss chance: the
  * percent chance that a shipment collected there is lost. Loss modifiers raise or lower it, and
