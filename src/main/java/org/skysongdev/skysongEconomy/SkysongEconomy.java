@@ -4,6 +4,7 @@ import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.skysongdev.skysongEconomy.bootstrap.BusinessFeature;
+import org.skysongdev.skysongEconomy.bootstrap.CalendarConnection;
 import org.skysongdev.skysongEconomy.bootstrap.BusinessSystem;
 import org.skysongdev.skysongEconomy.bootstrap.ClaimFeature;
 import org.skysongdev.skysongEconomy.bootstrap.NodeFeature;
@@ -12,6 +13,7 @@ import org.skysongdev.skysongEconomy.bootstrap.NpcFeature;
 import org.skysongdev.skysongEconomy.bootstrap.PierFeature;
 import org.skysongdev.skysongEconomy.bootstrap.UpkeepFeature;
 import org.skysongdev.skysongEconomy.bootstrap.TradeInputs;
+import org.skysongdev.skysongEconomy.calendar.CalendarClock;
 import org.skysongdev.skysongEconomy.commands.SkysongEconomyCommand;
 import org.skysongdev.skysongEconomy.config.ConfigException;
 import org.skysongdev.skysongEconomy.config.ConfigSection;
@@ -69,6 +71,8 @@ public final class SkysongEconomy extends JavaPlugin {
     private UpkeepFeature upkeepFeature;
     private ClaimFeature claimFeature;
     private PierFeature pierFeature;
+    /** The IC calendar, or {@link CalendarClock#NONE} without SkysongCalendar. */
+    private CalendarClock calendar;
 
     @Override
     public void onEnable() {
@@ -90,6 +94,8 @@ public final class SkysongEconomy extends JavaPlugin {
         loadPrices(configFiles);
         MaterialIdResolver materialIds = new MaterialIdResolver(skysongItems.tags());
         Wallet wallet = new GringottsWallet();
+        // The IC calendar, when SkysongCalendar is installed.
+        calendar = CalendarConnection.connect(this);
         TradeInputs trade = new TradeInputs(importItems, prices, priceSettings, goodTypes, materialIds);
         // Receiving piers for imports; other plugins manage them through the Piers service.
         pierFeature = PierFeature.start(this, configFiles, databaseSettings(), messenger);

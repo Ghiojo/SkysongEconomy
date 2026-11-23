@@ -14,6 +14,7 @@ softdepend:
   - SkysongNPCs
   - Citizens
   - SkysongClaims
+  - SkysongCalendar
 
 commands:
   se:
