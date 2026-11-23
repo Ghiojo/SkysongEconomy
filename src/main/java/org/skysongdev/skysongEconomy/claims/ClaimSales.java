@@ -27,10 +27,19 @@ public final class ClaimSales {
 
     private final ClaimGateway claims;
     private final ClaimPrices prices;
+    private final List<Consumer<String>> listeners = new ArrayList<>();
 
     public ClaimSales(ClaimGateway claims, ClaimPrices prices) {
         this.claims = Objects.requireNonNull(claims, "claims");
         this.prices = Objects.requireNonNull(prices, "prices");
+    }
+
+    /**
+     * Tells the listener the id of every Claim whose price or sale changed here, after the change,
+     * so what shows a price (such as a Claim sign) can show the new one.
+     */
+    public void addListener(Consumer<String> listener) {
+        listeners.add(Objects.requireNonNull(listener, "listener"));
     }
 
     /** @return the asking prices */
@@ -48,7 +57,9 @@ public final class ClaimSales {
     public BigDecimal setPrice(String claimId, String text, String by) {
         ClaimView claim = require(claimId);
         refuseFree(claim);
-        return prices.set(claim.id(), text, by);
+        BigDecimal value = prices.set(claim.id(), text, by);
+        changed(claim.id());
+        return value;
     }
 
     /**
@@ -63,10 +74,12 @@ public final class ClaimSales {
         if (!prices.remove(id)) {
             throw ClaimException.about("claims.no-price", id);
         }
-        return claims.find(id).filter(this::isOurs).map(claim -> {
+        boolean wasListed = claims.find(id).filter(this::isOurs).map(claim -> {
             claims.setForSale(claim.id(), false);
             return true;
         }).orElse(false);
+        changed(id);
+        return wasListed;
     }
 
     /**
@@ -97,6 +110,7 @@ public final class ClaimSales {
         if (!isOurs(claim)) {
             claims.setForSale(claim.id(), true);
         }
+        changed(claim.id());
         return value;
     }
 
@@ -111,6 +125,7 @@ public final class ClaimSales {
             throw ClaimException.about("claims.not-for-sale", claim.id());
         }
         claims.setForSale(claim.id(), false);
+        changed(claim.id());
     }
 
     /** @return every Claim SkysongEconomy has on sale */
@@ -129,6 +144,7 @@ public final class ClaimSales {
                 .filter(claim -> prices.find(claim.id()).isPresent())
                 .map(claim -> {
                     claims.setForSale(claim.id(), true);
+                    changed(claim.id());
                     return true;
                 }).orElse(false);
     }
@@ -150,6 +166,7 @@ public final class ClaimSales {
             Optional<ClaimView> claim = claims.find(id);
             if (claim.isEmpty() || claim.get().free()) {
                 prices.remove(id);
+                changed(id);
                 changes.accept("Removed the price of " + id + ": "
                         + (claim.isEmpty() ? "SkysongClaims no longer has it" : "it is a Free Claim now"));
             }
@@ -157,6 +174,7 @@ public final class ClaimSales {
         for (ClaimView claim : listed()) {
             if (prices.find(claim.id()).isEmpty() || claim.free()) {
                 claims.setForSale(claim.id(), false);
+                changed(claim.id());
                 changes.accept("Took " + claim.id() + " off sale: it has no price");
             }
         }
@@ -165,6 +183,10 @@ public final class ClaimSales {
     /** @return whether SkysongEconomy put the Claim on sale */
     public boolean isOurs(ClaimView claim) {
         return claim.isForSaleBy(SELLER);
+    }
+
+    private void changed(String claimId) {
+        listeners.forEach(listener -> listener.accept(claimId));
     }
 
     private ClaimView require(String claimId) {

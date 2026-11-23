@@ -4,11 +4,13 @@ import org.jetbrains.annotations.Nullable;
 
 import java.math.BigDecimal;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.TreeMap;
 import java.util.function.Consumer;
@@ -27,9 +29,18 @@ import java.util.function.Consumer;
 public final class PriceDatabase {
     private final BaseValueRepository repository;
     private final Map<String, PriceExpression> expressions = new HashMap<>();
+    private final List<Runnable> listeners = new ArrayList<>();
 
     public PriceDatabase(BaseValueRepository repository) {
         this.repository = repository;
+    }
+
+    /**
+     * Runs the listener after a base value is set or removed, so prices shown elsewhere (such as on
+     * a Claim sign) can be worked out again.
+     */
+    public void addListener(Runnable listener) {
+        listeners.add(Objects.requireNonNull(listener, "listener"));
     }
 
     /**
@@ -103,6 +114,7 @@ public final class PriceDatabase {
             requireNoLoop(id);
             BigDecimal value = new ItemValues().item(id);
             repository.save(id, expression.text(), value);
+            listeners.forEach(Runnable::run);
             return value;
         } catch (PriceException e) {
             if (previous == null) {
@@ -133,6 +145,7 @@ public final class PriceDatabase {
         }
         expressions.remove(id);
         repository.delete(id);
+        listeners.forEach(Runnable::run);
         return true;
     }
 

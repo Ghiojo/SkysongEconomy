@@ -26,6 +26,7 @@ public final class FakeClaims implements ClaimGateway {
     private final Map<String, Integer> limits = new HashMap<>();
     private final Set<CharacterRef> unknown = new HashSet<>();
     private final Map<String, String> priceLines = new HashMap<>();
+    private int priceLineWrites;
 
     private static final class Stored {
         final String id;
@@ -101,6 +102,11 @@ public final class FakeClaims implements ClaimGateway {
     }
 
     /** @return the fourth line of the Claim's signs, empty when it is blank */
+    /** @return how many times a sign line was set or cleared */
+    public int priceLineWrites() {
+        return priceLineWrites;
+    }
+
     public Optional<String> priceLine(String claimId) {
         return Optional.ofNullable(priceLines.get(claimId));
     }
@@ -160,12 +166,14 @@ public final class FakeClaims implements ClaimGateway {
     public void setPriceLine(String claimId, String miniMessage) {
         require(claimId);
         priceLines.put(claimId, miniMessage);
+        priceLineWrites++;
     }
 
     @Override
     public void clearPriceLine(String claimId) {
         require(claimId);
         priceLines.remove(claimId);
+        priceLineWrites++;
     }
 
     private Stored require(String claimId) {

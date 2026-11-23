@@ -12,7 +12,7 @@ The full agreed design is in the project's design file `claims-integration-desig
 | Connecting to SkysongClaims | **Done** (this page) |
 | Claim prices and server listings (`/se claim price`, `sell`, `unsell`, `list`) | **Done** |
 | Claim modifiers (`claim-type:`, `claim:`, `on:claims`, flat amounts) | **Done** |
-| The price on sign line 4 | Not yet |
+| The price on sign line 4 | **Done** |
 | Buying, and `ClaimPurchaseEvent` | Not yet |
 | Player resale | Not yet |
 
@@ -97,6 +97,35 @@ modifier type key, never the table:
 | `applying(claim)` | Every modifier that changes one Claim's price now |
 
 To follow changes (for example to redraw a price), use `PriceModifiers.addListener`.
+
+## The price on sign line 4
+
+SkysongClaims keeps the fourth line of every Claim sign for SkysongEconomy. `claims/SignPriceUpdater` writes there
+**what a buyer pays** (the asking price plus every modifier's share) while SkysongEconomy has the Claim on sale, and
+blanks it otherwise: a Claim nobody sells, one that is owned, or one another plugin is selling.
+
+```yaml
+# messages.yml
+claims:
+  sign-price: "<gold><price>"                 # e.g. "1,950 Pouches"; signs fit about 15 characters
+  sign-price-raised: "<gold><price> <red>↑"   # used when modifiers add to the asking price
+```
+
+SkysongClaims saves the line, so it is only written when its text changes; the last text written for each Claim is
+kept in memory. What makes it write again:
+
+| What happened | Claims redrawn |
+| --- | --- |
+| A price set or cleared, a Claim put on sale or taken off, an abandoned Claim back on sale | That Claim |
+| A sign linked to a Claim (new signs start blank) | That Claim, always written |
+| A Claim changed type, or its sale changed in SkysongClaims | That Claim |
+| A modifier with `on:claims` added, replaced or removed | Every Claim on sale |
+| Such a modifier expires | Every Claim on sale, within a minute (expired modifiers are looked for once a minute) |
+| A base value set or removed with `/se ledger` | Every Claim on sale |
+| SkysongEconomy starting, or SkysongClaims reloading | Every Claim with a price or on sale, always written |
+
+If a Claim on sale has a price that can't be worked out (it names an item whose base value was removed), its line
+is left blank and the console says why.
 
 ## The gateway
 
