@@ -92,6 +92,8 @@ nodes feature and other plugins use it to reach businesses.
 | `nodes.random` | Random tables (`nodes/random/*.yml`). |
 | `nodes.farm` | Farm resources and types, plantings, primer returns, `FarmHarvester`. |
 | `nodes.harvest` | `RandomHarvester`, `HarvestCost`, `HarvestPayer`, `NodeAccess`. |
+| `nodes.modifiers` | Calendar node modifiers (`nodes/modifiers/*.yml`): `CalendarModifier`, its parser, `CalendarWindow`, `NodeTarget`, `NodeModifiers`. |
+| `calendar` | The IC calendar as the plugin sees it: `CalendarClock` (`NONE` without SkysongCalendar), `CalendarDay`, `CalendarNames`, `CalendarMoment`. No SkysongCalendar classes. |
 | `loot` | Weighted loot: groups, outputs, the roller, and exact odds. No server classes. |
 | `blocks` | `BlockGuard` / `GuardedBlock`: blocks a feature holds, protected by one listener. |
 | `character` | Small interfaces over SkysongStats: `CharacterRef`, `CharacterDirectory`, `DowntimeWallet`, `SkillCatalog`, `SkillLevels`, `SkillProgression`. |

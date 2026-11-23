@@ -22,6 +22,7 @@ Code map:
 | Farm | `nodes/farm/*`: `FarmResource`, `FarmType`, `FarmPlots`, `FarmHarvester`, `PrimerReturns` |
 | Paying | `nodes/harvest/HarvestCost`, `HarvestPayer`, `NodeAccess` |
 | Menus | `gui/node/NodeMenus`, `NodeGatherMenu`, `FarmMenu`, opened by `listeners/NodeInteractListener` |
+| Calendar modifiers | `nodes/modifiers/*`: `CalendarModifier`, `CalendarModifierParser`, `CalendarWindow`, `NodeTarget`, `NodeModifiers`; `calendar/*` |
 | Nameplates | `listeners/NodeNameplates` |
 | Item tags | `listeners/NodeItemTags`, `items/PrimerItems` |
 | Commands | `commands/node/*` |
@@ -214,7 +215,7 @@ The farm nameplate has a second line showing what is planted, or "Empty" (`node.
 
 ## Reloading
 
-`/se node reload` reads the loot groups, random tables, farm resources and farm types again, in that order, and
+`/se node reload` reads the loot groups, random tables, farm resources, farm types and calendar modifiers again, in that order, and
 swaps them in (`NodeTables.replace`). Broken files are skipped with a console warning and the reply says how many
 warnings there were. Nodes look their table up on every use, so they pick up the new files at once. A node whose
 table or type no longer loads shows `node.nameplate-unavailable` and can't be used until it loads again.
@@ -271,4 +272,79 @@ is boosted and uses it once: one charge when the item has SkysongItems charges, 
 - An item without the tags is refused, and so is a booster of another type or one with no charges left; each has
   its own message under `node.booster` in `messages.yml`.
 - An effect that can't be read is refused and the console names the item.
-- `/se node odds` does not count boosters.
+- `/se node odds` does not count boosters. It can count [calendar modifiers](#calendar-modifiers-nodesmodifiersidyml).
+
+## Calendar modifiers: `nodes/modifiers/<id>.yml`
+
+A calendar modifier changes what nodes give at a time of the IC year: in a season, between two dates, or during the
+festival. It works on every node kind, random and farm. The IC date comes from **SkysongCalendar**, which is
+optional: without it the folder isn't read (one console warning if it has files) and nothing changes.
+
+```yaml
+# nodes/modifiers/winter-crops.yml
+name: "<aqua>Winter frost"            # what players see (MiniMessage); default the file name
+
+when:                                 # on when ANY of these holds today's IC date
+  seasons: ["Vinse'er"]               # SkysongCalendar's seasons, by name or id (vinse_er)
+  dates:                              # days of months, every IC year
+    - {from: "Rana 10", to: "Litoria 5"}   # both ends included; a range may wrap past the new year
+    - {day: "Celestine 1"}            # one day (write day:, not on:, which YAML reads as true)
+  festival: true                      # the festival days that close the year
+
+applies-to:                           # a node is hit when ANY line names it
+  random-tables: [herbs]              # random table ids
+  random-types: [foraging]            # random tables' type (the one boosters use)
+  farm-types: [crop]                  # farm type ids
+  farm-resources: [wheat, berries]    # what is planted
+  nodes: [north_field]                # single node ids
+  tiers: [1, 2, 3]                    # optional: only these tiers; default every tier
+
+effect: "max-50%; rolls-1; chance-50%"   # same parts as booster effects, or: dormant
+```
+
+**Names.** Seasons and months are never written in SkysongEconomy: each name in a file is matched, ignoring case,
+against the installed SkysongCalendar's own names and ids. A name it doesn't know skips the file with a warning that
+lists the valid ones. SkysongCalendar's seasons go Florescia (spring), Su'untah (summer), Altrue (autumn), Vinse'er
+(winter); the festival belongs to Vinse'er, so `seasons: [vinse_er]` covers it too.
+
+**Effect.** The same text as a [booster effect](#boosters) (`min`, `max`, `rolls`, `chance`), or `dormant`:
+
+- Every modifier on for a harvest **adds up** with the others and with the booster, part by part, then applies once:
+  winter `max-50%` and a booster `max+25%` give `max-25%`.
+- `dormant` stops the harvest: nothing is charged and the booster isn't used (`node.harvest.dormant`). Planting and
+  taking primers out still work.
+
+**What is checked.** A broken file (no `when`, no `applies-to`, an unknown season or month, a day past the month's
+end, a tier outside 1 to 5, an effect that can't be read) is skipped with a warning. Tables, types and resources in
+`applies-to` that didn't load only warn, so a modifier can name a file added later. Node ids aren't checked.
+
+**When it applies.** The modifiers and today's date are read on every harvest, so `/se node reload` and a new IC
+day take effect at once.
+
+**Opting a node out.** `/se node setmodifiers <id> off` makes one node (a greenhouse, say) ignore every modifier;
+`on` puts it back. It is saved on the node (`nodes.modifiers_enabled`) and shown in `/se node info`.
+
+**What players see.**
+
+- Each tier button in the node menus lists the modifiers on for it (`node.gather.tier.modifier`), and its item lines
+  already show the changed amounts, chances and roll counts. A dormant tier is locked with
+  `node.gather.tier.dormant`.
+- The nameplate gets a last line naming the first modifier on the node (at any tier it offers), plus "+N more"
+  (`node.nameplate-modifier`, `node.nameplate-modifier-more`). Nameplates are redrawn at every new IC day and when
+  SkysongCalendar reloads. `nameplate.show-modifiers: false` in `nodes/settings.yml` hides the line.
+
+**Staff commands.**
+
+- `/se node modifiers [id]`: today's IC date and every modifier on, or the ones hitting one node.
+- `/se node odds <table> <tier> [when]`: with `when` (`today`, a season, a day like `Rana 10`, or `festival`), the
+  modifiers on then are listed and counted in the odds. For a whole season only modifiers that list that season
+  count, and modifiers naming single nodes never do.
+
+**Other plugins.** `NodeHarvestEvent#getModifiers()` lists the ids of the modifiers that changed a harvest.
+
+Code: `CalendarModifierParser` reads a file; `CalendarWindow` (seasons, `DateRange`s, festival) and `NodeTarget`
+(`applies-to`) decide when and where; `NodeModifiers` finds the ones on for a `NodeFacts` (node id, kind, table or
+type, random type, planted resource, opted out or not) and returns `ActiveModifiers` (added-up `effect()`,
+`dormant()`, `ids()`). The harvesters call it in `harvest`, and offer `modifiers(node, tier)` and
+`modifiersOnNode(node)` for the menus and nameplates. The calendar itself is `calendar/CalendarClock`
+(`integration/skysongcalendar/SkysongCalendarAdapter`, or `CalendarClock.NONE`).

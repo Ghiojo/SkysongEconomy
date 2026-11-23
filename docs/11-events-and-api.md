@@ -18,7 +18,7 @@ Other plugins can listen to these like any Bukkit event.
 | `ShipmentOrderEvent` (in `api/piers`) | An import is about to be ordered; nothing paid yet | Yes: nothing is paid, the player sees `getCancelMessage()` or the default | `getShipment()`, `getPier()`, `getPlayer()`, `setCancelMessage(...)` |
 | `ShipmentArriveEvent` (in `api/piers`) | A delivery is being collected, right after its pier's loss roll | Yes: cancelled = seized (lost, no refund); starts cancelled when the roll lost it | `getShipment()`, `getPier()`, `getCollector()`, `getLossChance()`, `getRoll()`, `isLostByRoll()`, `getItems()`/`setItems(...)`, `setSeizeMessage(...)` |
 | `ShipmentCollectedEvent` (in `api/piers`) | The shipment was handed over or seized; slot freed | No | `getShipment()`, `getPier()`, `getCollector()`, `getOutcome()`, `getItems()`, `getLossChance()`, `isLostByRoll()` |
-| `NodeHarvestEvent` | Someone harvested at a node: paid and rolled, items handed over right after | No | `getPlayer()`, `getNode()`, `getCharacter()`, `getTier()`, `getPaid()` (`HarvestCost`), `getItems()` |
+| `NodeHarvestEvent` | Someone harvested at a node: paid and rolled, items handed over right after | No | `getPlayer()`, `getNode()`, `getCharacter()`, `getTier()`, `getPaid()` (`HarvestCost`), `getItems()`, `getModifiers()` (ids of the calendar modifiers that changed it) |
 
 The shift message is not shown in game; `ShiftStartEvent.getMessage()` is meant for a Discord bridge or similar.
 
@@ -126,6 +126,17 @@ adapter, and `SkysongClaimsAdapter.connect` refuses an API older than `REQUIRED_
 `claims/ClaimGateway` (read Claims as `ClaimView`, `canOwn`, `addOwner`, `clearOwners`, `setForSale`, the sign price
 line), which is all the Claim rules see. Version checks for both SkysongNPCs and SkysongClaims use
 `integration/ApiVersion`. See [Claims](15-claims.md).
+
+### SkysongCalendar: `integration/skysongcalendar/SkysongCalendarAdapter`
+
+SkysongCalendar is optional. `bootstrap/CalendarConnection` checks that the plugin is enabled before anything loads the
+adapter, and `SkysongCalendarAdapter.connect` refuses an API older than `REQUIRED_API` (1.0.0); either way the plugin
+gets `CalendarClock.NONE` instead and nothing changes with the date. The adapter implements `calendar/CalendarClock`:
+`today()` (from `calendar().today()`, as a `CalendarDay` of season id, month id or festival, and day), `names()` (the
+seasons and months in order, with their display names, built from SkysongCalendar's `Season` and `Month`, so config
+files are always checked against SkysongCalendar's own names) and `whenDayChanges` (a `CalendarDayListener` on
+`IcDayChangeEvent` and `CalendarReloadEvent`). Ids are the enum names in lower case (`VINSE_ER` is `vinse_er`). See
+[calendar modifiers](07-nodes.md#calendar-modifiers-nodesmodifiersidyml).
 
 ### Citizens: `integration/citizens/CitizensNpcs`
 

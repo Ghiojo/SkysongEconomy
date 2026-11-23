@@ -10,6 +10,7 @@
 | SkysongNPCs (API 0.23.0 or newer; 0.24.0 for the upkeep sheet line) | Optional (`softdepend`) | Business NPCs, NPC upkeep, and letting NPC access name business groups as `economy:<business>/<group>`. Without it the console says "SkysongNPCs is not installed: business NPCs are off" and everything else works. An older SkysongNPCs is refused with a console error that names the API it has. | `integration/skysongnpcs/SkysongNpcsAdapter` (the only class that calls its API), `integration/skysongnpcs/BusinessGroupProvider` |
 | Citizens 2.0.43 | Optional (`softdepend`) | NPC upkeep only: finding the NPC a player looks at, where an NPC stands, and its body for the Unmaintained line under its name. SkysongNPCs needs it anyway. | `integration/citizens/CitizensNpcs`, `integration/citizens/UpkeepNameLines` |
 | SkysongClaims (API 1.0.0 or newer) | Optional (`softdepend`) | Pricing, selling and buying its Claims, and the price on line 4 of Claim signs. Without it the console says "SkysongClaims is not installed: Claim sales are off" and everything else works. An older SkysongClaims is refused with a console error that names the API it has. | `integration/skysongclaims/SkysongClaimsAdapter` (the only class that calls its API) |
+| SkysongCalendar (API 1.0.0 or newer) | Optional (`softdepend`) | The IC date, seasons and months for [calendar node modifiers](07-nodes.md#calendar-modifiers-nodesmodifiersidyml), and redrawing node nameplates at each new IC day. Without it the console says "SkysongCalendar is not installed: nothing changes with the IC date", `nodes/modifiers` isn't read, and everything else works. An older one is refused with a console error. | `integration/skysongcalendar/SkysongCalendarAdapter` (the only class that calls its API), `CalendarDayListener`, `bootstrap/CalendarConnection` |
 | PlaceholderAPI | Optional (`softdepend`) | `%skysongeconomy_tokens%` placeholders. | `integration/placeholderapi/TokenExpansion` |
 | CMI | Optional (`softdepend`) | Whether a player is AFK, so shift and training time stops. Called by reflection because CMI has no Maven artifact. | `integration/cmi/CmiAfkCheck` |
 
@@ -29,7 +30,7 @@ Dependencies in `build.gradle` are all `compileOnly`, because the plugins above 
   `com.github.Ghiojo:SkysongNPCs:1.2.0` (API 0.25.0) from JitPack. SkysongNPCs 1.2.0 itself needs Skysong_Items
   built from tag 1.3.0 or newer, and so does NPC upkeep (its item mark is kept through transforms).
   `com.github.Ghiojo:SkysongClaims:1.0.0` (API 1.0.0; JitPack publishes its `api` module under the repository's
-  name) is also from JitPack. Ghiojo repositories are always `com.github.Ghiojo:<RepoName>:<tag>`, with no `:api` module.
+  name) and `com.github.Ghiojo:SkysongCalendar:1.0.0` (API 1.0.0) are also from JitPack. Ghiojo repositories are always `com.github.Ghiojo:<RepoName>:<tag>`, with no `:api` module.
 - `me.clip:placeholderapi:2.11.6` from repo.extendedclip.com
 
 Tests use JUnit 5 and SnakeYAML only.

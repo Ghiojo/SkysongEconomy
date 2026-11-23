@@ -243,6 +243,7 @@ The text is `business.nameplate` in `messages.yml`.
 | `menu.info`, `tier`, `locked-tier`, `empty-plot`, `take-out` | Node menu items |
 | `farm.primer-removal-downtime` | Downtime taking a primer out costs; 0 is free |
 | `nameplate.*` | As in `businesses/block.yml`; text is `node.nameplate` (`-farm`, `-unavailable`) |
+| `nameplate.show-modifiers` | A last nameplate line naming the calendar modifiers on the node (`node.nameplate-modifier`); default `true` |
 
 ## Node folders
 
@@ -252,6 +253,7 @@ The text is `business.nameplate` in `messages.yml`.
 | `nodes/random/<id>.yml` | `nodes/random/RandomTableParser` | `name`, `type`, `skill`, `tiers.<n>.{cost, public-cost, guaranteed, chances, rolls}` |
 | `nodes/farm/resources/<id>.yml` | `nodes/farm/FarmResourceParser` | `name`, `primer.{item, amount}`, `tiers.<n>.{cost, guaranteed, chances, rolls}` |
 | `nodes/farm/types/<id>.yml` | `nodes/farm/FarmTypeParser` | `name`, `skill`, `resources` |
+| `nodes/modifiers/<id>.yml` | `nodes/modifiers/CalendarModifierParser` | `name`, `when.{seasons, dates[{from, to} or {day}], festival}`, `applies-to.{random-tables, random-types, farm-types, farm-resources, nodes, tiers}`, `effect` (or `dormant`); only read with SkysongCalendar |
 
 Full examples are in [Nodes](07-nodes.md). File names must be valid ids (lower-case letters, digits, `_`, `-`).
 
