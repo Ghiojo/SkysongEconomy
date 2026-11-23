@@ -114,6 +114,25 @@ public final class RandomHarvester {
         return table(node).type();
     }
 
+    /**
+     * @return the calendar modifiers on today for a harvest at that tier of the node
+     * @throws NodeException {@code node.harvest.unavailable} when the node's table isn't loaded
+     */
+    public ActiveModifiers modifiers(Node node, RandomTier tier) {
+        return deps.modifiers().activeFor(facts(node, table(node)), tier.tier());
+    }
+
+    /** @return the calendar modifiers on today for any tier the node offers; none when its table isn't loaded */
+    public ActiveModifiers modifiersOnNode(Node node) {
+        return deps.tables().randomTable(node)
+                .map(table -> deps.modifiers().activeUpTo(facts(node, table), node.tier()))
+                .orElse(ActiveModifiers.NONE);
+    }
+
+    private static NodeFacts facts(Node node, RandomTable table) {
+        return NodeFacts.random(node.id(), table.id(), table.type()).withModifiers(node.modifiersEnabled());
+    }
+
     /** Gathers once without a booster; see {@link #harvest(Node, CharacterRef, int, Optional)}. */
     public Harvest harvest(Node node, CharacterRef character, int tierNumber) {
         return harvest(node, character, tierNumber, Optional.empty());
@@ -140,9 +159,7 @@ public final class RandomHarvester {
         if (!deps.levels().reaches(character, table.skill(), level)) {
             throw new NodeException("node.harvest.low-level", Map.of("level", level, "skill", table.skill()));
         }
-        NodeFacts facts = NodeFacts.random(node.id(), table.id(), table.type())
-                .withModifiers(node.modifiersEnabled());
-        ActiveModifiers active = deps.modifiers().activeFor(facts, tier.tier());
+        ActiveModifiers active = deps.modifiers().activeFor(facts(node, table), tier.tier());
         active.dormant().ifPresent(dormant -> {
             throw new NodeException("node.harvest.dormant", Map.of("modifier", dormant.name()));
         });

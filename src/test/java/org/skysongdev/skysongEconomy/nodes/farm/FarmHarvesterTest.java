@@ -18,6 +18,7 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class FarmHarvesterTest {
     private final FarmWorld world = new FarmWorld();
@@ -75,6 +76,15 @@ class FarmHarvesterTest {
 
         assertEquals(List.of(new ItemAmount("wheat", 2)), harvest.items(), "5 - 60% = 2");
         assertEquals(List.of("winter-wheat"), harvest.modifiers(), "barley's modifier doesn't hit wheat");
+    }
+
+    @Test
+    void anEmptyFarmHasNoModifiersOnItsNameplate() {
+        world.modifierFiles = new FileRegistry<>(List.of(winterOn("wheat", "max-1")));
+
+        assertTrue(harvester.modifiersOnNode(world.field).isEmpty());
+        world.plantWheat();
+        assertEquals(List.of("winter-wheat"), harvester.modifiersOnNode(world.field).ids());
     }
 
     @Test

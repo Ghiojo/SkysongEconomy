@@ -19,6 +19,11 @@ public interface CalendarClock {
         public Optional<CalendarNames> names() {
             return Optional.empty();
         }
+
+        @Override
+        public void whenDayChanges(Runnable action) {
+            // No calendar, no new days.
+        }
     };
 
     /** @return today's IC day; empty without a calendar */
@@ -26,4 +31,10 @@ public interface CalendarClock {
 
     /** @return the calendar's seasons and months; empty without a calendar */
     Optional<CalendarNames> names();
+
+    /**
+     * Runs {@code action} on the main thread whenever a new IC day starts, and when the calendar
+     * reloads. Without a calendar it never runs.
+     */
+    void whenDayChanges(Runnable action);
 }

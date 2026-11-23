@@ -34,4 +34,9 @@ public final class FixedCalendar implements CalendarClock {
     public Optional<CalendarNames> names() {
         return Optional.of(CalendarNamesTest.atmos());
     }
+
+    @Override
+    public void whenDayChanges(Runnable action) {
+        // Tests change the day with set.
+    }
 }

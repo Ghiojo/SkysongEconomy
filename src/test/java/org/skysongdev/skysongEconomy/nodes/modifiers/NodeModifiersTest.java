@@ -58,6 +58,20 @@ class NodeModifiersTest {
     }
 
     @Test
+    void theNameplateSeesModifiersOnAnyTierUpToTheNodes() {
+        CalendarModifier highTiers = new CalendarModifier("deep-frost", "Deep frost",
+                new CalendarWindow(Set.of("vinse_er"), List.of(), false),
+                new NodeTarget(Set.of(), Set.of(), Set.of("crop"), Set.of(), Set.of(), Set.of(3)), YieldEffect.parse("max-1"),
+                false);
+        FileRegistry<CalendarModifier> files = new FileRegistry<>(List.of(highTiers));
+        NodeModifiers modifiers = new NodeModifiers(() -> files, FixedCalendar.on("rana", 3));
+
+        assertTrue(modifiers.activeUpTo(FIELD, 2).isEmpty());
+        assertEquals(List.of("deep-frost"), modifiers.activeUpTo(FIELD, 3).ids());
+        assertTrue(modifiers.activeUpTo(FIELD.withModifiers(false), 5).isEmpty());
+    }
+
+    @Test
     void aNodeWithModifiersOffGetsNone() {
         FileRegistry<CalendarModifier> files = new FileRegistry<>(List.of(winter("frost", "max-50%")));
         NodeModifiers modifiers = new NodeModifiers(() -> files, FixedCalendar.on("rana", 3));

@@ -750,6 +750,10 @@ node:
   nameplate: "<white><node>, Tier <tier>"
   nameplate-farm: "<white><node>, Tier <tier>\n<gray><planted>"
   nameplate-unavailable: "<gray><node>, Tier <tier> <red>(unavailable)"
+  # An extra nameplate line while calendar modifiers (nodes/modifiers) are on for the node: the first one's name,
+  # then <more> when there are others. Hide it with nameplate.show-modifiers: false in nodes/settings.yml.
+  nameplate-modifier: "<aqua>✦ <modifier><more>"
+  nameplate-modifier-more: "<gray> +<count> more"
   owner-public: "everyone"
   owner-unowned: "nobody"
   not-found: "<red>There is no node with the id <yellow><id></yellow>."
@@ -831,6 +835,10 @@ node:
       click: "<yellow>Click to gather."
       business-only: "<red>Not offered on public nodes."
       too-low: "<red>Your skill level is too low."
+      # A calendar modifier (nodes/modifiers) on today: its name and what it changes, like "max-50%; rolls-1".
+      # The amounts and chances below it already include it.
+      modifier: "<aqua>✦ <modifier><gray>: <white><effect>"
+      dormant: "<red>Dormant right now: <modifier>"
   harvest:
     unavailable: "<red>This node can't be used right now: its table or farm type didn't load. Tell staff."
     gone: "<red>That node no longer exists."

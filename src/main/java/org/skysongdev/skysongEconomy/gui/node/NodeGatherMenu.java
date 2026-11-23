@@ -64,7 +64,8 @@ final class NodeGatherMenu extends HarvestMenu {
         } catch (RefusedException businessOnly) {
             cost = Optional.empty();
         }
-        return tierButton(tier.tier(), cost, harvester.requiredLevel(tier), table.skill(), tier.output());
+        return tierButton(new TierChoice(tier.tier(), cost, harvester.requiredLevel(tier), table.skill(), tier.output(),
+                harvester.modifiers(node, tier)));
     }
 
     private Component line(String key, TagResolver... placeholders) {

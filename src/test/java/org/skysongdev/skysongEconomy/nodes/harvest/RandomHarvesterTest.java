@@ -217,6 +217,17 @@ class RandomHarvesterTest {
     }
 
     @Test
+    void menusAndNameplatesCanAskWhichModifiersAreOn() {
+        Node node = businessNode(3);
+        modifierFiles = new FileRegistry<>(List.of(winterOnMining("frost", "max-1")));
+
+        assertEquals(List.of("frost"), harvester.modifiers(node, mine().tier(2).orElseThrow()).ids());
+        assertEquals(List.of("frost"), harvester.modifiersOnNode(node).ids());
+        nodes.setModifiersEnabled(node, false);
+        assertTrue(harvester.modifiersOnNode(node).isEmpty());
+    }
+
+    @Test
     void aNodeWithModifiersTurnedOffIgnoresThem() {
         Node node = businessNode(3);
         tokens.add(miner, 5);

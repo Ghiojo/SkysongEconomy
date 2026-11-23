@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Supplier;
+import java.util.stream.IntStream;
 
 /**
  * Finds the calendar modifiers on for a harvest: the loaded files whose window holds today's IC
@@ -48,6 +49,19 @@ public final class NodeModifiers {
         }
         return new ActiveModifiers(activeOn(day).stream().filter(modifier -> modifier.target().matches(node, tier))
                 .toList());
+    }
+
+    /**
+     * @return the modifiers hitting the node today at any tier up to {@code maxTier}, such as for
+     *         its nameplate; none when the node has them turned off
+     */
+    public ActiveModifiers activeUpTo(NodeFacts node, int maxTier) {
+        Optional<CalendarDay> today = calendar.today();
+        if (today.isEmpty() || !node.enabled()) {
+            return ActiveModifiers.NONE;
+        }
+        return new ActiveModifiers(activeOn(today.get()).stream().filter(modifier ->
+                IntStream.rangeClosed(1, maxTier).anyMatch(tier -> modifier.target().matches(node, tier))).toList());
     }
 
     /** @return every modifier on, on {@code day}, whatever it hits; none without a calendar */
