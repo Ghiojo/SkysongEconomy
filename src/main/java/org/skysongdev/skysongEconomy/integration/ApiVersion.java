@@ -1,8 +1,8 @@
-package org.skysongdev.skysongEconomy.integration.skysongnpcs;
+package org.skysongdev.skysongEconomy.integration;
 
 /**
- * A plugin API's version, such as SkysongNPCs' {@code 0.23.0}, to check that the installed plugin
- * is new enough before calling methods an older one does not have.
+ * A plugin API's version, such as SkysongNPCs' {@code 0.23.0} or SkysongClaims' {@code 1.0.0}, to
+ * check that the installed plugin is new enough before calling methods an older one does not have.
  */
 public record ApiVersion(int major, int minor, int patch) implements Comparable<ApiVersion> {
     /** What an unreadable version counts as: older than everything. */

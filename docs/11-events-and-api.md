@@ -35,6 +35,7 @@ Get the plugin instance (`(SkysongEconomy) Bukkit.getPluginManager().getPlugin("
 | `getBusinessFeature().system()` | `Optional<BusinessSystem>`, empty when businesses are disabled |
 | `getNodeFeature().nodes()` | `Optional<NodeService>`, empty when nodes are disabled |
 | `getModuleFeature().modules()` | `Optional<BusinessModules>`: the modules each business picked (`of`, `has`, `groups`, `pool`, `pick`, `clear`) and every module file with its effects (`module`, `modules`); empty when businesses are disabled or `businesses/modules.yml` can't be read |
+| `getClaimFeature().gateway()` | `Optional<ClaimGateway>`: the way into SkysongClaims, empty when it is not installed or too old |
 | `getNpcFeature().gateways()` | `Optional<NpcFeature.Gateways>`: the gateways into SkysongNPCs (NPCs, sheets, access, and `menu` for buttons in its NPC menu), empty when it is not installed or businesses are disabled |
 | `getNpcFeature().progression()` | `Optional<NpcProgression>`: what each business NPC is owed (`owed`) and bringing it in line (`sync`) |
 | `getNpcFeature().npcAccess()` | `Optional<BusinessNpcAccess>`: what each access group may do with a business's NPCs (`grants`, `allowed`, `set`, `toggle`) |
@@ -109,6 +110,14 @@ the Upkeep menu button (`UpkeepMenuButton`, `menu().registerButton`, `access().m
 (`items().isCurrent`, `storedNpc`), the events `NpcDeleteEvent`, `NpcPickupEvent` and `NpcPlaceEvent`, and the
 sheet footer `skysongeconomy:upkeep` (`UpkeepSheetLine`, `sheets().registerFooter`, API 0.24.0 or newer, skipped
 with a warning on older ones). See [NPC upkeep](14-npc-upkeep.md).
+
+### SkysongClaims: `integration/skysongclaims/SkysongClaimsAdapter`
+
+SkysongClaims is optional. `bootstrap/ClaimFeature` checks that the plugin is enabled before anything loads the
+adapter, and `SkysongClaimsAdapter.connect` refuses an API older than `REQUIRED_API` (1.0.0). The adapter implements
+`claims/ClaimGateway` (read Claims as `ClaimView`, `canOwn`, `addOwner`, `clearOwners`, `setForSale`, the sign price
+line), which is all the Claim rules see. Version checks for both SkysongNPCs and SkysongClaims use
+`integration/ApiVersion`. See [Claims](15-claims.md).
 
 ### Citizens: `integration/citizens/CitizensNpcs`
 

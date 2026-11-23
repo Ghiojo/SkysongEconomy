@@ -24,6 +24,7 @@ If you are new to the code, read these in order:
 | [Businesses](05-businesses.md) | Business types, tiers, owners (including `#server`), workers, skill picks, access groups, the vault, shifts, training, Gathering Tokens, the business menu, business NPCs (slots, what an NPC receives, who may use them), modules and their effects |
 | [Economy and Logistics](06-economy-and-logistics.md) | Trade ledgers, imports and deliveries, exports, slots |
 | [Nodes](07-nodes.md) | Random nodes, farm nodes, loot groups, primers, harvest costs, boosters, `/se node` |
+| [Claims](15-claims.md) | SkysongClaims Claims: connecting to SkysongClaims (prices, sales and sign prices are being built) |
 | [NPC upkeep](14-npc-upkeep.md) | Items NPCs eat every cycle, the Upkeep chest, Unmaintained (name line, sheet line, menu, item trait), the crafting repair, `/se upkeep` |
 
 ## Reference

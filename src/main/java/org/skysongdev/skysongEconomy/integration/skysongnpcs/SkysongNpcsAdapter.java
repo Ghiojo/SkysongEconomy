@@ -21,6 +21,7 @@ import org.skysongdev.skysongEconomy.business.npc.PicksGiven;
 import org.skysongdev.skysongEconomy.business.npc.PointsGiven;
 import org.skysongdev.skysongEconomy.business.npc.SpawnPoint;
 import org.skysongdev.skysongEconomy.character.CharacterRef;
+import org.skysongdev.skysongEconomy.integration.ApiVersion;
 import org.skysongdev.skysongnpcs.api.ability.NpcAbility;
 import org.skysongdev.skysongnpcs.api.SkysongNpcsApi;
 import org.skysongdev.skysongnpcs.api.access.AccessGrant;

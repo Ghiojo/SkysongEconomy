@@ -1,6 +1,7 @@
 package org.skysongdev.skysongEconomy.integration.skysongnpcs;
 
 import net.kyori.adventure.text.minimessage.MiniMessage;
+import org.skysongdev.skysongEconomy.integration.ApiVersion;
 import org.skysongdev.skysongEconomy.upkeep.UpkeepNpcs;
 import org.skysongdev.skysongnpcs.api.SkysongNpcsApi;
 
