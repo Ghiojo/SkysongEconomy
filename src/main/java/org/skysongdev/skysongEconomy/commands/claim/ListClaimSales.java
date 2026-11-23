@@ -2,15 +2,15 @@ package org.skysongdev.skysongEconomy.commands.claim;
 
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.command.CommandSender;
+import org.skysongdev.skysongEconomy.claims.ClaimQuote;
 import org.skysongdev.skysongEconomy.claims.ClaimView;
-import org.skysongdev.skysongEconomy.prices.PriceException;
+import org.skysongdev.skysongEconomy.messaging.RefusedException;
 
-import java.math.BigDecimal;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
-/** /se claim list: every Claim SkysongEconomy has on sale, with its price. */
+/** /se claim list: every Claim SkysongEconomy has on sale, with what a buyer pays for it now. */
 final class ListClaimSales extends ClaimSubCommand {
     ListClaimSales(ClaimCommandSupport support) {
         super(support, "claim", "list", "", 0, ClaimCommand.ADMIN);
@@ -25,15 +25,16 @@ final class ListClaimSales extends ClaimSubCommand {
         }
         support.messenger.send(sender, "claims.list-header", Placeholder.unparsed("count", Integer.toString(listed.size())));
         for (ClaimView claim : listed) {
-            Optional<BigDecimal> value;
+            Optional<ClaimQuote> quote;
             try {
-                value = support.sales.prices().value(claim.id());
-            } catch (PriceException e) {
-                value = Optional.empty();
+                quote = Optional.of(support.pricing.quote(claim.id()));
+            } catch (RefusedException e) {
+                quote = Optional.empty();
             }
-            if (value.isPresent()) {
+            if (quote.isPresent()) {
                 support.messenger.send(sender, "claims.list-entry", ClaimCommandSupport.claim(claim.id()),
-                        Placeholder.unparsed("type", claim.typeId()), support.price(value.get()));
+                        Placeholder.unparsed("type", claim.typeId()), support.price(quote.get().total()),
+                        Placeholder.unparsed("asking", support.wallet.format(quote.get().askingPrice())));
             } else {
                 support.messenger.send(sender, "claims.list-entry-broken", ClaimCommandSupport.claim(claim.id()),
                         Placeholder.unparsed("type", claim.typeId()));

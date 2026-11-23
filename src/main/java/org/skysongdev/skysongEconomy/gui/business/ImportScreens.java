@@ -101,6 +101,7 @@ final class ImportScreens {
 
     private static Component modifierLine(Messenger messenger, String key, PriceModifier modifier) {
         return messenger.render(key, Placeholder.parsed("name", modifier.displayName()),
-                Placeholder.unparsed("percent", PriceModifiers.signed(modifier.percent())));
+                Placeholder.unparsed("amount", modifier.amount().signed()),
+                Placeholder.unparsed("percent", PriceModifiers.signed(modifier.amount().value())));
     }
 }

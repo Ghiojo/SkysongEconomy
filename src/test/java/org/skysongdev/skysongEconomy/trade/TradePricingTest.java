@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 import org.skysongdev.skysongEconomy.prices.PriceException;
 import org.skysongdev.skysongEconomy.prices.modifier.AppliesTo;
 import org.skysongdev.skysongEconomy.prices.modifier.ModifiedPrice;
+import org.skysongdev.skysongEconomy.prices.modifier.ModifierAmount;
 import org.skysongdev.skysongEconomy.prices.modifier.ModifierDraft;
 import org.skysongdev.skysongEconomy.prices.modifier.ModifierTarget;
 import org.skysongdev.skysongEconomy.prices.modifier.TargetKind;
@@ -24,7 +25,8 @@ class TradePricingTest {
     }
 
     private void modifier(String type, String target, String percent) {
-        trade.modifiers.add(new ModifierDraft(type, ModifierTarget.parse(target), AppliesTo.IMPORTS, new BigDecimal(percent),
+        trade.modifiers.add(new ModifierDraft(type, ModifierTarget.parse(target), AppliesTo.IMPORTS,
+                new ModifierAmount.Percent(new BigDecimal(percent)),
                 null, null, "Staff"));
     }
 

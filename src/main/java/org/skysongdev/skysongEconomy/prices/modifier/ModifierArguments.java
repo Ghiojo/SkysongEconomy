@@ -2,7 +2,6 @@ package org.skysongdev.skysongEconomy.prices.modifier;
 
 import org.skysongdev.skysongEconomy.prices.PriceException;
 
-import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
@@ -13,11 +12,13 @@ import java.util.regex.Pattern;
 
 /**
  * Reads the words of {@code /se modifier add|set}:
- * {@code <type> <target> <percent> [for:<time>] [on:imports|exports|both] [display name...]}.
+ * {@code <type> <target> <amount> [for:<time>] [on:imports|exports|both|claims] [display name...]}.
  * <p>
- * The percent is signed, like {@code +10} or {@code -5}, and may end in {@code %}. The time is
- * written like {@code 30m}, {@code 12h}, {@code 7d} or {@code 1d12h}. Without {@code for:} the
- * modifier never expires; without {@code on:} it changes imports only.
+ * The amount is signed. With {@code %} it is a percentage, like {@code +10%} or {@code -5%};
+ * without, a flat amount of money, like {@code +50}, which only Claims take. The time is written
+ * like {@code 30m}, {@code 12h}, {@code 7d} or {@code 1d12h}. Without {@code for:} the modifier
+ * never expires. Without {@code on:} it changes imports only, except on a {@code claim-type:} or
+ * {@code claim:} target, where it changes Claims.
  */
 public final class ModifierArguments {
     /** How many words come before the options. */
@@ -40,9 +41,9 @@ public final class ModifierArguments {
         }
         String type = args[0].toLowerCase(Locale.ROOT);
         ModifierTarget target = ModifierTarget.parse(args[1]);
-        BigDecimal percent = percent(args[2]);
+        ModifierAmount amount = ModifierAmount.parse(args[2]);
         Instant expiresAt = null;
-        AppliesTo appliesTo = AppliesTo.IMPORTS;
+        AppliesTo appliesTo = target.kind().claimsOnly() ? AppliesTo.CLAIMS : AppliesTo.IMPORTS;
         int index = REQUIRED;
         for (; index < args.length; index++) {
             String word = args[index].toLowerCase(Locale.ROOT);
@@ -57,21 +58,7 @@ public final class ModifierArguments {
             }
         }
         String name = String.join(" ", Arrays.copyOfRange(args, index, args.length));
-        return new ModifierDraft(type, target, appliesTo, percent, name.isBlank() ? null : name, expiresAt, createdBy);
-    }
-
-    /**
-     * @return the signed percentage in {@code text}, e.g. {@code +10}, {@code -5} or {@code 7.5%}
-     * @throws PriceException {@code prices.modifiers.invalid-percent}
-     */
-    public static BigDecimal percent(String text) {
-        String number = text.endsWith("%") ? text.substring(0, text.length() - 1) : text;
-        try {
-            return new BigDecimal(number.startsWith("+") ? number.substring(1) : number);
-        } catch (NumberFormatException e) {
-            throw new PriceException("prices.modifiers.invalid-percent", Map.of("percent", text,
-                    "min", PriceModifiers.MIN_PERCENT.toPlainString(), "max", PriceModifiers.MAX_PERCENT.toPlainString()));
-        }
+        return new ModifierDraft(type, target, appliesTo, amount, name.isBlank() ? null : name, expiresAt, createdBy);
     }
 
     /**

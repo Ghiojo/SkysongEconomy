@@ -234,10 +234,10 @@ business:
       option: "<gray>  • <white><amount></white> × <white><item></white> <dark_gray>(<chance>%)"
     price:
       base: "<gray>Price before modifiers: <white><price></white>"
-      modifier: "<gray>  <name><gray>: <yellow><percent>%"
+      modifier: "<gray>  <name><gray>: <yellow><amount>"
       # Shown when the ledger is tax exempt and some modifiers were ignored.
       exempt: "<dark_gray>Tax exempt, not applied:"
-      skipped: "<dark_gray>  <st><name>: <percent>%</st>"
+      skipped: "<dark_gray>  <st><name>: <amount></st>"
       final: "<gold>Price: <white><price></white>"
     confirm:
       title: "Order this import?"
@@ -881,24 +881,33 @@ prices:
   unknown-item: "<red><yellow><material></yellow> has no base value in the price database yet."
   loop: "<red>That would make a loop: <path>."
   still-used: "<red>The base value of <yellow><material></yellow> is used by <users>. Change those first."
-  # /se modifier. Every line about one modifier can use <id>, <type>, <target>, <percent> (signed),
+  # /se modifier. Every line about one modifier can use <id>, <type>, <target>, <amount> (signed, with %
+  # for a percentage: +10% or a flat +50), <percent> (the signed number alone),
   # <applies-to>, <name>, <by> and <expires>.
   modifiers:
     list-header: "<gold>Price modifiers (<count>):"
-    list-entry: "<gray>- <white><id></white> <name><gray>: <yellow><percent>%</yellow> on <white><target></white> (<applies-to>), type <white><type></white>, expires <expires>, set by <by>"
+    list-entry: "<gray>- <white><id></white> <name><gray>: <yellow><amount></yellow> on <white><target></white> (<applies-to>), type <white><type></white>, expires <expires>, set by <by>"
     list-empty: "<gray>No price modifiers apply."
     never: "never"
-    added: "<green>Added modifier <white><id></white>: <yellow><percent>%</yellow> on <white><target></white> (<applies-to>), expires <expires>."
-    replaced: "<green>Replaced the <white><type></white> modifier on <white><target></white> (<id>): <yellow><old-percent>%</yellow> is now <yellow><percent>%</yellow>, expires <expires>."
-    removed: "<green>Removed modifier <white><id></white> (<yellow><percent>%</yellow> on <white><target></white>)."
+    added: "<green>Added modifier <white><id></white>: <yellow><amount></yellow> on <white><target></white> (<applies-to>), expires <expires>."
+    replaced: "<green>Replaced the <white><type></white> modifier on <white><target></white> (<id>): <yellow><old-amount></yellow> is now <yellow><amount></yellow>, expires <expires>."
+    removed: "<green>Removed modifier <white><id></white> (<yellow><amount></yellow> on <white><target></white>)."
     not-found: "<red>There is no price modifier <yellow><id></yellow>. See /se modifier list."
     exists: "<red><yellow><target></yellow> already has a <yellow><type></yellow> modifier (<id>). Use /se modifier set to replace it."
-    invalid-target: '<red><yellow><target></yellow> isn''t a target. Use global, business:\<id>, ledger:\<id>, good-type:\<type> or item:\<material_id>.'
+    invalid-target: '<red><yellow><target></yellow> isn''t a target. Use global, business:\<id>, ledger:\<id>, good-type:\<type>, item:\<material_id>, claim-type:\<type> or claim:\<claim>.'
     invalid-type: "<red><yellow><type></yellow> isn't a valid type. Use up to <max> lowercase letters, digits and _, like port_tax."
-    invalid-percent: "<red><yellow><percent></yellow> isn't a valid percentage. Use a number from <min> to <max> other than 0, like +10 or -5."
+    invalid-percent: "<red><yellow><percent>%</yellow> isn't a valid percentage. Use a number from <min> to <max> other than 0, like +10% or -5%."
+    invalid-amount: "<red><yellow><amount></yellow> isn't an amount. Write a percentage with %, like +10%, or a flat amount for Claims, like +50."
+    invalid-flat: "<red><yellow><amount></yellow> isn't a valid flat amount. Use a number other than 0, up to <max>."
+    flat-needs-claims: "<red><yellow><amount></yellow> is a flat amount, which only Claim prices take. For a percentage, write it with %, like <amount>%."
+    claims-only-target: "<red><yellow><target></yellow> is a Claim target, so the modifier needs on:claims."
+    not-a-claim-target: "<red>Claim modifiers go on global, claim-type:\\<type> or claim:\\<claim>, not <yellow><target></yellow>."
+    claim-discount: "<red>Claim modifiers can only raise a price, so <yellow><amount></yellow> must be positive."
+    unknown-claim-type: "<red>SkysongClaims has no Claim type <yellow><type></yellow>."
+    unknown-claim: "<red>SkysongClaims has no Claim <yellow><claim></yellow>."
     invalid-name: "<red>The display name can be at most <max> characters."
     invalid-duration: "<red><yellow><duration></yellow> isn't a valid time. Use something like 30m, 12h, 7d or 1d12h."
-    invalid-applies-to: "<red><yellow><value></yellow> isn't valid after on:. Use imports, exports or both."
+    invalid-applies-to: "<red><yellow><value></yellow> isn't valid after on:. Use imports, exports, both or claims."
     already-expired: "<red>That modifier would already be expired."
 
 # SkysongClaims Claims (/se claim). <claim> is a Claim's id; <price> an amount of money as players read it.
@@ -915,13 +924,17 @@ claims:
   price-cleared-unlisted: "<green>Removed the price of <white><claim></white>. It was for sale, so it is off sale now."
   price-none: "<gray><claim> has no price."
   price-view: "<gold><claim></gold><gray>: <white><price></white> <dark_gray>(<expression>, set by <by>)"
+  price-share: "<gray>  + <name> <dark_gray>(<amount> on <target>)</dark_gray>: <white><share>"
+  price-total: "<gray>  A buyer pays <white><price></white> in total."
   price-view-broken: "<gold><claim></gold><gray>: <red>can't be worked out</red> <dark_gray>(<expression>, set by <by>)"
   listed: "<green><white><claim></white> is for sale for <white><price></white>."
   unlisted: "<green><white><claim></white> is no longer for sale. Its price stays saved."
   list-header: "<gold>Claims for sale (<count>):"
-  list-entry: "<gray>- <white><claim></white> <dark_gray>(<type>)</dark_gray>: <white><price></white>"
+  # <price> is what a buyer pays now, modifiers included; <asking> is what the seller asks.
+  list-entry: "<gray>- <white><claim></white> <dark_gray>(<type>)</dark_gray>: <white><price></white> <dark_gray>(asking <asking>)"
   list-entry-broken: "<gray>- <white><claim></white> <dark_gray>(<type>)</dark_gray>: <red>price can't be worked out"
   list-empty: "<gray>No Claims are for sale."
+  modifiers-off: "<red>Businesses are disabled, so there are no price modifiers."
 
 # NPC upkeep (npc-upkeep.yml). Lines about one NPC can use <npc> (its name), <profile>, <state>
 # (the maintained or unmaintained word below) and <next> (time left until its next cycle).

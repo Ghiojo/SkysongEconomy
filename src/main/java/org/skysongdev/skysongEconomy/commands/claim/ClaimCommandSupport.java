@@ -4,6 +4,7 @@ import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import org.bukkit.command.CommandSender;
 import org.skysongdev.skysongEconomy.claims.ClaimGateway;
+import org.skysongdev.skysongEconomy.claims.ClaimPricing;
 import org.skysongdev.skysongEconomy.claims.ClaimSales;
 import org.skysongdev.skysongEconomy.claims.ClaimView;
 import org.skysongdev.skysongEconomy.messaging.Messenger;
@@ -18,12 +19,14 @@ import java.util.Locale;
 /** What the /se claim commands share: the services, and turning amounts and Claims into message placeholders. */
 final class ClaimCommandSupport {
     final ClaimSales sales;
+    final ClaimPricing pricing;
     final ClaimGateway claims;
     final Wallet wallet;
     final Messenger messenger;
 
-    ClaimCommandSupport(ClaimSales sales, ClaimGateway claims, Wallet wallet, Messenger messenger) {
+    ClaimCommandSupport(ClaimSales sales, ClaimPricing pricing, ClaimGateway claims, Wallet wallet, Messenger messenger) {
         this.sales = sales;
+        this.pricing = pricing;
         this.claims = claims;
         this.wallet = wallet;
         this.messenger = messenger;

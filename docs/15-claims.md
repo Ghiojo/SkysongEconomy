@@ -11,7 +11,7 @@ The full agreed design is in the project's design file `claims-integration-desig
 | --- | --- |
 | Connecting to SkysongClaims | **Done** (this page) |
 | Claim prices and server listings (`/se claim price`, `sell`, `unsell`, `list`) | **Done** |
-| Claim modifiers (`claim-type:`, `claim:`, `on:claims`, flat amounts) | Not yet |
+| Claim modifiers (`claim-type:`, `claim:`, `on:claims`, flat amounts) | **Done** |
 | The price on sign line 4 | Not yet |
 | Buying, and `ClaimPurchaseEvent` | Not yet |
 | Player resale | Not yet |
@@ -57,6 +57,46 @@ table `claim_prices`). It is a price expression, usually a plain number such as 
 
 SkysongClaims only knows whether a Claim is for sale and which plugin said so (`ClaimSales.SELLER`, the plugin's
 name). The price stays here.
+
+## Claim modifiers
+
+Claim modifiers are ordinary price modifiers (`/se modifier`, see [Prices](04-prices.md#price-modifiers-se-modifier))
+with `on:claims`, on `global`, `claim-type:<type>` or `claim:<claim>`. They are always positive, and can be a
+percentage (`+10%`) or a flat amount (`+50`). Trade modifiers (`on:imports`, `exports`, `both`) never change a
+Claim's price.
+
+`claims/ClaimPricing.quote` works out what a Claim costs. Every modifier's share comes from the **asking price
+alone**, so each one has an exact amount:
+
+```
+share of a percentage = asking price x percent / 100, truncated
+share of a flat       = its amount, truncated
+total                 = asking price + every share
+```
+
+Example: a house asking 2,000, with `district_tax claim-type:house +10%` (share 200) and
+`registry_fee claim-type:house +50` (share 50), costs 2,250. The seller's part is always the asking price; the
+shares never go to the seller.
+
+`ClaimQuote` holds the asking price, each `Share` (the modifier and its amount), the modifier total and the total.
+`/se claim price view` lists them, and `/se claim list` shows the total with the asking price.
+
+When businesses are disabled there are no modifiers, and a Claim costs its asking price.
+
+### The API
+
+`getClaimFeature().pricing()` gives `ClaimPricing`. Another mechanic (a district tax, a festival) uses it with its own
+modifier type key, never the table:
+
+| Method | What it does |
+| --- | --- |
+| `quote(claimId)` | What buying the Claim costs now, with every share |
+| `setTypeModifier(key, typeId, amount, duration, name, by)` | Adds or replaces the modifier with that key on every Claim of the type |
+| `removeTypeModifier(key, typeId)` | Removes it |
+| `modifiersOf(typeId)` | The modifiers on the type itself |
+| `applying(claim)` | Every modifier that changes one Claim's price now |
+
+To follow changes (for example to redraw a price), use `PriceModifiers.addListener`.
 
 ## The gateway
 

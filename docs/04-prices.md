@@ -84,9 +84,10 @@ still use hard-coded texts instead of `messages.yml`.
 
 ## Price modifiers: `/se modifier`
 
-A modifier is a signed percentage on a **target**, such as a port tax of +10% on one ledger. Code:
-`prices/modifier/PriceModifiers` (the rules), `PriceModifier` (one modifier), `ModifierTarget`, `ModifierArguments`
-(parses the command words).
+A modifier is a signed amount on a **target**, such as a port tax of +10% on one ledger. Trades take
+**percentages**; SkysongClaims Claims also take **flat amounts** of money (see [Claims](15-claims.md)). Code:
+`prices/modifier/PriceModifiers` (the rules), `PriceModifier` (one modifier), `ModifierAmount` (a percentage or a
+flat amount), `ModifierTarget`, `ModifierArguments` (parses the command words).
 
 ### Targets
 
@@ -97,6 +98,8 @@ A modifier is a signed percentage on a **target**, such as a port tax of +10% on
 | `ledger:<id>` | everything from one ledger |
 | `good-type:<type>` | trades involving an item of that good type |
 | `item:<material_id>` | trades involving that item |
+| `claim-type:<type>` | every SkysongClaims Claim of that type (Claims only) |
+| `claim:<claim id>` | one SkysongClaims Claim (Claims only) |
 
 For an import, "involving" means any item its bundle can deliver; for an export, the items actually sold.
 
@@ -105,20 +108,36 @@ For an import, "involving" means any item its bundle can deliver; for an export,
 - Each modifier has a **type**, a short key like `port_tax` (`[a-z0-9_]`, up to 32 characters). A target holds
   at most one modifier of each type, so nothing stacks by accident: `add` refuses a second one
   (`prices.modifiers.exists`) and `set` replaces it, keeping its id. Modifiers of different types add up.
-- The percent is from -100 (free) to +1000, never 0. It may be written `+10`, `-5` or `7.5%`.
-- `on:imports` (the default), `on:exports` or `on:both` says which direction it changes.
+- The **amount** is a percentage when it ends in `%` (`+10%`, `-5%`, `7.5%`), from -100 (free) to +1000, never 0.
+  A plain number (`+50`) is a **flat amount** of money, which only Claims take (`prices.modifiers.flat-needs-claims`
+  says to add `%` otherwise). **Since the Claims work, `+10` without `%` no longer means +10%.** Modifiers saved
+  before then are percentages and stay so (the `kind` column).
+- `on:imports` (the default), `on:exports` or `on:both` says which trades it changes. `on:claims` makes it a
+  Claim modifier instead; it is the default on `claim-type:` and `claim:` targets. `both` never reaches Claims, so
+  no trade modifier changes a house price.
+- Claim modifiers only **raise** prices (`prices.modifiers.claim-discount`), and only go on `global`, `claim-type:`
+  or `claim:` (`prices.modifiers.not-a-claim-target`). Claim targets need `on:claims`
+  (`prices.modifiers.claims-only-target`). `claim-type:` and `claim:` ids are checked against SkysongClaims.
 - `for:<time>` makes it expire, such as `30m`, `12h`, `7d` or `1d12h`. Without it, it never expires. Expired
   modifiers stop applying at once and are deleted the next time the list is read or changed.
 - The display name (the words after the options, up to 64 characters, MiniMessage) is shown when players hover
-  a price. Without one it is `<type> <percent>%`, such as `port_tax +10%`.
+  a price. Without one it is the type and the amount, such as `port_tax +10%` or `registry_fee +50`.
 - Ids are generated: `m1`, `m2`, ...
-- When a business is deleted, every modifier on `business:<its id>` is removed.
+- When a business is deleted, every modifier on `business:<its id>` is removed; when SkysongClaims deletes a
+  Claim, every modifier on `claim:<its id>` is.
+- Anything can listen for changes with `PriceModifiers.addListener` (added, replaced, removed, expired), and add a
+  check on new targets with `addTargetCheck`.
 
 ### How a modified price is worked out
+
+For a trade:
 
 ```
 price = truncate( value * (1 + sum of every applying modifier's percent / 100) ), never below 0
 ```
+
+Claims are worked out differently, so each modifier's share can be reported: see
+[Claims](15-claims.md#claim-modifiers).
 
 `value` is the ledger expression's result. `ModifiedPrice` keeps the base, the modifiers applied, those skipped,
 their total percent and the final price, so menus can show how the price was reached.
@@ -135,16 +154,18 @@ rules: [Economy and Logistics](06-economy-and-logistics.md#tax-exempt-ledgers).
 | Command | Permission |
 | --- | --- |
 | `/se modifier list [target]` | `skysongeconomy.modifiers` |
-| `/se modifier add <type> <target> <percent> [for:<time>] [on:imports\|exports\|both] [name...]` | `skysongeconomy.modifiers.edit` |
-| `/se modifier set <type> <target> <percent> [for:<time>] [on:...] [name...]` | `skysongeconomy.modifiers.edit` |
+| `/se modifier add <type> <target> <amount> [for:<time>] [on:imports\|exports\|both\|claims] [name...]` | `skysongeconomy.modifiers.edit` |
+| `/se modifier set <type> <target> <amount> [for:<time>] [on:...] [name...]` | `skysongeconomy.modifiers.edit` |
 | `/se modifier remove <id>` | `skysongeconomy.modifiers.edit` |
 
 Examples:
 
 ```
-/se modifier add port_tax ledger:smugglers +10 for:7d Port tax
-/se modifier set festival global -15 on:both Harvest festival
-/se modifier add embargo good-type:weapon +50
+/se modifier add port_tax ledger:smugglers +10% for:7d Port tax
+/se modifier set festival global -15% on:both Harvest festival
+/se modifier add embargo good-type:weapon +50%
+/se modifier add district_tax claim-type:house +10% Harbour district tax
+/se modifier add registry_fee claim-type:house +50 Registry fee
 /se modifier remove m3
 ```
 

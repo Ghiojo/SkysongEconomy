@@ -4,6 +4,7 @@ import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.skysongdev.skysongEconomy.bootstrap.BusinessFeature;
+import org.skysongdev.skysongEconomy.bootstrap.BusinessSystem;
 import org.skysongdev.skysongEconomy.bootstrap.ClaimFeature;
 import org.skysongdev.skysongEconomy.bootstrap.NodeFeature;
 import org.skysongdev.skysongEconomy.bootstrap.ModuleFeature;
@@ -104,7 +105,8 @@ public final class SkysongEconomy extends JavaPlugin {
                 messenger, messages);
         // SkysongClaims' Claims: priced, put on sale and bought.
         claimFeature = ClaimFeature.start(this,
-                new ClaimFeature.Inputs(databaseSettings(), prices, priceSettings, wallet, messenger));
+                new ClaimFeature.Inputs(databaseSettings(), prices, priceSettings,
+                        businessFeature.system().map(BusinessSystem::modifiers), wallet, messenger));
 
         registerCommands(messenger, materialIds);
     }

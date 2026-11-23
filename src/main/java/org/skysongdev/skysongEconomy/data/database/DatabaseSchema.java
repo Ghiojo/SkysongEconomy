@@ -224,7 +224,9 @@ public final class DatabaseSchema {
 
     /** Columns added after their table first shipped: table, column, definition. */
     private static final List<String[]> ADDED_COLUMNS = List.<String[]>of(
-            new String[] {"price_ledger", "expression", "VARCHAR(255) NULL"});
+            new String[] {"price_ledger", "expression", "VARCHAR(255) NULL"},
+            // percent or flat; rows from before flat amounts existed are percentages.
+            new String[] {"price_modifiers", "kind", "VARCHAR(16) NOT NULL DEFAULT 'percent'"});
 
     /**
      * Columns that became optional after their table first shipped: table, column, new

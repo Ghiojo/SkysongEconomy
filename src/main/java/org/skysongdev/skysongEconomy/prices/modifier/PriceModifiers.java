@@ -12,7 +12,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Consumer;
 import java.util.regex.Pattern;
 
 /**
@@ -20,10 +22,10 @@ import java.util.regex.Pattern;
  * a future mechanic that sets taxes) use the same operations.
  * <p>
  * A target holds at most one modifier of each type: {@link #add} refuses a second one and
- * {@link #set} replaces it, so nothing stacks by accident. A price is changed by the sum of
- * every applying modifier's percentage. Expired modifiers stop applying at once and are deleted
- * the next time the list is read or changed. Kept in memory and saved right away; use it on the
- * main thread.
+ * {@link #set} replaces it, so nothing stacks by accident. A trade's price is changed by the sum of
+ * every applying modifier's percentage; Claims also take flat amounts, and only ever go up (see
+ * {@code claims/ClaimPricing}). Expired modifiers stop applying at once and are deleted the next
+ * time the list is read or changed. Kept in memory and saved right away; use it on the main thread.
  */
 public final class PriceModifiers {
     /** Longest type key, in characters. */
@@ -34,6 +36,8 @@ public final class PriceModifiers {
     public static final BigDecimal MIN_PERCENT = BigDecimal.valueOf(-100);
     /** The highest percentage a single modifier can have. */
     public static final BigDecimal MAX_PERCENT = BigDecimal.valueOf(1000);
+    /** The highest flat amount a single modifier can have, as the table stores it. */
+    public static final BigDecimal MAX_FLAT = BigDecimal.valueOf(999_999);
 
     private static final Pattern TYPE = Pattern.compile("[a-z0-9_]{1," + MAX_TYPE_LENGTH + "}");
     private static final BigDecimal HUNDRED = BigDecimal.valueOf(100);
@@ -41,11 +45,28 @@ public final class PriceModifiers {
     private final ModifierRepository repository;
     private final Clock clock;
     private final Map<String, PriceModifier> byId = new LinkedHashMap<>();
+    private final List<ModifierListener> listeners = new ArrayList<>();
+    private final List<Consumer<ModifierTarget>> targetChecks = new ArrayList<>();
     private long nextNumber = 1;
 
     public PriceModifiers(ModifierRepository repository, Clock clock) {
         this.repository = repository;
         this.clock = clock;
+    }
+
+    /** Tells the listener whenever a modifier starts or stops changing prices. */
+    public void addListener(ModifierListener listener) {
+        listeners.add(Objects.requireNonNull(listener, "listener"));
+    }
+
+    /**
+     * Adds a check that a new modifier's target exists, such as a feature that knows its own ids
+     * ({@code claim-type:} types that SkysongClaims has).
+     *
+     * @param check throws a {@link PriceException} naming the problem when the target is unknown
+     */
+    public void addTargetCheck(Consumer<ModifierTarget> check) {
+        targetChecks.add(Objects.requireNonNull(check, "check"));
     }
 
     /**
@@ -127,6 +148,7 @@ public final class PriceModifiers {
                 new PriceException("prices.modifiers.not-found", Map.of("id", id)));
         byId.remove(modifier.id());
         repository.delete(modifier.id());
+        changed(modifier);
         return modifier;
     }
 
@@ -140,6 +162,7 @@ public final class PriceModifiers {
         removed.forEach(modifier -> {
             byId.remove(modifier.id());
             repository.delete(modifier.id());
+            changed(modifier);
         });
         return removed.size();
     }
@@ -158,12 +181,15 @@ public final class PriceModifiers {
     }
 
     /**
-     * Applies every matching modifier to a price: {@code value * (1 + sum of percentages / 100)},
-     * truncated, and never below 0. Modifiers the subject is exempt from are skipped.
+     * Applies every matching modifier to a trade's price: {@code value * (1 + sum of percentages / 100)},
+     * truncated, and never below 0. Modifiers the subject is exempt from are skipped. Trades only
+     * take percentages; Claims are priced by {@code claims/ClaimPricing}.
      */
     public ModifiedPrice price(BigDecimal value, PriceSubject subject, PriceSettings settings) {
         List<PriceModifier> applied = applying(subject);
-        BigDecimal percent = applied.stream().map(PriceModifier::percent).reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal percent = applied.stream().map(PriceModifier::amount)
+                .filter(ModifierAmount.Percent.class::isInstance)
+                .map(ModifierAmount::value).reduce(BigDecimal.ZERO, BigDecimal::add);
         BigDecimal factor = BigDecimal.ONE.add(percent.divide(HUNDRED, MathContext.DECIMAL64)).max(BigDecimal.ZERO);
         BigDecimal price = settings.truncate(value.multiply(factor));
         return new ModifiedPrice(value, applied, skipped(subject), percent, price);
@@ -183,17 +209,23 @@ public final class PriceModifiers {
         expired.forEach(modifier -> {
             byId.remove(modifier.id());
             repository.delete(modifier.id());
+            changed(modifier);
         });
     }
 
     private PriceModifier store(String id, ModifierDraft draft) {
         String name = draft.displayName() == null || draft.displayName().isBlank()
                 ? defaultName(draft) : draft.displayName().strip();
-        PriceModifier modifier = new PriceModifier(id, draft.type(), draft.target(), draft.appliesTo(), draft.percent(),
+        PriceModifier modifier = new PriceModifier(id, draft.type(), draft.target(), draft.appliesTo(), draft.amount(),
                 name, draft.expiresAt(), draft.createdBy(), clock.instant());
         byId.put(id, modifier);
         repository.save(modifier);
+        changed(modifier);
         return modifier;
+    }
+
+    private void changed(PriceModifier modifier) {
+        listeners.forEach(listener -> listener.modifierChanged(modifier));
     }
 
     private void validate(ModifierDraft draft) {
@@ -201,11 +233,9 @@ public final class PriceModifiers {
             throw new PriceException("prices.modifiers.invalid-type", Map.of("type", draft.type(),
                     "max", String.valueOf(MAX_TYPE_LENGTH)));
         }
-        if (draft.percent().compareTo(MIN_PERCENT) < 0 || draft.percent().compareTo(MAX_PERCENT) > 0
-                || draft.percent().signum() == 0) {
-            throw new PriceException("prices.modifiers.invalid-percent", Map.of("percent", draft.percent().toPlainString(),
-                    "min", MIN_PERCENT.toPlainString(), "max", MAX_PERCENT.toPlainString()));
-        }
+        validateAmount(draft);
+        validateClaims(draft);
+        targetChecks.forEach(check -> check.accept(draft.target()));
         if (draft.displayName() != null && draft.displayName().strip().length() > MAX_DISPLAY_NAME_LENGTH) {
             throw new PriceException("prices.modifiers.invalid-name", Map.of("max", String.valueOf(MAX_DISPLAY_NAME_LENGTH)));
         }
@@ -214,9 +244,47 @@ public final class PriceModifiers {
         }
     }
 
-    /** @return e.g. {@code port_tax +10%} */
+    private static void validateAmount(ModifierDraft draft) {
+        BigDecimal value = draft.amount().value();
+        if (draft.amount() instanceof ModifierAmount.Percent) {
+            if (value.compareTo(MIN_PERCENT) < 0 || value.compareTo(MAX_PERCENT) > 0 || value.signum() == 0) {
+                throw new PriceException("prices.modifiers.invalid-percent", Map.of("percent", value.toPlainString(),
+                        "min", MIN_PERCENT.toPlainString(), "max", MAX_PERCENT.toPlainString()));
+            }
+            return;
+        }
+        if (draft.appliesTo() != AppliesTo.CLAIMS) {
+            throw new PriceException("prices.modifiers.flat-needs-claims", Map.of("amount", draft.amount().signed()));
+        }
+        if (value.signum() == 0 || value.abs().compareTo(MAX_FLAT) > 0) {
+            throw new PriceException("prices.modifiers.invalid-flat", Map.of("amount", value.toPlainString(),
+                    "max", MAX_FLAT.toPlainString()));
+        }
+    }
+
+    /**
+     * Claim modifiers only raise prices, and only on targets that can match a Claim; trade
+     * modifiers can't be put on a Claim target, where they would never apply.
+     */
+    private static void validateClaims(ModifierDraft draft) {
+        boolean claimTarget = draft.target().kind().claimsOnly();
+        if (draft.appliesTo() != AppliesTo.CLAIMS) {
+            if (claimTarget) {
+                throw new PriceException("prices.modifiers.claims-only-target", Map.of("target", draft.target().key()));
+            }
+            return;
+        }
+        if (!claimTarget && draft.target().kind() != TargetKind.GLOBAL) {
+            throw new PriceException("prices.modifiers.not-a-claim-target", Map.of("target", draft.target().key()));
+        }
+        if (draft.amount().value().signum() < 0) {
+            throw new PriceException("prices.modifiers.claim-discount", Map.of("amount", draft.amount().signed()));
+        }
+    }
+
+    /** @return e.g. {@code port_tax +10%} or {@code registry_fee +50} */
     public static String defaultName(ModifierDraft draft) {
-        return draft.type() + " " + signed(draft.percent()) + "%";
+        return draft.type() + " " + draft.amount().signed();
     }
 
     /** @return the percentage with its sign, e.g. {@code +10} or {@code -5.5} */

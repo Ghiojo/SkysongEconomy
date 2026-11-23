@@ -9,7 +9,8 @@ import java.util.regex.Pattern;
 
 /**
  * What a modifier is attached to. Written as {@code global}, {@code business:<id>},
- * {@code ledger:<id>}, {@code good-type:<type>} or {@code item:<material_id>}.
+ * {@code ledger:<id>}, {@code good-type:<type>}, {@code item:<material_id>}, or for SkysongClaims
+ * Claims {@code claim-type:<type>} and {@code claim:<claim id>}.
  */
 public sealed interface ModifierTarget {
     /** Every price. */
@@ -125,6 +126,50 @@ public sealed interface ModifierTarget {
         }
     }
 
+    /** Every SkysongClaims Claim of one type. */
+    record ClaimType(String typeId) implements ModifierTarget {
+        public ClaimType {
+            Objects.requireNonNull(typeId, "typeId");
+        }
+
+        @Override
+        public TargetKind kind() {
+            return TargetKind.CLAIM_TYPE;
+        }
+
+        @Override
+        public String key() {
+            return "claim-type:" + typeId;
+        }
+
+        @Override
+        public boolean matches(PriceSubject subject) {
+            return typeId.equals(subject.claimTypeId());
+        }
+    }
+
+    /** One SkysongClaims Claim. */
+    record Claim(String claimId) implements ModifierTarget {
+        public Claim {
+            Objects.requireNonNull(claimId, "claimId");
+        }
+
+        @Override
+        public TargetKind kind() {
+            return TargetKind.CLAIM;
+        }
+
+        @Override
+        public String key() {
+            return "claim:" + claimId;
+        }
+
+        @Override
+        public boolean matches(PriceSubject subject) {
+            return claimId.equals(subject.claimId());
+        }
+    }
+
     /**
      * Reads a target, ignoring case.
      *
@@ -150,6 +195,12 @@ public sealed interface ModifierTarget {
                 }
                 case "item" -> {
                     return new Item(value);
+                }
+                case "claim-type" -> {
+                    return new ClaimType(value);
+                }
+                case "claim" -> {
+                    return new Claim(value);
                 }
                 default -> {
                     // Reported below.

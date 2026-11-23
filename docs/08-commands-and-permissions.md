@@ -88,8 +88,8 @@ child may add a stricter one.
 | Command | Permission |
 | --- | --- |
 | `list [target]` | `skysongeconomy.modifiers` |
-| `add <type> <target> <percent> [for:<time>] [on:imports\|exports\|both] [name...]` | `skysongeconomy.modifiers.edit` |
-| `set <type> <target> <percent> [for:<time>] [on:...] [name...]` | `skysongeconomy.modifiers.edit` |
+| `add <type> <target> <amount> [for:<time>] [on:imports\|exports\|both\|claims] [name...]` | `skysongeconomy.modifiers.edit` |
+| `set <type> <target> <amount> [for:<time>] [on:...] [name...]` | `skysongeconomy.modifiers.edit` |
 | `remove <id>` | `skysongeconomy.modifiers.edit` |
 
 Targets: `global`, `business:<id>`, `ledger:<id>`, `good-type:<type>`, `item:<material_id>`. Details in

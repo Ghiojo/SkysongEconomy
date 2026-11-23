@@ -23,7 +23,9 @@ final class ModifierText {
     }
 
     /**
-     * @return the placeholders {@code id}, {@code type}, {@code target}, {@code percent},
+     * @return the placeholders {@code id}, {@code type}, {@code target}, {@code amount} (signed,
+     *         with {@code %} for a percentage, such as {@code +10%} or {@code +50}), {@code percent}
+     *         (the signed number alone, for messages.yml files written before flat amounts),
      *         {@code applies-to}, {@code name} (MiniMessage, set by staff), {@code by} and
      *         {@code expires} (the time, or the {@code prices.modifiers.never} text)
      */
@@ -33,7 +35,8 @@ final class ModifierText {
                 unparsed("id", modifier.id()),
                 unparsed("type", modifier.type()),
                 unparsed("target", modifier.target().key()),
-                unparsed("percent", PriceModifiers.signed(modifier.percent())),
+                unparsed("amount", modifier.amount().signed()),
+                unparsed("percent", PriceModifiers.signed(modifier.amount().value())),
                 unparsed("applies-to", modifier.appliesTo().key()),
                 Placeholder.parsed("name", modifier.displayName()),
                 unparsed("by", modifier.createdBy()),

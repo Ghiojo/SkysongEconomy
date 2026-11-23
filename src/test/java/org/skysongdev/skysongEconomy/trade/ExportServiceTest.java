@@ -8,6 +8,7 @@ import org.skysongdev.skysongEconomy.business.access.Permission;
 import org.skysongdev.skysongEconomy.prices.PriceException;
 import org.skysongdev.skysongEconomy.prices.PriceExpression;
 import org.skysongdev.skysongEconomy.prices.modifier.AppliesTo;
+import org.skysongdev.skysongEconomy.prices.modifier.ModifierAmount;
 import org.skysongdev.skysongEconomy.prices.modifier.ModifierDraft;
 import org.skysongdev.skysongEconomy.prices.modifier.ModifierTarget;
 import org.skysongdev.skysongEconomy.trade.ExportBatch.Stack;
@@ -93,7 +94,8 @@ class ExportServiceTest {
     }
 
     private void add(String type, AppliesTo appliesTo, String percent) {
-        trade.modifiers.add(new ModifierDraft(type, ModifierTarget.GLOBAL, appliesTo, new BigDecimal(percent), null, null, "Staff"));
+        trade.modifiers.add(new ModifierDraft(type, ModifierTarget.GLOBAL, appliesTo,
+                new ModifierAmount.Percent(new BigDecimal(percent)), null, null, "Staff"));
     }
 
     @Test
