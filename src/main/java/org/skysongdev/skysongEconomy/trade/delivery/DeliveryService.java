@@ -21,6 +21,8 @@ import org.skysongdev.skysongEconomy.trade.Ledger;
 import org.skysongdev.skysongEconomy.trade.LedgerSelections;
 import org.skysongdev.skysongEconomy.trade.TradePricing;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
@@ -29,6 +31,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Consumer;
@@ -38,7 +41,8 @@ import java.util.random.RandomGenerator;
  * Orders imports into delivery slots, and keeps every delivery until it is collected.
  * <p>
  * Whoever ordered a delivery, the owner, and groups allowed to order imports can collect it once
- * it has arrived; collecting frees its slot.
+ * it has arrived; collecting frees its slot. That is when it reaches its pier: the pier's loss
+ * chance is rolled, and other plugins may seize it or change what it brings.
  * <p>
  * Ordering needs Economy and Logistics, the ledger selected, the owner or a group allowed to
  * order imports, a free delivery slot and, whenever there are piers, an open receiving pier. Then
@@ -189,14 +193,32 @@ public final class DeliveryService implements BusinessChangeListener {
     }
 
     /**
-     * Hands over a delivery that has arrived and frees its slot. If {@code handOver} throws, the
+     * What collecting a delivery did.
+     *
+     * @param seized       whether it was lost at its pier, so nothing was handed over
+     * @param items        what was handed over; empty when seized
+     * @param seizeMessage the text a plugin gave for the seizure; empty for the default
+     */
+    public record Collection(boolean seized, List<ItemAmount> items, Optional<String> seizeMessage) {
+        public Collection {
+            items = List.copyOf(items);
+            Objects.requireNonNull(seizeMessage, "seizeMessage");
+        }
+    }
+
+    /**
+     * Collects a delivery that has arrived and frees its slot. First its pier's loss chance is
+     * rolled and {@link ShipmentEvents#arriving} may change the items or the outcome. A lost
+     * (seized) delivery hands nothing over and isn't refunded. If {@code handOver} throws, the
      * delivery stays where it is, so nothing is lost.
      *
-     * @param handOver gives the items to the player
+     * @param handOver gives the items to the player; not called when the delivery is seized or
+     *                 listeners left it empty
      * @throws BusinessException when the delivery isn't there any more, hasn't arrived, or the
      *                           character may not collect it
      */
-    public void collect(Business business, CharacterRef character, Delivery delivery, Consumer<List<ItemAmount>> handOver) {
+    public Collection collect(Business business, CharacterRef character, Delivery delivery,
+                              Consumer<List<ItemAmount>> handOver) {
         if (!deliveries(business).contains(delivery)) {
             throw new BusinessException("business.slots.gone");
         }
@@ -207,9 +229,25 @@ public final class DeliveryService implements BusinessChangeListener {
         if (!canCollect(business, character, delivery)) {
             throw new BusinessException("business.slots.not-allowed", Map.of("business", business.displayName()));
         }
-        handOver.accept(delivery.items());
+        Optional<Pier> pier = delivery.pierId().flatMap(deps.piers()::find);
+        BigDecimal chance = pier.map(found -> found.finalLossChance(delivery.tags())).orElse(BigDecimal.ZERO);
+        ShipmentEvents.Arrival arrival = new ShipmentEvents.Arrival(Shipments.of(delivery), pier, character, chance,
+                roll(), Shipments.items(delivery.items()));
+        ShipmentEvents.Outcome outcome = deps.events().arriving(arrival);
+        List<ItemAmount> items = outcome.seized() ? List.of() : outcome.items().stream()
+                .map(item -> new ItemAmount(item.materialId(), item.amount())).toList();
+        if (!items.isEmpty()) {
+            handOver.accept(items);
+        }
         byBusiness.get(business.id()).remove(delivery);
         repository.delete(delivery.id());
+        deps.events().collected(arrival, outcome);
+        return new Collection(outcome.seized(), items, outcome.seizeMessage());
+    }
+
+    /** @return a number from 0 (included) to 100 (excluded), with two decimals */
+    private BigDecimal roll() {
+        return BigDecimal.valueOf(random.nextDouble() * 100).setScale(2, RoundingMode.DOWN);
     }
 
     /** Refunds every delivery of a deleted business to whoever paid for it. */
