@@ -14,12 +14,15 @@ import java.util.UUID;
 
 /**
  * A small world of Claims for the Claim rules' tests: {@code rose_house} and {@code oak_house}
- * (type {@code house}, not free, unowned), and {@code hovel_1} (a Free Claim). The price database
+ * (type {@code house}, not free, unowned), and {@code hovel_1} (a Free Claim). Anna and Bram are
+ * two players' characters; Anna's second character is {@link #ANNA_ALT}. The price database
  * knows {@code architite_pound} at 10; prices keep 1 decimal.
  */
 final class ClaimFixture {
     static final CharacterRef ANNA = new CharacterRef(UUID.fromString("00000000-0000-0000-0000-00000000000a"), "Anna");
     static final CharacterRef BRAM = new CharacterRef(UUID.fromString("00000000-0000-0000-0000-00000000000b"), "Bram");
+    static final CharacterRef ANNA_ALT = new CharacterRef(ANNA.player(), "Annabel");
+    static final CharacterRef CARA = new CharacterRef(UUID.fromString("00000000-0000-0000-0000-00000000000c"), "Cara");
     static final Instant NOW = Instant.parse("2026-11-23T12:00:00Z");
 
     final FakeClaims claims = new FakeClaims().add("rose_house", "house").add("oak_house", "house")
@@ -27,7 +30,9 @@ final class ClaimFixture {
     final InMemoryClaimPriceRepository storage = new InMemoryClaimPriceRepository();
     final PriceDatabase database = new PriceDatabase(new NoBaseValueStorage());
     final ClaimPrices prices = new ClaimPrices(storage, database, new PriceSettings(1), Clock.fixed(NOW, ZoneOffset.UTC));
-    final ClaimSales sales = new ClaimSales(claims, prices);
+    final InMemoryClaimListingRepository listingStorage = new InMemoryClaimListingRepository();
+    final ClaimListings listings = new ClaimListings(listingStorage, Clock.fixed(NOW, ZoneOffset.UTC));
+    final ClaimSales sales = new ClaimSales(claims, prices, listings);
 
     ClaimFixture() {
         database.set("architite_pound", "10");

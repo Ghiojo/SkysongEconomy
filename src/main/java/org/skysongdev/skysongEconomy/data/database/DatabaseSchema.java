@@ -218,7 +218,8 @@ public final class DatabaseSchema {
                     + "expression VARCHAR(255) NOT NULL, "
                     + "set_by VARCHAR(64) NOT NULL, "
                     + "set_at BIGINT NOT NULL) ENGINE=InnoDB",
-            // Every Claim bought, as ClaimPurchaseEvent reported it; modifiers is a JSON list of each modifier's share.
+            // Every Claim bought, as ClaimPurchaseEvent reported it; modifiers is a JSON list of each modifier's
+            // share, seller the JSON of who sold it and what each received (NULL for a server sale).
             "CREATE TABLE IF NOT EXISTS claim_sales ("
                     + "id BIGINT PRIMARY KEY NOT NULL, "
                     + "claim_id VARCHAR(64) NOT NULL, "
@@ -229,8 +230,24 @@ public final class DatabaseSchema {
                     + "modifier_total DECIMAL(19, 4) NOT NULL, "
                     + "paid DECIMAL(19, 4) NOT NULL, "
                     + "modifiers TEXT NOT NULL, "
+                    + "seller TEXT NULL, "
+                    + "seller_paid_later BOOLEAN NOT NULL DEFAULT FALSE, "
                     + "sold_at BIGINT NOT NULL, "
-                    + "INDEX claim_sales_claim (claim_id)) ENGINE=InnoDB");
+                    + "INDEX claim_sales_claim (claim_id)) ENGINE=InnoDB",
+            // Claims on sale for their owners rather than the server, and the owner who put each on sale.
+            "CREATE TABLE IF NOT EXISTS claim_listings ("
+                    + "claim_id VARCHAR(64) PRIMARY KEY NOT NULL, "
+                    + "listed_by_uuid CHAR(36) NOT NULL, "
+                    + "listed_by_profile VARCHAR(64) NOT NULL, "
+                    + "listed_at BIGINT NOT NULL) ENGINE=InnoDB",
+            // Sellers' shares of Claim sales that couldn't be paid at once, paid when they join.
+            "CREATE TABLE IF NOT EXISTS claim_payouts ("
+                    + "sale_id BIGINT NOT NULL, "
+                    + "account_uuid CHAR(36) NOT NULL, "
+                    + "claim_id VARCHAR(64) NOT NULL, "
+                    + "amount DECIMAL(19, 4) NOT NULL, "
+                    + "sold_at BIGINT NOT NULL, "
+                    + "PRIMARY KEY (sale_id, account_uuid)) ENGINE=InnoDB");
 
     private DatabaseSchema() {
     }
@@ -239,7 +256,10 @@ public final class DatabaseSchema {
     private static final List<String[]> ADDED_COLUMNS = List.<String[]>of(
             new String[] {"price_ledger", "expression", "VARCHAR(255) NULL"},
             // percent or flat; rows from before flat amounts existed are percentages.
-            new String[] {"price_modifiers", "kind", "VARCHAR(16) NOT NULL DEFAULT 'percent'"});
+            new String[] {"price_modifiers", "kind", "VARCHAR(16) NOT NULL DEFAULT 'percent'"},
+            // Who sold a Claim: added with player resale; earlier sales were all server sales.
+            new String[] {"claim_sales", "seller", "TEXT NULL"},
+            new String[] {"claim_sales", "seller_paid_later", "BOOLEAN NOT NULL DEFAULT FALSE"});
 
     /**
      * Columns that became optional after their table first shipped: table, column, new

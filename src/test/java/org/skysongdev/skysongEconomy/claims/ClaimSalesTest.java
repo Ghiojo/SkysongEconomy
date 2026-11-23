@@ -4,12 +4,15 @@ import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.skysongdev.skysongEconomy.claims.ClaimFixture.ANNA;
+import static org.skysongdev.skysongEconomy.claims.ClaimFixture.BRAM;
+import static org.skysongdev.skysongEconomy.claims.ClaimFixture.NOW;
 import static org.skysongdev.skysongEconomy.claims.ClaimFixture.money;
 
 class ClaimSalesTest {
@@ -149,5 +152,103 @@ class ClaimSalesTest {
         assertEquals(List.of("old_manor"), List.copyOf(fixture.prices.all().keySet()));
         assertFalse(claim("oak_house").isForSale());
         assertEquals(2, changes.size());
+    }
+
+    @Test
+    void anOwnerListsTheWholeClaimAndTheirPriceBecomesItsPrice() {
+        claims.addOwner("rose_house", ANNA);
+        claims.addOwner("rose_house", BRAM);
+
+        assertEquals(money("3000"), sales.listByOwner(BRAM, "rose_house", "3000"));
+
+        assertTrue(sales.isOurs(claim("rose_house")));
+        assertEquals(Optional.of(new ClaimListing("rose_house", BRAM, NOW)), fixture.listings.find("rose_house"));
+        assertEquals(fixture.listings.find("rose_house").orElseThrow(), fixture.listingStorage.saved.get("rose_house"));
+        assertEquals(money("3000"), fixture.prices.value("rose_house").orElseThrow());
+        assertEquals("Bram", fixture.prices.find("rose_house").orElseThrow().setBy());
+    }
+
+    @Test
+    void onlyOwnersListAndNeverFreeClaims() {
+        claims.addOwner("rose_house", ANNA);
+        assertEquals("claims.sell.not-owner", refusal(() -> sales.listByOwner(BRAM, "rose_house", "3000")));
+        claims.addOwner("hovel_1", ANNA);
+        assertEquals("claims.free", refusal(() -> sales.listByOwner(ANNA, "hovel_1", "3000")));
+        claims.setForSaleBy("rose_house", "OtherPlugin");
+        assertEquals("claims.sold-elsewhere", refusal(() -> sales.listByOwner(ANNA, "rose_house", "3000")));
+        claims.addOwner("oak_house", ANNA);
+        assertEquals("claims.price-not-positive", refusal(() -> sales.listByOwner(ANNA, "oak_house", "0")));
+    }
+
+    @Test
+    void anyOwnerCanTakeItOffSale() {
+        claims.addOwner("rose_house", ANNA);
+        claims.addOwner("rose_house", BRAM);
+        sales.listByOwner(ANNA, "rose_house", "3000");
+
+        assertEquals("claims.sell.not-owner", refusal(() -> sales.unsellByOwner(ClaimFixture.CARA, "rose_house")));
+        sales.unsellByOwner(BRAM, "rose_house");
+
+        assertFalse(claim("rose_house").isForSale());
+        assertTrue(fixture.listings.find("rose_house").isEmpty());
+        assertTrue(fixture.listingStorage.saved.isEmpty());
+        assertEquals(money("3000"), fixture.prices.value("rose_house").orElseThrow());
+    }
+
+    @Test
+    void aListingWhoseOwnersAllLeftBecomesAServerSale() {
+        claims.addOwner("rose_house", ANNA);
+        sales.listByOwner(ANNA, "rose_house", "3000");
+
+        claims.removeOwner("rose_house", ANNA);
+        assertFalse(sales.abandoned("rose_house"));
+
+        assertTrue(sales.isOurs(claim("rose_house")));
+        assertTrue(fixture.listings.find("rose_house").isEmpty());
+    }
+
+    @Test
+    void ownersLeavingDuringATransferIsNotAnAbandonment() {
+        sales.setPrice("rose_house", "2000", "Staff");
+        claims.addOwner("rose_house", ANNA);
+
+        boolean relisted = sales.transfer("rose_house", () -> {
+            claims.clearOwners("rose_house");
+            return sales.abandoned("rose_house");
+        });
+
+        assertFalse(relisted);
+        assertFalse(claim("rose_house").isForSale());
+    }
+
+    @Test
+    void reconcileDropsListingsThatNoLongerHold() {
+        claims.addOwner("rose_house", ANNA);
+        claims.addOwner("oak_house", BRAM);
+        sales.listByOwner(ANNA, "rose_house", "3000");
+        sales.listByOwner(BRAM, "oak_house", "1000");
+        claims.removeOwner("rose_house", ANNA);
+        claims.setForSaleBy("oak_house", "OtherPlugin");
+        List<String> changes = new ArrayList<>();
+
+        sales.reconcile(changes::add);
+
+        assertTrue(fixture.listings.all().isEmpty());
+        assertTrue(sales.isOurs(claim("rose_house")), "it stays on sale, for the server");
+        assertEquals(2, changes.size());
+    }
+
+    @Test
+    void soldAndDeletedClaimsLoseTheirListing() {
+        claims.addOwner("rose_house", ANNA);
+        claims.addOwner("oak_house", ANNA);
+        sales.listByOwner(ANNA, "rose_house", "3000");
+        sales.listByOwner(ANNA, "oak_house", "1000");
+
+        sales.sold("rose_house");
+        sales.deleted("oak_house");
+
+        assertTrue(fixture.listings.all().isEmpty());
+        assertFalse(claim("rose_house").isForSale());
     }
 }

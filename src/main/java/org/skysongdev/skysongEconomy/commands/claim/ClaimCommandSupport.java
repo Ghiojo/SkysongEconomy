@@ -4,8 +4,12 @@ import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import org.bukkit.Location;
 import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Player;
 import org.jetbrains.annotations.Nullable;
+import org.skysongdev.skysongEconomy.character.CharacterDirectory;
+import org.skysongdev.skysongEconomy.character.CharacterRef;
 import org.skysongdev.skysongEconomy.claims.ClaimGateway;
+import org.skysongdev.skysongEconomy.claims.ClaimListing;
 import org.skysongdev.skysongEconomy.claims.ClaimPricing;
 import org.skysongdev.skysongEconomy.claims.ClaimSales;
 import org.skysongdev.skysongEconomy.claims.ClaimView;
@@ -19,6 +23,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 
 /** What the /se claim commands share: the services, and turning amounts and Claims into message placeholders. */
@@ -31,16 +36,36 @@ final class ClaimCommandSupport {
     /** The buying confirmation, or {@code null} when menus are off because businesses are disabled. */
     final @Nullable ClaimBuyScreens buying;
     final Function<Location, Optional<ClaimView>> claimAt;
+    final CharacterDirectory characters;
+    final BiConsumer<ClaimListing, BigDecimal> listed;
 
-    ClaimCommandSupport(ClaimSales sales, ClaimPricing pricing, ClaimGateway claims, Wallet wallet, Messenger messenger,
-                        @Nullable ClaimBuyScreens buying, Function<Location, Optional<ClaimView>> claimAt) {
-        this.sales = sales;
-        this.pricing = pricing;
-        this.claims = claims;
-        this.wallet = wallet;
-        this.messenger = messenger;
-        this.buying = buying;
-        this.claimAt = claimAt;
+    ClaimCommandSupport(ClaimCommand.Services services) {
+        this.sales = services.sales();
+        this.pricing = services.pricing();
+        this.claims = services.claims();
+        this.wallet = services.wallet();
+        this.messenger = services.messenger();
+        this.buying = services.buying();
+        this.claimAt = services.claimAt();
+        this.characters = services.characters();
+        this.listed = services.listed();
+    }
+
+    /** @return whether the sender is staff, who may sell and take off sale any Claim for the server */
+    static boolean isStaff(CommandSender sender) {
+        return sender.hasPermission(ClaimCommand.ADMIN);
+    }
+
+    /** @return the character the player is playing, empty for the console or a player without one */
+    Optional<CharacterRef> character(CommandSender sender) {
+        return sender instanceof Player player ? characters.active(player.getUniqueId()) : Optional.empty();
+    }
+
+    /** @return the ids of the Claims the sender's character owns that start with what was typed */
+    List<String> ownedIds(CommandSender sender, String typed) {
+        String lower = typed.toLowerCase(Locale.ROOT);
+        return character(sender).map(owner -> claims.all().stream().filter(claim -> claim.isOwnedBy(owner))
+                .map(ClaimView::id).filter(id -> id.startsWith(lower)).sorted().toList()).orElse(List.of());
     }
 
     /** @return {@code <claim>}: the Claim's id */

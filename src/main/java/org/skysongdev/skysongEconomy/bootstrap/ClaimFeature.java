@@ -9,6 +9,8 @@ import org.jetbrains.annotations.Nullable;
 import org.skysongdev.skysongEconomy.api.claims.ClaimPurchaseEvent;
 import org.skysongdev.skysongEconomy.character.CharacterDirectory;
 import org.skysongdev.skysongEconomy.claims.ClaimGateway;
+import org.skysongdev.skysongEconomy.claims.ClaimListings;
+import org.skysongdev.skysongEconomy.claims.ClaimPayouts;
 import org.skysongdev.skysongEconomy.claims.ClaimPrices;
 import org.skysongdev.skysongEconomy.claims.ClaimPricing;
 import org.skysongdev.skysongEconomy.claims.ClaimPurchases;
@@ -17,19 +19,26 @@ import org.skysongdev.skysongEconomy.claims.ClaimSales;
 import org.skysongdev.skysongEconomy.claims.SignPriceUpdater;
 import org.skysongdev.skysongEconomy.commands.SubCommand;
 import org.skysongdev.skysongEconomy.commands.claim.ClaimCommand;
+import org.skysongdev.skysongEconomy.data.database.AsyncClaimListingRepository;
+import org.skysongdev.skysongEconomy.data.database.AsyncClaimPayoutRepository;
 import org.skysongdev.skysongEconomy.data.database.AsyncClaimPriceRepository;
 import org.skysongdev.skysongEconomy.data.database.AsyncClaimSaleRepository;
 import org.skysongdev.skysongEconomy.data.database.BackgroundWriter;
 import org.skysongdev.skysongEconomy.data.database.ConnectionProvider;
 import org.skysongdev.skysongEconomy.data.database.DatabaseSettings;
+import org.skysongdev.skysongEconomy.data.database.SqlClaimListingRepository;
+import org.skysongdev.skysongEconomy.data.database.SqlClaimPayoutRepository;
 import org.skysongdev.skysongEconomy.data.database.SqlClaimPriceRepository;
 import org.skysongdev.skysongEconomy.data.database.SqlClaimSaleRepository;
 import org.skysongdev.skysongEconomy.data.database.StorageException;
+import org.skysongdev.skysongEconomy.gui.ChatPrompts;
 import org.skysongdev.skysongEconomy.gui.MenuTheme;
 import org.skysongdev.skysongEconomy.gui.claim.ClaimBuyScreens;
-import org.skysongdev.skysongEconomy.integration.skysongclaims.BuyButton;
+import org.skysongdev.skysongEconomy.gui.claim.ClaimSellScreens;
 import org.skysongdev.skysongEconomy.integration.skysongclaims.ClaimChangeListener;
+import org.skysongdev.skysongEconomy.integration.skysongclaims.ClaimSignButton;
 import org.skysongdev.skysongEconomy.integration.skysongclaims.SkysongClaimsAdapter;
+import org.skysongdev.skysongEconomy.listeners.ClaimNotices;
 import org.skysongdev.skysongEconomy.messaging.Messenger;
 import org.skysongdev.skysongEconomy.money.Wallet;
 import org.skysongdev.skysongEconomy.prices.PriceDatabase;
@@ -47,7 +56,7 @@ import java.util.logging.Logger;
  * Connects SkysongEconomy to SkysongClaims, which is optional, and sells its Claims: asking prices
  * (kept in {@code claim_prices}), Claim modifiers ({@code claim-type:} and {@code claim:} targets,
  * {@code on:claims}), server sales, putting abandoned Claims back on sale, the price on line 4 of
- * Claim signs, buying Claims, and the {@code /se claim} commands. Without SkysongClaims, or with one too old, everything about Claims
+ * Claim signs, buying Claims, owners reselling them, and the {@code /se claim} commands. Without SkysongClaims, or with one too old, everything about Claims
  * stays off and the rest of the plugin works as before.
  * <p>
  * No SkysongClaims class is loaded until SkysongClaims is known to be enabled, so the plugin starts
@@ -56,6 +65,9 @@ import java.util.logging.Logger;
 public final class ClaimFeature implements AutoCloseable {
     /** The SkysongClaims plugin's name, as plugin.yml's {@code softdepend} lists it. */
     public static final String SKYSONG_CLAIMS = "SkysongClaims";
+    /** The ids of SkysongEconomy's buttons in Claim sign menus. */
+    private static final String BUY_BUTTON = "buy";
+    private static final String SELL_BUTTON = "sell";
     /** How often expired modifiers are looked for: once a minute. */
     private static final long EXPIRY_CHECK_TICKS = 20L * 60;
 
@@ -87,12 +99,16 @@ public final class ClaimFeature implements AutoCloseable {
      *                      and then Claims cost their asking price
      * @param wallet        players' money, to show amounts and pay for Claims
      * @param characters    players' characters, which own Claims
-     * @param menus         the menu look, which businesses keep; empty when businesses are disabled, and
-     *                      then Claims can't be bought
+     * @param menus         the menus' look and chat questions, which businesses keep; empty when businesses
+     *                      are disabled, and then Claims can't be bought and the sign buttons are off
      */
     public record Inputs(DatabaseSettings database, PriceDatabase prices, PriceSettings priceSettings,
                          Optional<PriceModifiers> modifiers, Wallet wallet, CharacterDirectory characters,
-                         Optional<MenuTheme> menus, Messenger messenger) {
+                         Optional<MenuTools> menus, Messenger messenger) {
+    }
+
+    /** What SkysongEconomy's menus are made with. */
+    public record MenuTools(MenuTheme theme, ChatPrompts prompts) {
     }
 
     /**
@@ -123,7 +139,9 @@ public final class ClaimFeature implements AutoCloseable {
         resources.add(writer);
         ClaimPrices prices = new ClaimPrices(new AsyncClaimPriceRepository(new SqlClaimPriceRepository(connections), writer),
                 inputs.prices(), inputs.priceSettings(), Clock.systemUTC());
-        ClaimSales sales = new ClaimSales(adapter, prices);
+        ClaimListings listings = new ClaimListings(
+                new AsyncClaimListingRepository(new SqlClaimListingRepository(connections), writer), Clock.systemUTC());
+        ClaimSales sales = new ClaimSales(adapter, prices, listings);
         ClaimPricing pricing = new ClaimPricing(adapter, prices, inputs.modifiers().orElse(null), inputs.priceSettings(),
                 Clock.systemUTC());
         SignPriceUpdater signs = new SignPriceUpdater(adapter, sales, pricing, signText(inputs), logger::warning);
@@ -139,45 +157,60 @@ public final class ClaimFeature implements AutoCloseable {
         }, () -> logger.info("Businesses are disabled, so there are no price modifiers: Claims cost their asking price"));
         try {
             logger.info("Loaded " + prices.loadAll(logger::warning) + " Claim price(s)");
+            listings.loadAll();
             sales.reconcile(logger::info);
         } catch (StorageException e) {
             logger.log(Level.SEVERE, "Claim prices could not be loaded from the database", e);
         }
         signs.redrawAll();
         plugin.getServer().getPluginManager().registerEvents(new ClaimChangeListener(sales, pricing, signs, logger), plugin);
-        ClaimBuyScreens buying = startBuying(plugin, inputs, adapter, sales, pricing,
+        ClaimPayouts payouts = new ClaimPayouts(
+                new AsyncClaimPayoutRepository(new SqlClaimPayoutRepository(connections), writer), inputs.wallet());
+        ClaimNotices notices = new ClaimNotices(plugin.getServer(), adapter, sales, payouts, inputs.wallet(),
+                inputs.messenger());
+        plugin.getServer().getPluginManager().registerEvents(notices, plugin);
+        ClaimBuyScreens buying = startBuying(plugin, inputs, adapter, sales, pricing, payouts, notices,
                 new AsyncClaimSaleRepository(new SqlClaimSaleRepository(connections), writer));
-        return new ClaimFeature(adapter, sales, pricing, List.of(new ClaimCommand(sales, pricing, adapter, inputs.wallet(),
-                inputs.messenger(), buying, adapter::at)), resources, logger);
+        inputs.menus().ifPresent(menus -> {
+            ClaimSellScreens selling = new ClaimSellScreens(sales, adapter, inputs.characters(), inputs.wallet(),
+                    menus.theme(), menus.prompts(), inputs.messenger(), notices::listed);
+            adapter.addMenuButton(SELL_BUTTON, new ClaimSignButton(selling::buttonIcon, selling::click));
+        });
+        ClaimCommand command = new ClaimCommand(new ClaimCommand.Services(sales, pricing, adapter, inputs.wallet(),
+                inputs.characters(), inputs.messenger(), buying, adapter::at, notices::listed));
+        return new ClaimFeature(adapter, sales, pricing, List.of(command), resources, logger);
     }
 
     /**
      * Lets players buy Claims: the Buy button on Claim signs and the confirmation. Every purchase
-     * fires {@link ClaimPurchaseEvent}.
+     * fires {@link ClaimPurchaseEvent} and tells the sellers.
      *
      * @return the confirmation screens, or {@code null} when buying is off (no menus, or past sales
-     *         can't be read, which would reuse their numbers)
+     *         or waiting payouts can't be read, which would reuse sale numbers or lose money owed)
      */
     private static @Nullable ClaimBuyScreens startBuying(JavaPlugin plugin, Inputs inputs, SkysongClaimsAdapter adapter,
-                                                         ClaimSales sales, ClaimPricing pricing,
-                                                         ClaimSaleRepository saleRecords) {
+                                                         ClaimSales sales, ClaimPricing pricing, ClaimPayouts payouts,
+                                                         ClaimNotices notices, ClaimSaleRepository saleRecords) {
         Logger logger = plugin.getLogger();
         if (inputs.menus().isEmpty()) {
             logger.warning("Buying Claims is off: it uses the business menus, and businesses are disabled");
             return null;
         }
-        ClaimPurchases purchases = new ClaimPurchases(adapter, sales, pricing, inputs.wallet(), saleRecords,
-                sale -> plugin.getServer().getPluginManager().callEvent(new ClaimPurchaseEvent(sale)), logger::severe,
-                Clock.systemUTC());
+        ClaimPurchases purchases = new ClaimPurchases(adapter, sales, pricing, inputs.wallet(), payouts,
+                inputs.priceSettings(), saleRecords, sale -> {
+                    plugin.getServer().getPluginManager().callEvent(new ClaimPurchaseEvent(sale));
+                    notices.sold(sale);
+                }, logger::severe, Clock.systemUTC());
         try {
             purchases.load();
+            payouts.loadAll();
         } catch (StorageException e) {
-            logger.log(Level.SEVERE, "Buying Claims is off: past Claim sales could not be read from the database", e);
+            logger.log(Level.SEVERE, "Buying Claims is off: past Claim sales or payouts could not be read from the database", e);
             return null;
         }
         ClaimBuyScreens screens = new ClaimBuyScreens(purchases, adapter, inputs.characters(), inputs.wallet(),
-                inputs.menus().get(), inputs.messenger());
-        adapter.addMenuButton(BuyButton.ID, new BuyButton(screens));
+                inputs.menus().get().theme(), inputs.messenger());
+        adapter.addMenuButton(BUY_BUTTON, new ClaimSignButton(screens::buttonIcon, screens::open));
         return screens;
     }
 

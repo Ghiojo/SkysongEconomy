@@ -11,6 +11,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Consumer;
 
 /**
  * SkysongClaims in memory, answering the way its API documents: owners are checked in the same
@@ -29,6 +30,8 @@ public final class FakeClaims implements ClaimGateway {
     private int priceLineWrites;
     /** When set, the next {@link #addOwner} gives this answer and adds no one, as if things changed after {@link #canOwn}. */
     public OwnershipAnswer refuseNextOwner;
+    /** Told the Claim's id after {@link #clearOwners}, as SkysongClaims fires its owner-removed events. */
+    public Consumer<String> onOwnersCleared = claimId -> { };
 
     private static final class Stored {
         final String id;
@@ -162,6 +165,7 @@ public final class FakeClaims implements ClaimGateway {
     @Override
     public void clearOwners(String claimId) {
         require(claimId).owners.clear();
+        onOwnersCleared.accept(claimId);
     }
 
     @Override

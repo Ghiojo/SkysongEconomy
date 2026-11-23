@@ -33,7 +33,8 @@ public final class SqlClaimSaleRepository implements ClaimSaleRepository {
     public void save(ClaimSale sale) {
         try (PreparedStatement statement = connections.getConnection().prepareStatement(
                 "INSERT INTO claim_sales (id, claim_id, claim_type, buyer_uuid, buyer_profile, asking_price, "
-                        + "modifier_total, paid, modifiers, sold_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")) {
+                        + "modifier_total, paid, modifiers, seller, seller_paid_later, sold_at) "
+                        + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")) {
             statement.setLong(1, sale.id());
             statement.setString(2, sale.claimId());
             statement.setString(3, sale.claimTypeId());
@@ -43,7 +44,9 @@ public final class SqlClaimSaleRepository implements ClaimSaleRepository {
             statement.setBigDecimal(7, sale.modifierTotal());
             statement.setBigDecimal(8, sale.paid());
             statement.setString(9, GSON.toJson(sale.modifiers()));
-            statement.setLong(10, sale.at().toEpochMilli());
+            statement.setString(10, sale.seller().map(GSON::toJson).orElse(null));
+            statement.setBoolean(11, sale.sellerPaidLater());
+            statement.setLong(12, sale.at().toEpochMilli());
             statement.executeUpdate();
         } catch (SQLException e) {
             throw new StorageException("Failed to record the sale of the Claim " + sale.claimId(), e);

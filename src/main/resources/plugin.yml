@@ -68,10 +68,13 @@ permissions:
     description: Allows the /se upkeep commands, to see and change NPC upkeep
     default: op
   skysongeconomy.claims.admin:
-    description: Allows /se claim price, sell, unsell and list, to price SkysongClaims Claims and sell them for the server
+    description: Allows /se claim price and list, and selling or taking off sale any Claim, to price SkysongClaims Claims and sell them for the server
     default: op
   skysongeconomy.claims.buy:
     description: Allows buying Claims on sale, with /se claim buy or the Buy button on a Claim sign
+    default: true
+  skysongeconomy.claims.sell:
+    description: Allows putting your own Claim on sale and taking it off, with /se claim sell and unsell or the Sell button on a Claim sign
     default: true
   skysongeconomy.*:
     description: Gives access to all SkysongEconomy features
@@ -94,3 +97,4 @@ permissions:
       skysongeconomy.upkeep.admin: true
       skysongeconomy.claims.admin: true
       skysongeconomy.claims.buy: true
+      skysongeconomy.claims.sell: true

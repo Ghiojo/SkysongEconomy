@@ -73,9 +73,9 @@ public final class ClaimBuyScreens {
     }
 
     /** @return the Buy button for a Claim SkysongEconomy has on sale, showing what it costs; empty otherwise */
-    public Optional<ItemStack> buttonIcon(String claimId) {
+    public Optional<ItemStack> buttonIcon(Player viewer, String claimId) {
         try {
-            return claims.find(claimId).filter(claim -> purchases.isForSale(claim)).map(claim ->
+            return claims.find(claimId).filter(purchases::isForSale).map(claim ->
                     theme.item(BUTTON_ICON, messenger.render("claims.buy.button-name"), List.of(messenger.render(
                             "claims.buy.button-lore", price(purchases.price(claim.id()))))));
         } catch (RefusedException e) {
@@ -108,7 +108,10 @@ public final class ClaimBuyScreens {
     private ItemStack summary(Player player, ClaimView claim, ClaimQuote quote, CharacterRef character) {
         List<Component> lore = new ArrayList<>();
         lore.add(messenger.render("claims.buy.confirm.type", Placeholder.unparsed("type", claim.typeId())));
-        lore.add(messenger.render("claims.buy.confirm.seller-server"));
+        lore.add(purchases.listing(claim.id()).isPresent() && claim.isOwned()
+                ? messenger.render("claims.buy.confirm.seller-owners", Placeholder.unparsed("owners",
+                        String.join(", ", claim.owners().stream().map(CharacterRef::profile).toList())))
+                : messenger.render("claims.buy.confirm.seller-server"));
         lore.add(Component.empty());
         lore.add(messenger.render("claims.buy.confirm.asking", price(quote.askingPrice())));
         quote.shares().forEach(share -> lore.add(messenger.render("claims.buy.confirm.share",
