@@ -104,7 +104,7 @@ public final class LedgerParser {
         for (String text : root.strings("exempt-from")) {
             Optional<TargetKind> kind = TargetKind.parse(text);
             if (kind.isEmpty()) {
-                warnings.accept(root.error("exempt-from", "'" + text + "' is not one of global, business, good-type, item,"
+                warnings.accept(root.error("exempt-from", "'" + text + "' is not one of global, business, good-type, item, pier,"
                         + " so it is ignored").getMessage());
             } else if (kind.get() == TargetKind.LEDGER) {
                 warnings.accept(root.error("exempt-from", "can't hold 'ledger': modifiers on a ledger always apply to it,"

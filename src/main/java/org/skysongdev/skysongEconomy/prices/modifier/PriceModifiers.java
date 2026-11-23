@@ -272,6 +272,10 @@ public final class PriceModifiers {
             if (claimTarget) {
                 throw new PriceException("prices.modifiers.claims-only-target", Map.of("target", draft.target().key()));
             }
+            // Only imports go to a pier, so a pier modifier on exports would never apply.
+            if (draft.target().kind() == TargetKind.PIER && draft.appliesTo() == AppliesTo.EXPORTS) {
+                throw new PriceException("prices.modifiers.pier-imports-only", Map.of("target", draft.target().key()));
+            }
             return;
         }
         if (!claimTarget && draft.target().kind() != TargetKind.GLOBAL) {

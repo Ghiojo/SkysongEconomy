@@ -69,6 +69,27 @@ class PriceModifiersTest {
     }
 
     @Test
+    void aPierModifierMatchesImportsSentToThatPier() {
+        modifiers.add(draft("harbour_dues", "PIER:Harbour", "10"));
+
+        assertEquals(0, new BigDecimal("100").compareTo(modifiers.price(new BigDecimal("100"), WINE_IMPORT, ONE_DECIMAL).price()));
+        assertEquals(0, new BigDecimal("110").compareTo(modifiers.price(new BigDecimal("100"), WINE_IMPORT.toPier("harbour"), ONE_DECIMAL).price()));
+        assertEquals(0, new BigDecimal("100").compareTo(modifiers.price(new BigDecimal("100"), WINE_IMPORT.toPier("cove"), ONE_DECIMAL).price()));
+        assertEquals(TargetKind.PIER, ModifierTarget.parse("pier:harbour").kind());
+    }
+
+    @Test
+    void aPierModifierCantApplyOnlyToExportsOrClaims() {
+        PriceException exports = assertThrows(PriceException.class, () -> modifiers.add(new ModifierDraft("dues",
+                ModifierTarget.parse("pier:harbour"), AppliesTo.EXPORTS, percent("10"), null, null, "Staff")));
+        assertEquals("prices.modifiers.pier-imports-only", exports.messageKey());
+        assertThrows(PriceException.class, () -> modifiers.add(new ModifierDraft("dues",
+                ModifierTarget.parse("pier:harbour"), AppliesTo.CLAIMS, percent("10"), null, null, "Staff")));
+        modifiers.add(new ModifierDraft("dues", ModifierTarget.parse("pier:harbour"), AppliesTo.BOTH, percent("10"),
+                null, null, "Staff"));
+    }
+
+    @Test
     void theSameTypeOnAnotherTargetStacks() {
         modifiers.add(draft("port_tax", "ledger:smugglers", "10"));
         modifiers.add(draft("port_tax", "global", "10"));

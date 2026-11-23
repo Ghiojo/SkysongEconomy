@@ -1,5 +1,6 @@
 package org.skysongdev.skysongEconomy.trade;
 
+import org.jetbrains.annotations.Nullable;
 import org.skysongdev.skysongEconomy.business.Business;
 import org.skysongdev.skysongEconomy.prices.PriceContext;
 import org.skysongdev.skysongEconomy.prices.PriceDatabase;
@@ -39,12 +40,24 @@ public final class TradePricing {
      *                        base value or the expression can't be worked out
      */
     public ImportQuote quote(Business business, Ledger ledger, ImportOffer offer, DeliveryTime time) {
+        return quote(business, ledger, offer, time, null);
+    }
+
+    /**
+     * Prices an import sent to a receiving pier, so {@code pier:<id>} modifiers apply.
+     *
+     * @param pierId the pier, or {@code null} while none is chosen
+     * @throws PriceException as {@link #quote(Business, Ledger, ImportOffer, DeliveryTime)}
+     */
+    public ImportQuote quote(Business business, Ledger ledger, ImportOffer offer, DeliveryTime time,
+                             @Nullable String pierId) {
         PriceExpression expression = offer.price(time.id()).orElseThrow(() ->
                 new PriceException("business.imports.time-not-offered", Map.of("time", time.id())));
         BigDecimal base = offer.contents().baseValue(prices.context(null));
         BigDecimal value = expression.evaluate(prices.context(base));
         PriceSubject subject = new PriceSubject(TradeDirection.IMPORT, business.id(), ledger.id(),
-                offer.contents().materialIds(), goodTypes.of(offer.contents().materialIds()), ledger.exemptFrom());
+                offer.contents().materialIds(), goodTypes.of(offer.contents().materialIds()), ledger.exemptFrom())
+                .toPier(pierId);
         return new ImportQuote(ledger, offer, time, modifiers.price(value, subject, settings));
     }
 

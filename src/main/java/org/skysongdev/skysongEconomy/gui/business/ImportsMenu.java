@@ -132,9 +132,19 @@ final class ImportsMenu extends PagedMenu<ImportsMenu.Choice> {
      *
      * @param pierId the pier chosen so far, if any
      */
-    private void confirm(Player player, ImportQuote quote, Optional<String> pierId) {
+    private void confirm(Player player, ImportQuote listed, Optional<String> pierId) {
         Optional<Pier> pier = pierId.flatMap(screens.piers::find).filter(Pier::open);
         boolean needsPier = screens.deliveries.needsPier();
+        ImportQuote quote;
+        try {
+            // Priced again for the chosen pier, so pier:<id> modifiers show.
+            quote = screens.pricing.quote(context.business(), listed.ledger(), listed.offer(), listed.deliveryTime(),
+                    pier.map(Pier::id).orElse(null));
+        } catch (PriceException broken) {
+            screens.messenger.send(player, broken);
+            open(player);
+            return;
+        }
         List<Component> lore = new ArrayList<>(screens.contents(quote.offer().contents()));
         lore.add(Component.empty());
         lore.add(screens.messenger.render("business.imports.confirm.time", Placeholder.parsed("time", quote.deliveryTime().displayName()),

@@ -143,7 +143,7 @@ public final class DeliveryService implements BusinessChangeListener {
                     Map.of("max", String.valueOf(deps.settings().limits(business).imports())));
         }
         Optional<Pier> pier = pier(pierId);
-        ImportQuote quote = deps.pricing().quote(business, ledger, offer, time);
+        ImportQuote quote = deps.pricing().quote(business, ledger, offer, time, pier.map(Pier::id).orElse(null));
         Instant now = clock.instant();
         Delivery delivery = new Delivery(UUID.randomUUID().toString(), business.id(), ledger.id(), offer.id(), time.id(),
                 offer.contents().roll(random), character, quote.price().price(), now, now.plus(time.duration()),

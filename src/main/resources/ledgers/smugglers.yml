@@ -13,7 +13,7 @@ description:
 
 # Optional. Makes the ledger tax exempt: price modifiers of these target kinds are ignored for its
 # imports and exports, whether they raise or lower the price. Allowed: global, business, good-type,
-# item. Modifiers aimed at this ledger (ledger:smugglers) always apply. Leave it out for a normal ledger.
+# item, pier. Modifiers aimed at this ledger (ledger:smugglers) always apply. Leave it out for a normal ledger.
 exempt-from: [global, good-type, item]
 
 # Optional. Labels put on every shipment of this ledger's imports, for other plugins to read (for
