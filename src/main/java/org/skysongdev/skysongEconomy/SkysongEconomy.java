@@ -106,7 +106,8 @@ public final class SkysongEconomy extends JavaPlugin {
         // SkysongClaims' Claims: priced, put on sale and bought.
         claimFeature = ClaimFeature.start(this,
                 new ClaimFeature.Inputs(databaseSettings(), prices, priceSettings,
-                        businessFeature.system().map(BusinessSystem::modifiers), wallet, messenger));
+                        businessFeature.system().map(BusinessSystem::modifiers), wallet, skysongStats,
+                        businessFeature.system().map(system -> system.menus().theme()), messenger));
 
         registerCommands(messenger, materialIds);
     }

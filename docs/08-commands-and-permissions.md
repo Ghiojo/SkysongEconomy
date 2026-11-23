@@ -135,6 +135,7 @@ usually a plain number. See [Claims](15-claims.md).
 | `sell <claim> [price]` | `skysongeconomy.claims.admin` | Puts an unowned Claim on sale for the server, at the price given or the saved one |
 | `unsell <claim>` | `skysongeconomy.claims.admin` | Takes it off sale; the price stays saved |
 | `list` | `skysongeconomy.claims.admin` | Every Claim SkysongEconomy has on sale, with its price |
+| `buy [claim]` | `skysongeconomy.claims.buy` | Shows what the Claim (named, or the one you stand in) costs and buys it when you confirm. The Buy button on a Claim sign does the same |
 
 ## Permissions
 
@@ -158,6 +159,7 @@ All are declared in `src/main/resources/plugin.yml`.
 | `skysongeconomy.nodes.tend-bypass` | op | Plant and take out primers at every farm node, whatever its owner and groups allow |
 | `skysongeconomy.upkeep.admin` | op | Every `/se upkeep` command |
 | `skysongeconomy.claims.admin` | op | `/se claim price`, `sell`, `unsell` and `list` |
+| `skysongeconomy.claims.buy` | everyone | `/se claim buy` and the Buy button on Claim signs |
 | `skysongeconomy.*` | op | All of the above |
 
 Players use most features through menus, not commands: right-click a business block or a node. Those menus check

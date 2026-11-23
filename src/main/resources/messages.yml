@@ -939,6 +939,32 @@ claims:
   sign-price: "<gold><price>"
   # The same, when modifiers raise the price above the asking price.
   sign-price-raised: "<gold><price> <red>↑"
+  # Buying (/se claim buy, and the Buy button in a Claim sign's menu).
+  buy:
+    not-for-sale: "<red><yellow><claim></yellow> isn't for sale."
+    not-here: "<red>You aren't standing in a Claim. Name one: /se claim buy \\<claim>"
+    no-character: "<red>Choose a character first: Claims are owned by characters."
+    menus-off: "<red>Buying Claims is off while businesses are disabled, since it uses their menus."
+    type-limit: "<red>Your character already owns as many Claims of this type as allowed."
+    full: "<red><yellow><claim></yellow> has no room for another owner."
+    already-owner: "<red>Your character already owns <yellow><claim></yellow>."
+    unknown-character: "<red>SkysongClaims doesn't know your character."
+    failed: "<red><yellow><claim></yellow> couldn't be given to you, so your money was given back."
+    price-changed: "<red>The price of <yellow><claim></yellow> changed to <white><price></white>. Have a look again before you buy."
+    no-money: "<red><yellow><claim></yellow> costs <white><price></white>, and you have <white><balance></white>."
+    bought: "<green>You bought <white><name></white> for <white><price></white>. It belongs to <white><character></white> now."
+    button-name: "<green>Buy this Claim"
+    button-lore: "<gray>For <white><price></white>"
+    confirm:
+      title: "Buy <name>?"
+      # The lines under the Claim's name in the confirmation.
+      type: "<gray>Type: <white><type>"
+      seller-server: "<gray>Sold by: <white>the server"
+      asking: "<gray>Price: <white><price>"
+      share: "<gray>+ <name>: <white><share>"
+      total: "<gold>You pay: <white><price>"
+      balance: "<gray>You have: <white><balance>"
+      owner: "<gray>It will belong to: <white><character>"
 
 # NPC upkeep (npc-upkeep.yml). Lines about one NPC can use <npc> (its name), <profile>, <state>
 # (the maintained or unmaintained word below) and <next> (time left until its next cycle).
