@@ -1,6 +1,6 @@
 package org.skysongdev.skysongEconomy.prices.modifier;
 
-/** Whether a price is paid for an import or received for an export. */
+/** What a price is for: an import paid for, an export paid out, or a SkysongClaims Claim bought. */
 public enum TradeDirection {
-    IMPORT, EXPORT
+    IMPORT, EXPORT, CLAIM
 }

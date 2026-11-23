@@ -5,6 +5,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.Nullable;
 import org.skysongdev.skysongEconomy.claims.ClaimGateway;
 import org.skysongdev.skysongEconomy.claims.ClaimPrices;
+import org.skysongdev.skysongEconomy.claims.ClaimPricing;
 import org.skysongdev.skysongEconomy.claims.ClaimSales;
 import org.skysongdev.skysongEconomy.commands.SubCommand;
 import org.skysongdev.skysongEconomy.commands.claim.ClaimCommand;
@@ -20,6 +21,7 @@ import org.skysongdev.skysongEconomy.messaging.Messenger;
 import org.skysongdev.skysongEconomy.money.Wallet;
 import org.skysongdev.skysongEconomy.prices.PriceDatabase;
 import org.skysongdev.skysongEconomy.prices.PriceSettings;
+import org.skysongdev.skysongEconomy.prices.modifier.PriceModifiers;
 
 import java.time.Clock;
 import java.util.ArrayList;
@@ -30,7 +32,8 @@ import java.util.logging.Logger;
 
 /**
  * Connects SkysongEconomy to SkysongClaims, which is optional, and sells its Claims: asking prices
- * (kept in {@code claim_prices}), server sales, putting abandoned Claims back on sale, and the
+ * (kept in {@code claim_prices}), Claim modifiers ({@code claim-type:} and {@code claim:} targets,
+ * {@code on:claims}), server sales, putting abandoned Claims back on sale, and the
  * {@code /se claim} commands. Without SkysongClaims, or with one too old, everything about Claims
  * stays off and the rest of the plugin works as before.
  * <p>
@@ -43,15 +46,17 @@ public final class ClaimFeature implements AutoCloseable {
 
     private final @Nullable ClaimGateway gateway;
     private final @Nullable ClaimSales sales;
+    private final @Nullable ClaimPricing pricing;
     private final List<SubCommand> commands;
     /** Closed in reverse order on shutdown. */
     private final List<AutoCloseable> resources;
     private final Logger logger;
 
-    private ClaimFeature(@Nullable ClaimGateway gateway, @Nullable ClaimSales sales, List<SubCommand> commands,
-                         List<AutoCloseable> resources, Logger logger) {
+    private ClaimFeature(@Nullable ClaimGateway gateway, @Nullable ClaimSales sales, @Nullable ClaimPricing pricing,
+                         List<SubCommand> commands, List<AutoCloseable> resources, Logger logger) {
         this.gateway = gateway;
         this.sales = sales;
+        this.pricing = pricing;
         this.commands = List.copyOf(commands);
         this.resources = List.copyOf(resources);
         this.logger = logger;
@@ -63,10 +68,12 @@ public final class ClaimFeature implements AutoCloseable {
      * @param database      the database to keep prices in; the feature opens its own connection
      * @param prices        where {@code {item:...}} in a Claim's price gets its value
      * @param priceSettings how many decimals prices keep
+     * @param modifiers     the price modifiers, which businesses keep; empty when businesses are disabled,
+     *                      and then Claims cost their asking price
      * @param wallet        players' money, to show amounts
      */
-    public record Inputs(DatabaseSettings database, PriceDatabase prices, PriceSettings priceSettings, Wallet wallet,
-                         Messenger messenger) {
+    public record Inputs(DatabaseSettings database, PriceDatabase prices, PriceSettings priceSettings,
+                         Optional<PriceModifiers> modifiers, Wallet wallet, Messenger messenger) {
     }
 
     /**
@@ -98,19 +105,23 @@ public final class ClaimFeature implements AutoCloseable {
         ClaimPrices prices = new ClaimPrices(new AsyncClaimPriceRepository(new SqlClaimPriceRepository(connections), writer),
                 inputs.prices(), inputs.priceSettings(), Clock.systemUTC());
         ClaimSales sales = new ClaimSales(adapter, prices);
+        ClaimPricing pricing = new ClaimPricing(adapter, prices, inputs.modifiers().orElse(null), inputs.priceSettings(),
+                Clock.systemUTC());
+        inputs.modifiers().ifPresentOrElse(modifiers -> modifiers.addTargetCheck(pricing::checkTarget),
+                () -> logger.info("Businesses are disabled, so there are no price modifiers: Claims cost their asking price"));
         try {
             logger.info("Loaded " + prices.loadAll(logger::warning) + " Claim price(s)");
             sales.reconcile(logger::info);
         } catch (StorageException e) {
             logger.log(Level.SEVERE, "Claim prices could not be loaded from the database", e);
         }
-        plugin.getServer().getPluginManager().registerEvents(new ClaimChangeListener(sales, logger), plugin);
-        return new ClaimFeature(adapter, sales,
-                List.of(new ClaimCommand(sales, adapter, inputs.wallet(), inputs.messenger())), resources, logger);
+        plugin.getServer().getPluginManager().registerEvents(new ClaimChangeListener(sales, pricing, logger), plugin);
+        return new ClaimFeature(adapter, sales, pricing,
+                List.of(new ClaimCommand(sales, pricing, adapter, inputs.wallet(), inputs.messenger())), resources, logger);
     }
 
     private static ClaimFeature off(Logger logger) {
-        return new ClaimFeature(null, null, List.of(), List.of(), logger);
+        return new ClaimFeature(null, null, null, List.of(), List.of(), logger);
     }
 
     /** @return the way into SkysongClaims, empty when it is not installed or could not be used */
@@ -121,6 +132,14 @@ public final class ClaimFeature implements AutoCloseable {
     /** @return Claim prices and sales, empty whenever {@link #gateway()} is */
     public Optional<ClaimSales> sales() {
         return Optional.ofNullable(sales);
+    }
+
+    /**
+     * @return what Claims cost with their modifiers, and the API for Claim type modifiers; empty
+     *         whenever {@link #gateway()} is
+     */
+    public Optional<ClaimPricing> pricing() {
+        return Optional.ofNullable(pricing);
     }
 
     /** @return the {@code /se claim} command, or none when Claim sales are off */

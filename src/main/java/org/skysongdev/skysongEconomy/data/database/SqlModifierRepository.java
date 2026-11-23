@@ -1,6 +1,7 @@
 package org.skysongdev.skysongEconomy.data.database;
 
 import org.skysongdev.skysongEconomy.prices.modifier.AppliesTo;
+import org.skysongdev.skysongEconomy.prices.modifier.ModifierAmount;
 import org.skysongdev.skysongEconomy.prices.modifier.ModifierRepository;
 import org.skysongdev.skysongEconomy.prices.modifier.ModifierTarget;
 import org.skysongdev.skysongEconomy.prices.modifier.PriceModifier;
@@ -37,7 +38,8 @@ public final class SqlModifierRepository implements ModifierRepository {
                 modifiers.add(new PriceModifier(rows.getString("id"), rows.getString("type"),
                         ModifierTarget.parse(rows.getString("target")),
                         AppliesTo.fromKey(rows.getString("applies_to")).orElse(AppliesTo.IMPORTS),
-                        rows.getBigDecimal("percent"), rows.getString("display_name"), expiresAt,
+                        ModifierAmount.of(rows.getString("kind"), rows.getBigDecimal("percent")),
+                        rows.getString("display_name"), expiresAt,
                         rows.getString("created_by"), Instant.ofEpochMilli(rows.getLong("created_at"))));
             }
             return modifiers;
@@ -49,15 +51,17 @@ public final class SqlModifierRepository implements ModifierRepository {
     @Override
     public void save(PriceModifier modifier) {
         try (PreparedStatement statement = connections.getConnection().prepareStatement(
-                "INSERT INTO price_modifiers (id, type, target, applies_to, percent, display_name, expires_at, created_by, created_at) "
-                        + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE type = VALUES(type), target = VALUES(target), "
+                "INSERT INTO price_modifiers (id, type, target, applies_to, percent, display_name, expires_at, created_by, created_at, kind) "
+                        + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE type = VALUES(type), target = VALUES(target), "
                         + "applies_to = VALUES(applies_to), percent = VALUES(percent), display_name = VALUES(display_name), "
-                        + "expires_at = VALUES(expires_at), created_by = VALUES(created_by), created_at = VALUES(created_at)")) {
+                        + "expires_at = VALUES(expires_at), created_by = VALUES(created_by), created_at = VALUES(created_at), "
+                        + "kind = VALUES(kind)")) {
             statement.setString(1, modifier.id());
             statement.setString(2, modifier.type());
             statement.setString(3, modifier.target().key());
             statement.setString(4, modifier.appliesTo().key());
-            statement.setBigDecimal(5, modifier.percent());
+            // The percent column holds the amount; kind says whether it is a percentage or flat money.
+            statement.setBigDecimal(5, modifier.amount().value());
             statement.setString(6, modifier.displayName());
             if (modifier.expiresAt() == null) {
                 statement.setNull(7, Types.BIGINT);
@@ -66,6 +70,7 @@ public final class SqlModifierRepository implements ModifierRepository {
             }
             statement.setString(8, modifier.createdBy());
             statement.setLong(9, modifier.createdAt().toEpochMilli());
+            statement.setString(10, modifier.amount().kind());
             statement.executeUpdate();
         } catch (SQLException e) {
             throw new StorageException("Failed to save price modifier " + modifier.id(), e);

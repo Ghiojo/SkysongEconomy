@@ -1,6 +1,7 @@
 package org.skysongdev.skysongEconomy.commands.claim;
 
 import org.skysongdev.skysongEconomy.claims.ClaimGateway;
+import org.skysongdev.skysongEconomy.claims.ClaimPricing;
 import org.skysongdev.skysongEconomy.claims.ClaimSales;
 import org.skysongdev.skysongEconomy.commands.CommandGroup;
 import org.skysongdev.skysongEconomy.messaging.Messenger;
@@ -14,9 +15,9 @@ public final class ClaimCommand extends CommandGroup {
     /** Staff permission: prices and server sales. */
     public static final String ADMIN = "skysongeconomy.claims.admin";
 
-    public ClaimCommand(ClaimSales sales, ClaimGateway claims, Wallet wallet, Messenger messenger) {
+    public ClaimCommand(ClaimSales sales, ClaimPricing pricing, ClaimGateway claims, Wallet wallet, Messenger messenger) {
         super("claim", null, messenger);
-        ClaimCommandSupport support = new ClaimCommandSupport(sales, claims, wallet, messenger);
+        ClaimCommandSupport support = new ClaimCommandSupport(sales, pricing, claims, wallet, messenger);
         register(new CommandGroup("price", ADMIN, messenger)
                 .register(new SetClaimPrice(support))
                 .register(new ClearClaimPrice(support))

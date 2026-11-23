@@ -10,7 +10,9 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -34,8 +36,12 @@ class PriceModifiersTest {
         modifiers.loadAll();
     }
 
+    private static ModifierAmount percent(String value) {
+        return new ModifierAmount.Percent(new BigDecimal(value));
+    }
+
     private static ModifierDraft draft(String type, String target, String percent) {
-        return new ModifierDraft(type, ModifierTarget.parse(target), AppliesTo.IMPORTS, new BigDecimal(percent), null, null, "Staff");
+        return new ModifierDraft(type, ModifierTarget.parse(target), AppliesTo.IMPORTS, percent(percent), null, null, "Staff");
     }
 
     @Test
@@ -59,7 +65,7 @@ class PriceModifiersTest {
         assertEquals(first.id(), result.modifier().id());
         assertEquals(first, result.replaced().orElseThrow());
         assertEquals(1, modifiers.all().size());
-        assertEquals(0, new BigDecimal("20").compareTo(repository.saved.get(first.id()).percent()));
+        assertEquals(0, new BigDecimal("20").compareTo(repository.saved.get(first.id()).amount().value()));
     }
 
     @Test
@@ -83,7 +89,7 @@ class PriceModifiersTest {
         PriceSubject export = new PriceSubject(TradeDirection.EXPORT, "tavern", "smugglers", Set.of("red_wine"), Set.of());
         modifiers.add(draft("port_tax", "global", "10"));
         assertEquals(List.of(), modifiers.applying(export));
-        modifiers.add(new ModifierDraft("export_bonus", ModifierTarget.GLOBAL, AppliesTo.BOTH, BigDecimal.TEN, null, null, "Staff"));
+        modifiers.add(new ModifierDraft("export_bonus", ModifierTarget.GLOBAL, AppliesTo.BOTH, percent("10"), null, null, "Staff"));
         assertEquals(1, modifiers.applying(export).size());
         assertEquals(2, modifiers.applying(WINE_IMPORT).size());
     }
@@ -139,7 +145,7 @@ class PriceModifiersTest {
 
     @Test
     void expiredModifiersStopApplyingAndAreDeleted() {
-        modifiers.add(new ModifierDraft("festival", ModifierTarget.GLOBAL, AppliesTo.IMPORTS, BigDecimal.valueOf(-10), null,
+        modifiers.add(new ModifierDraft("festival", ModifierTarget.GLOBAL, AppliesTo.IMPORTS, percent("-10"), null,
                 START.plus(Duration.ofHours(1)), "Staff"));
         assertEquals(1, modifiers.applying(WINE_IMPORT).size());
         clock.now = START.plus(Duration.ofHours(1));
@@ -154,9 +160,76 @@ class PriceModifiersTest {
         assertKey("prices.modifiers.invalid-percent", draft("tax", "global", "0"));
         assertKey("prices.modifiers.invalid-percent", draft("tax", "global", "-101"));
         assertKey("prices.modifiers.already-expired", new ModifierDraft("tax", ModifierTarget.GLOBAL, AppliesTo.IMPORTS,
-                BigDecimal.TEN, null, START, "Staff"));
+                percent("10"), null, START, "Staff"));
         assertKey("prices.modifiers.invalid-name", new ModifierDraft("tax", ModifierTarget.GLOBAL, AppliesTo.IMPORTS,
-                BigDecimal.TEN, "x".repeat(PriceModifiers.MAX_DISPLAY_NAME_LENGTH + 1), null, "Staff"));
+                percent("10"), "x".repeat(PriceModifiers.MAX_DISPLAY_NAME_LENGTH + 1), null, "Staff"));
+    }
+
+    @Test
+    void claimModifiersOnlyRaiseClaimPrices() {
+        assertKey("prices.modifiers.flat-needs-claims", new ModifierDraft("fee", ModifierTarget.GLOBAL, AppliesTo.IMPORTS,
+                flat("10"), null, null, "Staff"));
+        assertKey("prices.modifiers.claim-discount", new ModifierDraft("festival", ModifierTarget.GLOBAL, AppliesTo.CLAIMS,
+                percent("-15"), null, null, "Staff"));
+        assertKey("prices.modifiers.claim-discount", new ModifierDraft("damage", new ModifierTarget.Claim("rose_house"),
+                AppliesTo.CLAIMS, flat("-30"), null, null, "Staff"));
+        assertKey("prices.modifiers.not-a-claim-target", new ModifierDraft("tax", ModifierTarget.parse("ledger:smugglers"),
+                AppliesTo.CLAIMS, percent("10"), null, null, "Staff"));
+        assertKey("prices.modifiers.claims-only-target", new ModifierDraft("tax", new ModifierTarget.ClaimType("house"),
+                AppliesTo.BOTH, percent("10"), null, null, "Staff"));
+        assertKey("prices.modifiers.invalid-flat", new ModifierDraft("fee", ModifierTarget.GLOBAL, AppliesTo.CLAIMS,
+                flat("1000000"), null, null, "Staff"));
+
+        PriceModifier fee = modifiers.add(new ModifierDraft("registry_fee", new ModifierTarget.ClaimType("house"),
+                AppliesTo.CLAIMS, flat("50"), null, null, "Staff"));
+        assertEquals("registry_fee +50", fee.displayName());
+        assertEquals(List.of(fee), modifiers.applying(PriceSubject.claim("rose_house", "house")));
+        assertEquals(List.of(), modifiers.applying(PriceSubject.claim("big_manor", "manor")));
+        assertEquals(List.of(), modifiers.applying(WINE_IMPORT));
+    }
+
+    @Test
+    void tradeModifiersNeverReachClaims() {
+        modifiers.add(new ModifierDraft("festival", ModifierTarget.GLOBAL, AppliesTo.BOTH, percent("-15"), null, null, "Staff"));
+        PriceModifier claims = modifiers.add(new ModifierDraft("levy", ModifierTarget.GLOBAL, AppliesTo.CLAIMS, percent("5"),
+                null, null, "Staff"));
+
+        assertEquals(List.of(claims), modifiers.applying(PriceSubject.claim("rose_house", "house")));
+        assertEquals(1, modifiers.applying(WINE_IMPORT).size());
+    }
+
+    @Test
+    void targetChecksRefuseUnknownTargets() {
+        modifiers.addTargetCheck(target -> {
+            if (target instanceof ModifierTarget.ClaimType type && !type.typeId().equals("house")) {
+                throw new PriceException("prices.modifiers.unknown-claim-type", Map.of("type", type.typeId()));
+            }
+        });
+
+        assertKey("prices.modifiers.unknown-claim-type", new ModifierDraft("tax", new ModifierTarget.ClaimType("hous"),
+                AppliesTo.CLAIMS, percent("10"), null, null, "Staff"));
+        modifiers.add(new ModifierDraft("tax", new ModifierTarget.ClaimType("house"), AppliesTo.CLAIMS, percent("10"),
+                null, null, "Staff"));
+    }
+
+    @Test
+    void listenersHearEveryChange() {
+        List<String> heard = new ArrayList<>();
+        modifiers.addListener(modifier -> heard.add(modifier.type() + " " + modifier.amount().signed()));
+
+        PriceModifier tax = modifiers.add(draft("tax", "global", "10"));
+        modifiers.set(draft("tax", "global", "20"));
+        modifiers.remove(tax.id());
+        modifiers.add(new ModifierDraft("festival", ModifierTarget.GLOBAL, AppliesTo.IMPORTS, percent("-10"), null,
+                START.plus(Duration.ofHours(1)), "Staff"));
+        clock.now = START.plus(Duration.ofHours(1));
+        modifiers.purgeExpired();
+
+        assertEquals(List.of("tax +10%", "tax +20%", "tax +20%", "festival -10%", "festival -10%"), heard);
+    }
+
+    private static ModifierAmount flat(String value) {
+        return new ModifierAmount.Flat(new BigDecimal(value));
     }
 
     private void assertKey(String key, ModifierDraft draft) {

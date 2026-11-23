@@ -5,7 +5,8 @@ import java.util.Locale;
 
 /** Tab completion for the start of a modifier target. */
 final class TargetCompletions {
-    private static final List<String> PREFIXES = List.of("global", "business:", "ledger:", "good-type:", "item:");
+    private static final List<String> PREFIXES = List.of("global", "business:", "ledger:", "good-type:", "item:",
+            "claim-type:", "claim:");
 
     private TargetCompletions() {
     }

@@ -16,7 +16,8 @@ import java.util.Locale;
 import static net.kyori.adventure.text.minimessage.tag.resolver.Placeholder.unparsed;
 
 /**
- * /se modifier add|set &lt;type&gt; &lt;target&gt; &lt;percent&gt; [for:&lt;time&gt;] [on:&lt;imports|exports|both&gt;] [name...].
+ * /se modifier add|set &lt;type&gt; &lt;target&gt; &lt;amount&gt; [for:&lt;time&gt;] [on:&lt;imports|exports|both|claims&gt;] [name...].
+ * The amount is a percentage with {@code %} ({@code +10%}) or, for Claims, a flat amount ({@code +50}).
  * {@code add} refuses a second modifier of the same type on a target; {@code set} replaces it.
  */
 final class ChangeModifier implements SubCommand {
@@ -51,7 +52,7 @@ final class ChangeModifier implements SubCommand {
 
     @Override
     public String usage() {
-        return "<type> <target> <percent> [for:<time>] [on:imports|exports|both] [display name]";
+        return "<type> <target> <amount> [for:<time>] [on:imports|exports|both|claims] [display name]";
     }
 
     @Override
@@ -70,7 +71,8 @@ final class ChangeModifier implements SubCommand {
             if (result.replaced().isPresent()) {
                 PriceModifier old = result.replaced().get();
                 messenger.send(sender, "prices.modifiers.replaced", text.placeholders(result.modifier()),
-                        unparsed("old-percent", PriceModifiers.signed(old.percent())));
+                        unparsed("old-amount", old.amount().signed()),
+                        unparsed("old-percent", PriceModifiers.signed(old.amount().value())));
             } else {
                 messenger.send(sender, "prices.modifiers.added", text.placeholders(result.modifier()));
             }
@@ -83,8 +85,8 @@ final class ChangeModifier implements SubCommand {
     public List<String> tabComplete(CommandSender sender, String[] args) {
         return switch (args.length) {
             case 2 -> TargetCompletions.complete(args[1]);
-            case 3 -> List.of("+10", "-10");
-            case 4, 5 -> List.of("for:7d", "on:imports", "on:exports", "on:both");
+            case 3 -> List.of("+10%", "-10%", "+10");
+            case 4, 5 -> List.of("for:7d", "on:imports", "on:exports", "on:both", "on:claims");
             default -> List.of();
         };
     }

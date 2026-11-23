@@ -12,12 +12,21 @@ public enum TargetKind {
     BUSINESS("business"),
     LEDGER("ledger"),
     GOOD_TYPE("good-type"),
-    ITEM("item");
+    ITEM("item"),
+    /** Every SkysongClaims Claim of one type, such as {@code claim-type:house}. */
+    CLAIM_TYPE("claim-type"),
+    /** One SkysongClaims Claim, such as {@code claim:rose_house}. */
+    CLAIM("claim");
 
     private final String key;
 
     TargetKind(String key) {
         this.key = key;
+    }
+
+    /** @return whether targets of this kind only ever match Claims, never trades */
+    public boolean claimsOnly() {
+        return this == CLAIM_TYPE || this == CLAIM;
     }
 
     /** @return the kind as commands and files write it, e.g. {@code good-type} */

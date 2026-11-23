@@ -3,16 +3,20 @@ package org.skysongdev.skysongEconomy.prices.modifier;
 import java.util.Locale;
 import java.util.Optional;
 
-/** Which prices a modifier changes. Imports are the default; exports are opt-in. */
+/**
+ * Which prices a modifier changes. Imports are the default; exports are opt-in; {@link #BOTH} means
+ * imports and exports. Claims are kept apart, so no trade modifier ever changes a Claim's price.
+ */
 public enum AppliesTo {
-    IMPORTS, EXPORTS, BOTH;
+    IMPORTS, EXPORTS, BOTH, CLAIMS;
 
     /** @return whether a modifier with this setting changes a price in that direction */
     public boolean covers(TradeDirection direction) {
         return switch (this) {
             case IMPORTS -> direction == TradeDirection.IMPORT;
             case EXPORTS -> direction == TradeDirection.EXPORT;
-            case BOTH -> true;
+            case BOTH -> direction != TradeDirection.CLAIM;
+            case CLAIMS -> direction == TradeDirection.CLAIM;
         };
     }
 

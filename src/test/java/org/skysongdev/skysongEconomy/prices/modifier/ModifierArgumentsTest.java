@@ -20,10 +20,10 @@ class ModifierArgumentsTest {
 
     @Test
     void readsTheRequiredWordsWithDefaults() {
-        ModifierDraft draft = parse("Port_Tax ledger:Smugglers +10");
+        ModifierDraft draft = parse("Port_Tax ledger:Smugglers +10%");
         assertEquals("port_tax", draft.type());
         assertEquals(new ModifierTarget.Ledger("smugglers"), draft.target());
-        assertEquals(0, BigDecimal.TEN.compareTo(draft.percent()));
+        assertEquals(new ModifierAmount.Percent(BigDecimal.TEN), draft.amount());
         assertEquals(AppliesTo.IMPORTS, draft.appliesTo());
         assertNull(draft.expiresAt());
         assertNull(draft.displayName());
@@ -32,10 +32,23 @@ class ModifierArgumentsTest {
     @Test
     void readsOptionsAndTheDisplayName() {
         ModifierDraft draft = parse("festival global -5% for:1d12h on:both <gold>Harvest festival");
-        assertEquals(0, new BigDecimal("-5").compareTo(draft.percent()));
+        assertEquals(new ModifierAmount.Percent(new BigDecimal("-5")), draft.amount());
         assertEquals(NOW.plus(Duration.ofHours(36)), draft.expiresAt());
         assertEquals(AppliesTo.BOTH, draft.appliesTo());
         assertEquals("<gold>Harvest festival", draft.displayName());
+    }
+
+    @Test
+    void aPlainNumberIsFlatAndClaimTargetsDefaultToClaims() {
+        ModifierDraft fee = parse("registry_fee claim-type:House +50 Registry fee");
+        assertEquals(new ModifierAmount.Flat(new BigDecimal("50")), fee.amount());
+        assertEquals(new ModifierTarget.ClaimType("house"), fee.target());
+        assertEquals(AppliesTo.CLAIMS, fee.appliesTo());
+        assertEquals("Registry fee", fee.displayName());
+
+        ModifierDraft festival = parse("festival global +15% on:claims");
+        assertEquals(AppliesTo.CLAIMS, festival.appliesTo());
+        assertEquals(new ModifierTarget.Claim("rose_house"), parse("damage claim:rose_house +5%").target());
     }
 
     @Test
@@ -49,7 +62,8 @@ class ModifierArgumentsTest {
     void refusesBrokenWords() {
         assertKey("prices.modifiers.invalid-target", "tax shop:x 10");
         assertKey("prices.modifiers.invalid-target", "tax item: 10");
-        assertKey("prices.modifiers.invalid-percent", "tax global ten");
+        assertKey("prices.modifiers.invalid-amount", "tax global ten");
+        assertKey("prices.modifiers.invalid-amount", "tax global ten%");
         assertKey("prices.modifiers.invalid-duration", "tax global 10 for:soon");
         assertKey("prices.modifiers.invalid-duration", "tax global 10 for:0h");
         assertKey("prices.modifiers.invalid-duration", "tax global 10 for:5h3");

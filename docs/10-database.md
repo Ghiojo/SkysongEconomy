@@ -37,7 +37,7 @@ Times are stored as epoch milliseconds (`BIGINT`), money as `DECIMAL(19, 4)`, ch
 | `gathering_tokens` | Token balances | `SqlTokenRepository` | (`player_uuid`, `profile`), `balance` |
 | `business_ledgers` | Selected ledgers | `SqlLedgerSelectionRepository` | (`business_id`, `ledger_id`), `selected_at` |
 | `business_deliveries` | Ordered imports until collected | `SqlDeliveryRepository` | `id` (UUID), `business_id`, `ledger_id`, `import_id`, `delivery_time_id`, `items` (`id:amount;...`), orderer, `price`, `ordered_at`, `arrives_at` |
-| `price_modifiers` | Price modifiers | `SqlModifierRepository` | `id` (`m1`...), `type`, `target` (e.g. `ledger:smugglers`), `applies_to`, `percent`, `display_name`, `expires_at` (NULL = never), `created_by`, `created_at` |
+| `price_modifiers` | Price modifiers | `SqlModifierRepository` | `id` (`m1`...), `type`, `target` (e.g. `ledger:smugglers`), `applies_to` (`imports`, `exports`, `both` or `claims`), `percent` (the amount), `kind` (`percent` or `flat`; added later, existing rows are `percent`), `display_name`, `expires_at` (NULL = never), `created_by`, `created_at` |
 | `business_shifts` | Shifts from start until pay is retrieved | `SqlShiftRepository` | `id`, `business_id`, character, `started_at`, `required_seconds`, `worked_seconds`, `money`, `tokens`, `vault_cut`, `finished_at` (NULL while running) |
 | `business_training` | Running training sessions only | `SqlTrainingRepository` | `id`, `business_id`, character, `started_at`, `required_seconds`, `worked_seconds`, `price` |
 | `nodes` | Every node | `SqlNodeRepository` | `id` (PK), `kind` (`random`/`farm`), `source` (table or type id), `tier`, `owner_kind` (public/unowned/business), `owner_business`, `display_name`, block position |
