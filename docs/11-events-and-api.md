@@ -36,6 +36,7 @@ Get the plugin instance (`(SkysongEconomy) Bukkit.getPluginManager().getPlugin("
 | `getNodeFeature().nodes()` | `Optional<NodeService>`, empty when nodes are disabled |
 | `getModuleFeature().modules()` | `Optional<BusinessModules>`: the modules each business picked (`of`, `has`, `groups`, `pool`, `pick`, `clear`) and every module file with its effects (`module`, `modules`); empty when businesses are disabled or `businesses/modules.yml` can't be read |
 | `getClaimFeature().gateway()` | `Optional<ClaimGateway>`: the way into SkysongClaims, empty when it is not installed or too old |
+| `getClaimFeature().sales()` | `Optional<ClaimSales>`: Claim asking prices (`prices()`), server sales (`sell`, `unsell`, `listed`), empty whenever `gateway()` is |
 | `getNpcFeature().gateways()` | `Optional<NpcFeature.Gateways>`: the gateways into SkysongNPCs (NPCs, sheets, access, and `menu` for buttons in its NPC menu), empty when it is not installed or businesses are disabled |
 | `getNpcFeature().progression()` | `Optional<NpcProgression>`: what each business NPC is owed (`owed`) and bringing it in line (`sync`) |
 | `getNpcFeature().npcAccess()` | `Optional<BusinessNpcAccess>`: what each access group may do with a business's NPCs (`grants`, `allowed`, `set`, `toggle`) |

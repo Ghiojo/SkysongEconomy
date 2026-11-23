@@ -901,6 +901,28 @@ prices:
     invalid-applies-to: "<red><yellow><value></yellow> isn't valid after on:. Use imports, exports or both."
     already-expired: "<red>That modifier would already be expired."
 
+# SkysongClaims Claims (/se claim). <claim> is a Claim's id; <price> an amount of money as players read it.
+claims:
+  unknown-claim: "<red>There is no Claim <yellow><claim></yellow>."
+  free: "<red><yellow><claim></yellow> is a Free Claim: Free Claims are never priced or sold."
+  owned: "<red><yellow><claim></yellow> has owners, so the server can't sell it."
+  sold-elsewhere: "<red><yellow><claim></yellow> is already for sale by <plugin>."
+  no-price: '<red><yellow><claim></yellow> has no price. Give it one: /se claim sell <claim> \<price>'
+  not-for-sale: "<red><yellow><claim></yellow> isn't for sale."
+  price-not-positive: "<red>A Claim's price must be more than 0, and <yellow><expression></yellow> is worth <value>."
+  price-set: "<green>The price of <white><claim></white> is now <white><price></white> <dark_gray>(<expression>)"
+  price-cleared: "<green>Removed the price of <white><claim></white>."
+  price-cleared-unlisted: "<green>Removed the price of <white><claim></white>. It was for sale, so it is off sale now."
+  price-none: "<gray><claim> has no price."
+  price-view: "<gold><claim></gold><gray>: <white><price></white> <dark_gray>(<expression>, set by <by>)"
+  price-view-broken: "<gold><claim></gold><gray>: <red>can't be worked out</red> <dark_gray>(<expression>, set by <by>)"
+  listed: "<green><white><claim></white> is for sale for <white><price></white>."
+  unlisted: "<green><white><claim></white> is no longer for sale. Its price stays saved."
+  list-header: "<gold>Claims for sale (<count>):"
+  list-entry: "<gray>- <white><claim></white> <dark_gray>(<type>)</dark_gray>: <white><price></white>"
+  list-entry-broken: "<gray>- <white><claim></white> <dark_gray>(<type>)</dark_gray>: <red>price can't be worked out"
+  list-empty: "<gray>No Claims are for sale."
+
 # NPC upkeep (npc-upkeep.yml). Lines about one NPC can use <npc> (its name), <profile>, <state>
 # (the maintained or unmaintained word below) and <next> (time left until its next cycle).
 upkeep:
