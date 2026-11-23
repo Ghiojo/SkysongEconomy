@@ -2,12 +2,14 @@ package org.skysongdev.skysongEconomy.nodes;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.skysongdev.skysongEconomy.calendar.CalendarNamesTest;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -54,6 +56,31 @@ class NodeFilesTest {
         assertTrue(loaded.random().find("broken").isEmpty());
         assertEquals(1, loaded.warnings());
         assertTrue(warnings.get(0).contains("broken"), warnings.get(0));
+    }
+
+    @Test
+    void calendarModifiersLoadLastAndAreCheckedAgainstTheCalendar() throws IOException {
+        write("nodes/random/mine.yml", "skill: mining\ntype: mining\ntiers:\n  1: {cost: 1, guaranteed: [{item: coal}]}");
+        write("nodes/modifiers/frost.yml", "when: {seasons: [vinse_er]}\napplies-to: {random-tables: [mine]}\neffect: max-50%");
+        write("nodes/modifiers/winter.yml", "when: {seasons: [winter]}\napplies-to: {random-tables: [mine]}\neffect: max-50%");
+
+        NodeFiles.Loaded loaded = new NodeFiles(dataFolder, Set.of("coal")::contains, Set.of("mining")::contains,
+                Optional.of(CalendarNamesTest.atmos()), warnings::add).load();
+
+        assertEquals(Set.of("frost"), loaded.modifiers().ids());
+        assertEquals(1, loaded.warnings());
+        assertTrue(warnings.getFirst().contains("winter"), warnings.getFirst());
+    }
+
+    @Test
+    void withoutACalendarModifiersAreNotLoadedAndThatIsSaidOnce() throws IOException {
+        write("nodes/modifiers/frost.yml", "when: {seasons: [vinse_er]}\napplies-to: {random-tables: [mine]}\neffect: max-50%");
+
+        NodeFiles.Loaded loaded = files().load();
+
+        assertEquals(0, loaded.modifiers().size());
+        assertEquals(1, loaded.warnings());
+        assertTrue(warnings.getFirst().contains("SkysongCalendar"), warnings.getFirst());
     }
 
     @Test

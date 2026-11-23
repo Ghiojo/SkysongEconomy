@@ -3,6 +3,7 @@ package org.skysongdev.skysongEconomy.bootstrap;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.skysongdev.skysongEconomy.calendar.CalendarClock;
 import org.skysongdev.skysongEconomy.commands.SubCommand;
 import org.skysongdev.skysongEconomy.commands.node.NodeCommand;
 import org.skysongdev.skysongEconomy.commands.node.OddsSources;
@@ -46,6 +47,7 @@ import org.skysongdev.skysongEconomy.nodes.farm.PrimerReturns;
 import org.skysongdev.skysongEconomy.nodes.harvest.HarvestPayer;
 import org.skysongdev.skysongEconomy.nodes.harvest.NodeAccess;
 import org.skysongdev.skysongEconomy.nodes.harvest.RandomHarvester;
+import org.skysongdev.skysongEconomy.nodes.modifiers.NodeModifiers;
 import org.skysongdev.skysongitems.api.SkysongItemsApi;
 
 import java.security.SecureRandom;
@@ -60,7 +62,7 @@ import java.util.logging.Logger;
 /**
  * Builds the nodes system and connects it to the server: settings, the node files (loot groups,
  * random tables, farm resources and farm types), storage, block protection, nameplates, the
- * random and farm node menus, giving primers back, the node item tags and the {@code /se node}
+ * random and farm node menus, calendar modifiers, giving primers back, the node item tags and the {@code /se node}
  * commands. Nodes need businesses, so the
  * system stays off when businesses are off or {@code nodes/settings.yml} can't be read.
  */
@@ -87,10 +89,12 @@ public final class NodeFeature implements AutoCloseable {
      * @param skysongStats skills and skill levels, which tables name
      * @param wallet       money, for public costs and how amounts are written
      * @param trade        items, which loot names, and the price database, for {@code /se node odds}
+     * @param calendar     the IC calendar, which calendar modifiers follow; {@link CalendarClock#NONE}
+     *                     without SkysongCalendar
      */
     public static NodeFeature start(JavaPlugin plugin, YamlFiles configFiles, DatabaseSettings database,
                                     Optional<BusinessSystem> businesses, SkysongStatsAdapter skysongStats,
-                                    Wallet wallet, TradeInputs trade, Messenger messenger) {
+                                    Wallet wallet, TradeInputs trade, CalendarClock calendar, Messenger messenger) {
         Logger logger = plugin.getLogger();
         if (businesses.isEmpty()) {
             logger.severe("Nodes are disabled because businesses are disabled");
@@ -114,7 +118,7 @@ public final class NodeFeature implements AutoCloseable {
         resources.add(writer);
 
         NodeFiles files = new NodeFiles(plugin.getDataFolder().toPath(), trade.items()::exists, skysongStats::exists,
-                logger::warning);
+                calendar.names(), logger::warning);
         NodeFiles.Loaded loaded = files.load();
         logLoaded(logger, loaded);
         NodeTables tables = NodeTables.of(loaded);
@@ -156,10 +160,11 @@ public final class NodeFeature implements AutoCloseable {
         HarvestPayer payer = new HarvestPayer(system.tokens(), skysongStats, wallet);
         BukkitNodeHarvestEvents harvestEvents = new BukkitNodeHarvestEvents(events);
         LootRoller roller = new LootRoller(new SecureRandom());
+        NodeModifiers modifiers = new NodeModifiers(tables::modifiers, calendar);
         RandomHarvester harvester = new RandomHarvester(new RandomHarvester.Dependencies(tables, settings, access, payer,
-                skysongStats, harvestEvents), roller);
+                skysongStats, harvestEvents, modifiers), roller);
         FarmHarvester farmHarvester = new FarmHarvester(new FarmHarvester.Dependencies(plots, settings, access, payer,
-                skysongStats, harvestEvents), roller);
+                skysongStats, harvestEvents, modifiers), roller);
         NodeMenus.Farms farms = new NodeMenus.Farms(plots, farmHarvester,
                 new PrimerItems(SkysongItemsApi.get().tags(), trade.materialIds()));
         NodeMenus menus = new NodeMenus(new NodeMenus.Dependencies(nodes, harvester, farms, system.businesses(),
@@ -183,8 +188,8 @@ public final class NodeFeature implements AutoCloseable {
 
     private static void logLoaded(Logger logger, NodeFiles.Loaded loaded) {
         logger.info("Loaded " + loaded.groups().ids().size() + " loot group(s), " + loaded.random().size()
-                + " random node table(s), " + loaded.farmResources().size() + " farm resource(s) and "
-                + loaded.farmTypes().size() + " farm type(s)");
+                + " random node table(s), " + loaded.farmResources().size() + " farm resource(s), "
+                + loaded.farmTypes().size() + " farm type(s) and " + loaded.modifiers().size() + " calendar modifier(s)");
     }
 
     /** @return whether the player is online and has the permission; offline players have none */

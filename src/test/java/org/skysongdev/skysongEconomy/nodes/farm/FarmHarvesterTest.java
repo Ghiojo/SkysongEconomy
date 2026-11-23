@@ -7,10 +7,14 @@ import org.skysongdev.skysongEconomy.nodes.boost.Booster;
 import org.skysongdev.skysongEconomy.loot.YieldEffect;
 import org.skysongdev.skysongEconomy.nodes.harvest.Harvest;
 import org.skysongdev.skysongEconomy.nodes.harvest.HarvestCost;
+import org.skysongdev.skysongEconomy.nodes.modifiers.CalendarModifier;
+import org.skysongdev.skysongEconomy.nodes.modifiers.CalendarWindow;
+import org.skysongdev.skysongEconomy.nodes.modifiers.NodeTarget;
 import org.skysongdev.skysongEconomy.trade.ItemAmount;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -51,6 +55,38 @@ class FarmHarvesterTest {
         Harvest harvest = harvester.harvest(world.field, world.worker, 2,
                 Optional.of(new Booster("crop", YieldEffect.parse("min-2; max-2"))));
         assertEquals(List.of(new ItemAmount("wheat", 3)), harvest.items());
+    }
+
+    private static CalendarModifier winterOn(String resource, String effect) {
+        boolean dormant = effect.equals("dormant");
+        return new CalendarModifier("winter-" + resource, "Winter", new CalendarWindow(Set.of("vinse_er"), List.of(), false),
+                new NodeTarget(Set.of(), Set.of(), Set.of(), Set.of(resource), Set.of(), Set.of()),
+                dormant ? YieldEffect.NONE : YieldEffect.parse(effect), dormant);
+    }
+
+    @Test
+    void calendarModifiersFollowWhatIsPlanted() {
+        world.plantWheat();
+        world.tokens.add(world.worker, 10);
+        world.farmingLevels.put(world.worker, "novice");
+        world.modifierFiles = new FileRegistry<>(List.of(winterOn("wheat", "max-60%"), winterOn("barley", "dormant")));
+
+        Harvest harvest = harvester.harvest(world.field, world.worker, 2);
+
+        assertEquals(List.of(new ItemAmount("wheat", 2)), harvest.items(), "5 - 60% = 2");
+        assertEquals(List.of("winter-wheat"), harvest.modifiers(), "barley's modifier doesn't hit wheat");
+    }
+
+    @Test
+    void aDormantModifierStopsFarmHarvestsAndChargesNothing() {
+        world.plantWheat();
+        world.tokens.add(world.worker, 5);
+        world.farmingLevels.put(world.worker, "novice");
+        world.modifierFiles = new FileRegistry<>(List.of(winterOn("wheat", "dormant")));
+
+        assertEquals("node.harvest.dormant", refusal(() -> harvester.harvest(world.field, world.worker, 2)));
+        assertEquals(5, world.tokens.balance(world.worker));
+        assertEquals(List.of(), world.heard);
     }
 
     @Test

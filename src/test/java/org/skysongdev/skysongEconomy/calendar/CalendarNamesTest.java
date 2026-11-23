@@ -10,9 +10,9 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class CalendarNamesTest {
+public class CalendarNamesTest {
     /** A calendar shaped like SkysongCalendar's, written here only as test data. */
-    static CalendarNames atmos() {
+    public static CalendarNames atmos() {
         CalendarName florescia = new CalendarName("florescia", "Florescia");
         CalendarName suUntah = new CalendarName("su_untah", "Su'untah");
         CalendarName altrue = new CalendarName("altrue", "Altrue");
@@ -76,5 +76,29 @@ class CalendarNamesTest {
     @Test
     void idsComeFromConstantNames() {
         assertEquals("vinse_er", CalendarName.idOf("VINSE_ER"));
+    }
+
+    @Test
+    void countsDaysOfTheYearFromTheFirstMonth() {
+        CalendarNames names = atmos();
+
+        assertEquals(0, names.dayOfYear(names.month("celestine").orElseThrow(), 1));
+        assertEquals(6 * 45 + 9, names.dayOfYear(names.month("rana").orElseThrow(), 10));
+        assertEquals(java.util.OptionalInt.of(6 * 45 + 9), names.dayOfYear(CalendarDay.of("vinse_er", "rana", 10)));
+        assertEquals(java.util.OptionalInt.empty(), names.dayOfYear(CalendarDay.festival("vinse_er", 1)));
+        assertThrows(IllegalArgumentException.class, () -> names.dayOfYear(names.month("rana").orElseThrow(), 46));
+    }
+
+    @Test
+    void readsMonthDaysByName() {
+        CalendarNames names = atmos();
+
+        assertEquals("Rana 10", names.monthDay("rana 10").toString());
+        assertEquals("Ramphastos 1", names.monthDay(" Ramphastos 1 ").toString());
+        IllegalArgumentException unknown = assertThrows(IllegalArgumentException.class, () -> names.monthDay("January 1"));
+        assertTrue(unknown.getMessage().contains("Celestine"), "lists the months: " + unknown.getMessage());
+        assertThrows(IllegalArgumentException.class, () -> names.monthDay("Rana"));
+        assertThrows(IllegalArgumentException.class, () -> names.monthDay("Rana tenth"));
+        assertThrows(IllegalArgumentException.class, () -> names.monthDay("Rana 46"));
     }
 }

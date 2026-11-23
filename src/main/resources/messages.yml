@@ -831,6 +831,8 @@ node:
     no-tier: "<red>This node doesn't offer tier <tier>."
     business-only: "<red>Tier <tier> isn't offered on public nodes."
     low-level: "<red>That tier needs <yellow><level></yellow> in <yellow><skill></yellow>."
+    # A calendar modifier (nodes/modifiers) with effect: dormant is on for this node today. <modifier> is its name.
+    dormant: "<red>Nothing can be harvested here right now: <modifier><red>."
     no-tokens: "<red>That costs <cost> Harvest Token(s) and you have <balance>."
     no-money: "<red>That costs <cost> and you don't have that much."
     no-downtime: "<red>That costs <cost> downtime and your preferred pool doesn't have that much. See /downtime preference."

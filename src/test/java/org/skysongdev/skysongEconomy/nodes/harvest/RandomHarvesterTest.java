@@ -11,6 +11,7 @@ import org.skysongdev.skysongEconomy.business.tier.BusinessTiers;
 import org.skysongdev.skysongEconomy.business.tier.TierSettings;
 import org.skysongdev.skysongEconomy.business.type.BusinessType;
 import org.skysongdev.skysongEconomy.business.type.BusinessTypeRegistry;
+import org.skysongdev.skysongEconomy.calendar.FixedCalendar;
 import org.skysongdev.skysongEconomy.character.CharacterRef;
 import org.skysongdev.skysongEconomy.character.DowntimeWallet;
 import org.skysongdev.skysongEconomy.character.SkillLevels;
@@ -29,6 +30,10 @@ import org.skysongdev.skysongEconomy.nodes.NodeSettings;
 import org.skysongdev.skysongEconomy.nodes.NodeTables;
 import org.skysongdev.skysongEconomy.nodes.boost.Booster;
 import org.skysongdev.skysongEconomy.loot.YieldEffect;
+import org.skysongdev.skysongEconomy.nodes.modifiers.CalendarModifier;
+import org.skysongdev.skysongEconomy.nodes.modifiers.CalendarWindow;
+import org.skysongdev.skysongEconomy.nodes.modifiers.NodeModifiers;
+import org.skysongdev.skysongEconomy.nodes.modifiers.NodeTarget;
 import org.skysongdev.skysongEconomy.nodes.random.RandomTable;
 import org.skysongdev.skysongEconomy.nodes.random.RandomTier;
 import org.skysongdev.skysongEconomy.tokens.GatheringTokens;
@@ -70,6 +75,8 @@ class RandomHarvesterTest {
     private BusinessService businesses;
     private NodeService nodes;
     private RandomHarvester harvester;
+    /** The calendar modifier files; the calendar is always on Rana 1, in Vinse'er. */
+    private FileRegistry<CalendarModifier> modifierFiles = FileRegistry.empty();
 
     private static CharacterRef character(String profile) {
         return new CharacterRef(UUID.nameUUIDFromBytes(profile.getBytes()), profile);
@@ -132,7 +139,8 @@ class RandomHarvesterTest {
             }
         };
         harvester = new RandomHarvester(new RandomHarvester.Dependencies(tables, SETTINGS, new NodeAccess(businesses),
-                new HarvestPayer(tokens, downtimeWallet, wallet), levels, heard::add), new LootRoller(new Random(1)));
+                new HarvestPayer(tokens, downtimeWallet, wallet), levels, heard::add,
+                new NodeModifiers(() -> modifierFiles, FixedCalendar.on("rana", 1))), new LootRoller(new Random(1)));
     }
 
     private Node businessNode(int tier) {
@@ -173,6 +181,47 @@ class RandomHarvesterTest {
                 Optional.of(new Booster("mining", YieldEffect.parse("min+20%; max+20%; min+1; max+1"))));
 
         assertEquals(List.of(new ItemAmount("coal", 7)), harvest.items(), "5 + 20% + 1");
+    }
+
+    private static CalendarModifier winterOnMining(String id, String effect) {
+        boolean dormant = effect.equals("dormant");
+        return new CalendarModifier(id, "<aqua>" + id, new CalendarWindow(Set.of("vinse_er"), List.of(), false),
+                new NodeTarget(Set.of(), Set.of("mining"), Set.of(), Set.of(), Set.of(), Set.of()),
+                dormant ? YieldEffect.NONE : YieldEffect.parse(effect), dormant);
+    }
+
+    @Test
+    void calendarModifiersOnTodayAddUpWithTheBooster() {
+        Node node = businessNode(3);
+        tokens.add(miner, 5);
+        miningLevels.put(miner, "novice");
+        modifierFiles = new FileRegistry<>(List.of(winterOnMining("frost", "min-40%; max-40%")));
+
+        Harvest harvest = harvester.harvest(node, miner, 2,
+                Optional.of(new Booster("mining", YieldEffect.parse("min+20%; max+20%"))));
+
+        assertEquals(List.of(new ItemAmount("coal", 4)), harvest.items(), "5 - 40% + 20% = 4");
+        assertEquals(List.of("frost"), harvest.modifiers());
+    }
+
+    @Test
+    void aDormantModifierStopsTheHarvestAndChargesNothing() {
+        Node node = businessNode(3);
+        tokens.add(miner, 5);
+        miningLevels.put(miner, "novice");
+        modifierFiles = new FileRegistry<>(List.of(winterOnMining("frozen", "dormant")));
+
+        assertEquals("node.harvest.dormant", refusal(() -> harvester.harvest(node, miner, 2)));
+        assertEquals(5, tokens.balance(miner));
+        assertTrue(heard.isEmpty());
+    }
+
+    @Test
+    void withoutModifiersTheHarvestListsNone() {
+        Node node = businessNode(1);
+        tokens.add(miner, 5);
+
+        assertEquals(List.of(), harvester.harvest(node, miner, 1).modifiers());
     }
 
     @Test

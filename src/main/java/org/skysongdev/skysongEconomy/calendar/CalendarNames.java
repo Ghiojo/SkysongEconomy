@@ -3,6 +3,7 @@ package org.skysongdev.skysongEconomy.calendar;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.stream.Collectors;
 
 /**
@@ -52,6 +53,75 @@ public record CalendarNames(List<CalendarName> seasons, List<CalendarMonth> mont
             }
         }
         return Optional.empty();
+    }
+
+    /**
+     * @return how many month days come before that day of that month in the year, Celestine 1
+     *         being 0 in SkysongCalendar's calendar
+     * @throws IllegalArgumentException when the month isn't one of these, or the day is outside it
+     */
+    public int dayOfYear(CalendarMonth month, int day) {
+        int index = months.indexOf(month);
+        if (index < 0) {
+            throw new IllegalArgumentException("No month " + month.id() + " in this calendar");
+        }
+        if (day < 1 || day > monthLength) {
+            throw new IllegalArgumentException(month.name().displayName() + " has no day " + day
+                    + ": months have days 1 to " + monthLength);
+        }
+        return index * monthLength + day - 1;
+    }
+
+    /** @return {@link #dayOfYear(CalendarMonth, int)} for that day; empty for a festival day or an unknown month */
+    public OptionalInt dayOfYear(CalendarDay day) {
+        if (day.isFestival()) {
+            return OptionalInt.empty();
+        }
+        String monthId = day.monthId().orElseThrow();
+        return months.stream().filter(month -> month.id().equals(monthId)).findFirst()
+                .filter(month -> day.day() <= monthLength)
+                .map(month -> OptionalInt.of(dayOfYear(month, day.day())))
+                .orElse(OptionalInt.empty());
+    }
+
+    /**
+     * Reads a day of a month written like {@code Rana 10}, matching the month by id or display
+     * name, ignoring case.
+     *
+     * @return the month and the day
+     * @throws IllegalArgumentException naming what is wrong, and the months that exist
+     */
+    public MonthDay monthDay(String text) {
+        String written = text == null ? "" : text.strip();
+        int space = written.lastIndexOf(' ');
+        if (space < 0) {
+            throw new IllegalArgumentException("'" + written + "' isn't a date: write a month and a day, like \""
+                    + months.getFirst().name().displayName() + " 1\"");
+        }
+        String monthText = written.substring(0, space);
+        CalendarMonth month = month(monthText).orElseThrow(() -> new IllegalArgumentException(
+                "no month '" + monthText.strip() + "'; the months are " + monthList()));
+        int day;
+        try {
+            day = Integer.parseInt(written.substring(space + 1));
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("'" + written.substring(space + 1) + "' isn't a day number");
+        }
+        dayOfYear(month, day);
+        return new MonthDay(month, day);
+    }
+
+    /**
+     * A day of a month that comes back every year.
+     *
+     * @param month the month
+     * @param day   the day of the month, from 1
+     */
+    public record MonthDay(CalendarMonth month, int day) {
+        @Override
+        public String toString() {
+            return month.name().displayName() + " " + day;
+        }
     }
 
     /** @return the seasons' display names, such as {@code Florescia, Su'untah}, for warnings */

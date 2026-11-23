@@ -3,6 +3,7 @@ package org.skysongdev.skysongEconomy.nodes;
 import org.skysongdev.skysongEconomy.config.FileRegistry;
 import org.skysongdev.skysongEconomy.nodes.farm.FarmResource;
 import org.skysongdev.skysongEconomy.nodes.farm.FarmType;
+import org.skysongdev.skysongEconomy.nodes.modifiers.CalendarModifier;
 import org.skysongdev.skysongEconomy.nodes.random.RandomTable;
 
 import java.util.List;
@@ -10,7 +11,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 /**
- * The node files currently loaded: random tables, farm types and farm resources.
+ * The node files currently loaded: random tables, farm types, farm resources and calendar modifiers.
  * {@code /se node reload} swaps in freshly read files, and nodes look their table or type up here
  * on every use, so they never keep an old one.
  */
@@ -18,7 +19,9 @@ public final class NodeTables implements NodeSources {
     private FileRegistry<RandomTable> random;
     private FileRegistry<FarmType> farmTypes;
     private FileRegistry<FarmResource> farmResources;
+    private FileRegistry<CalendarModifier> modifiers = FileRegistry.empty();
 
+    /** Tables without calendar modifiers. */
     public NodeTables(FileRegistry<RandomTable> random, FileRegistry<FarmType> farmTypes,
                       FileRegistry<FarmResource> farmResources) {
         replace(random, farmTypes, farmResources);
@@ -26,10 +29,12 @@ public final class NodeTables implements NodeSources {
 
     /** @return tables built from what one load of the node files read */
     public static NodeTables of(NodeFiles.Loaded loaded) {
-        return new NodeTables(loaded.random(), loaded.farmTypes(), loaded.farmResources());
+        NodeTables tables = new NodeTables(loaded.random(), loaded.farmTypes(), loaded.farmResources());
+        tables.replaceModifiers(loaded.modifiers());
+        return tables;
     }
 
-    /** Swaps in freshly loaded files. */
+    /** Swaps in freshly loaded tables, types and resources; the calendar modifiers stay. */
     public void replace(FileRegistry<RandomTable> random, FileRegistry<FarmType> farmTypes,
                         FileRegistry<FarmResource> farmResources) {
         this.random = Objects.requireNonNull(random, "random");
@@ -37,9 +42,20 @@ public final class NodeTables implements NodeSources {
         this.farmResources = Objects.requireNonNull(farmResources, "farmResources");
     }
 
+    /** Swaps in freshly loaded calendar modifiers. */
+    public void replaceModifiers(FileRegistry<CalendarModifier> modifiers) {
+        this.modifiers = Objects.requireNonNull(modifiers, "modifiers");
+    }
+
     /** Swaps in what one load of the node files read. */
     public void replace(NodeFiles.Loaded loaded) {
         replace(loaded.random(), loaded.farmTypes(), loaded.farmResources());
+        replaceModifiers(loaded.modifiers());
+    }
+
+    /** @return the calendar modifiers that loaded */
+    public FileRegistry<CalendarModifier> modifiers() {
+        return modifiers;
     }
 
     public FileRegistry<RandomTable> random() {
