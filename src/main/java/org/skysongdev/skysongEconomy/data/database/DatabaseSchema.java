@@ -231,7 +231,7 @@ public final class DatabaseSchema {
                     + "paid DECIMAL(19, 4) NOT NULL, "
                     + "modifiers TEXT NOT NULL, "
                     + "seller TEXT NULL, "
-                    + "seller_paid_later BOOLEAN NOT NULL, "
+                    + "seller_paid_later BOOLEAN NOT NULL DEFAULT FALSE, "
                     + "sold_at BIGINT NOT NULL, "
                     + "INDEX claim_sales_claim (claim_id)) ENGINE=InnoDB",
             // Claims on sale for their owners rather than the server, and the owner who put each on sale.
@@ -256,7 +256,10 @@ public final class DatabaseSchema {
     private static final List<String[]> ADDED_COLUMNS = List.<String[]>of(
             new String[] {"price_ledger", "expression", "VARCHAR(255) NULL"},
             // percent or flat; rows from before flat amounts existed are percentages.
-            new String[] {"price_modifiers", "kind", "VARCHAR(16) NOT NULL DEFAULT 'percent'"});
+            new String[] {"price_modifiers", "kind", "VARCHAR(16) NOT NULL DEFAULT 'percent'"},
+            // Who sold a Claim: added with player resale; earlier sales were all server sales.
+            new String[] {"claim_sales", "seller", "TEXT NULL"},
+            new String[] {"claim_sales", "seller_paid_later", "BOOLEAN NOT NULL DEFAULT FALSE"});
 
     /**
      * Columns that became optional after their table first shipped: table, column, new
