@@ -27,6 +27,7 @@ public final class Node {
     private NodeOwner owner;
     private @Nullable String displayName;
     private @Nullable BlockPosition position;
+    private boolean modifiersEnabled;
 
     private Node(NodeSnapshot snapshot) {
         this.id = snapshot.id();
@@ -36,6 +37,7 @@ public final class Node {
         this.owner = snapshot.owner();
         this.displayName = snapshot.displayName();
         this.position = snapshot.position();
+        this.modifiersEnabled = snapshot.modifiers();
     }
 
     /** Creates a new tier 1 public node with no name of its own. */
@@ -49,7 +51,7 @@ public final class Node {
     }
 
     public NodeSnapshot snapshot() {
-        return new NodeSnapshot(id, kind, source, tier, owner, displayName, position);
+        return new NodeSnapshot(id, kind, source, tier, owner, displayName, position, modifiersEnabled);
     }
 
     public String id() {
@@ -88,6 +90,11 @@ public final class Node {
         return Optional.ofNullable(position);
     }
 
+    /** @return whether calendar modifiers apply to it; on unless staff turned them off */
+    public boolean modifiersEnabled() {
+        return modifiersEnabled;
+    }
+
     void setSource(String source) {
         this.source = Objects.requireNonNull(source, "source");
     }
@@ -106,6 +113,10 @@ public final class Node {
 
     void setPosition(@Nullable BlockPosition position) {
         this.position = position;
+    }
+
+    void setModifiersEnabled(boolean modifiersEnabled) {
+        this.modifiersEnabled = modifiersEnabled;
     }
 
     private static int checkTier(int tier) {

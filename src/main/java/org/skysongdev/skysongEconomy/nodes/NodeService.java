@@ -256,6 +256,15 @@ public final class NodeService implements BusinessChangeListener {
         save(node);
     }
 
+    /**
+     * Turns calendar modifiers on or off for one node, for example off for a greenhouse that
+     * grows the same all year.
+     */
+    public void setModifiersEnabled(Node node, boolean enabled) {
+        node.setModifiersEnabled(enabled);
+        save(node);
+    }
+
     /** A deleted business leaves its nodes unowned, so nobody gathers from them until staff decide. */
     @Override
     public void deleted(Business business) {

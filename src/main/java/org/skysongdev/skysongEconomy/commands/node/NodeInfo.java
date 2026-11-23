@@ -10,7 +10,10 @@ import java.util.Optional;
 import static net.kyori.adventure.text.minimessage.tag.resolver.Placeholder.component;
 import static net.kyori.adventure.text.minimessage.tag.resolver.Placeholder.unparsed;
 
-/** /se node info [id]: shows a node's kind, table, tier, owner and block; without an id, the node looked at. */
+/**
+ * /se node info [id]: shows a node's kind, table, tier, owner, block and whether calendar modifiers
+ * apply to it; without an id, the node looked at.
+ */
 final class NodeInfo extends NodeSubCommand {
     NodeInfo(NodeCommandSupport support) {
         super(support, "info", "[id]", 0);
@@ -33,6 +36,8 @@ final class NodeInfo extends NodeSubCommand {
                 unparsed("source", node.source()),
                 unparsed("tier", String.valueOf(node.tier())),
                 unparsed("owner", support.describeOwner(node)),
+                component("modifiers", support.messenger.render(node.modifiersEnabled()
+                        ? "node.modifiers.info-on" : "node.modifiers.info-off")),
                 node.position().isPresent()
                         ? unparsed("position", node.position().get().toString())
                         : component("position", support.messenger.render("node.info-no-block")));

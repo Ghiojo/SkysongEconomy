@@ -782,8 +782,16 @@ node:
     <gold><node> <dark_gray>(<id>)
     <gray>Kind: <white><kind></white>, table: <white><source></white>, tier: <white><tier></white>
     <gray>Owner: <white><owner></white>
+    <gray>Calendar modifiers: <modifiers>
     <gray>Block: <white><position></white>
   info-no-block: "none, use /se node move"
+  # /se node setmodifiers <id> <on|off>: whether calendar modifiers (nodes/modifiers) apply to one node.
+  modifiers:
+    turned-on: "<green>Calendar modifiers apply to <yellow><node></yellow> again."
+    turned-off: "<green>Calendar modifiers no longer apply to <yellow><node></yellow>."
+    invalid-choice: "<red>Write on or off."
+    info-on: "<white>on"
+    info-off: "<white>off</white> <dark_gray>(/se node setmodifiers)"
   list-header: "<gold>Nodes (<count>):"
   list-entry: "<gray>- <white><node></white> <dark_gray>(<id>, <kind>, tier <tier>, <owner>)"
   odds:

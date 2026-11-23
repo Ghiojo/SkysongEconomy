@@ -133,7 +133,8 @@ public final class FarmHarvester {
         if (!deps.levels().reaches(character, type.skill(), level)) {
             throw new NodeException("node.harvest.low-level", Map.of("level", level, "skill", type.skill()));
         }
-        NodeFacts facts = NodeFacts.farm(node.id(), type.id(), resource.id());
+        NodeFacts facts = NodeFacts.farm(node.id(), type.id(), resource.id())
+                .withModifiers(node.modifiersEnabled());
         ActiveModifiers active = deps.modifiers().activeFor(facts, tier.tier());
         active.dormant().ifPresent(dormant -> {
             throw new NodeException("node.harvest.dormant", Map.of("modifier", dormant.name()));

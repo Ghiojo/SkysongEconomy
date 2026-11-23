@@ -28,6 +28,7 @@ public final class NodeCommand extends CommandGroup {
         register(new SetNodeOwner(support));
         register(new SetNodeTable(support));
         register(new RenameNode(support));
+        register(new SetNodeModifiers(support));
         register(new NodeInfo(support));
         register(new ListNodes(support));
         register(new NodeOdds(support, odds));

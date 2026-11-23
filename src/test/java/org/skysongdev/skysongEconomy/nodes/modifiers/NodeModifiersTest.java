@@ -58,6 +58,14 @@ class NodeModifiersTest {
     }
 
     @Test
+    void aNodeWithModifiersOffGetsNone() {
+        FileRegistry<CalendarModifier> files = new FileRegistry<>(List.of(winter("frost", "max-50%")));
+        NodeModifiers modifiers = new NodeModifiers(() -> files, FixedCalendar.on("rana", 3));
+
+        assertEquals(ActiveModifiers.NONE, modifiers.activeFor(FIELD.withModifiers(false), 1));
+    }
+
+    @Test
     void withoutACalendarNothingIsEverOn() {
         FileRegistry<CalendarModifier> files = new FileRegistry<>(List.of(winter("frost", "max-50%")));
         NodeModifiers modifiers = new NodeModifiers(() -> files, CalendarClock.NONE);

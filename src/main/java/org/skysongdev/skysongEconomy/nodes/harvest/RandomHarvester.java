@@ -140,7 +140,8 @@ public final class RandomHarvester {
         if (!deps.levels().reaches(character, table.skill(), level)) {
             throw new NodeException("node.harvest.low-level", Map.of("level", level, "skill", table.skill()));
         }
-        NodeFacts facts = NodeFacts.random(node.id(), table.id(), table.type());
+        NodeFacts facts = NodeFacts.random(node.id(), table.id(), table.type())
+                .withModifiers(node.modifiersEnabled());
         ActiveModifiers active = deps.modifiers().activeFor(facts, tier.tier());
         active.dormant().ifPresent(dormant -> {
             throw new NodeException("node.harvest.dormant", Map.of("modifier", dormant.name()));
