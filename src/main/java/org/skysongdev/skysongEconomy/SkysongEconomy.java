@@ -9,6 +9,7 @@ import org.skysongdev.skysongEconomy.bootstrap.ClaimFeature;
 import org.skysongdev.skysongEconomy.bootstrap.NodeFeature;
 import org.skysongdev.skysongEconomy.bootstrap.ModuleFeature;
 import org.skysongdev.skysongEconomy.bootstrap.NpcFeature;
+import org.skysongdev.skysongEconomy.bootstrap.PierFeature;
 import org.skysongdev.skysongEconomy.bootstrap.UpkeepFeature;
 import org.skysongdev.skysongEconomy.bootstrap.TradeInputs;
 import org.skysongdev.skysongEconomy.commands.SkysongEconomyCommand;
@@ -67,6 +68,7 @@ public final class SkysongEconomy extends JavaPlugin {
     private NpcFeature npcFeature;
     private UpkeepFeature upkeepFeature;
     private ClaimFeature claimFeature;
+    private PierFeature pierFeature;
 
     @Override
     public void onEnable() {
@@ -89,6 +91,8 @@ public final class SkysongEconomy extends JavaPlugin {
         MaterialIdResolver materialIds = new MaterialIdResolver(skysongItems.tags());
         Wallet wallet = new GringottsWallet();
         TradeInputs trade = new TradeInputs(importItems, prices, priceSettings, goodTypes, materialIds);
+        // Receiving piers for imports; other plugins manage them through the Piers service.
+        pierFeature = PierFeature.start(this, configFiles, databaseSettings(), messenger);
         businessFeature = BusinessFeature.start(this, paths, configFiles, databaseSettings(), skysongStats, wallet, trade,
                 messenger, messages);
         nodeFeature = NodeFeature.start(this, configFiles, databaseSettings(), businessFeature.system(), skysongStats,
@@ -135,6 +139,9 @@ public final class SkysongEconomy extends JavaPlugin {
         }
         if (businessFeature != null) {
             businessFeature.close();
+        }
+        if (pierFeature != null) {
+            pierFeature.close();
         }
         if (connections != null) {
             connections.close();
@@ -203,6 +210,7 @@ public final class SkysongEconomy extends JavaPlugin {
         nodeFeature.commands().forEach(executor::register);
         upkeepFeature.commands().forEach(executor::register);
         claimFeature.commands().forEach(executor::register);
+        pierFeature.commands().forEach(executor::register);
         command.setExecutor(executor);
     }
 
@@ -254,6 +262,14 @@ public final class SkysongEconomy extends JavaPlugin {
     /** NPC upkeep; its parts are empty when SkysongNPCs is missing or npc-upkeep.yml couldn't be read. */
     public UpkeepFeature getUpkeepFeature() {
         return upkeepFeature;
+    }
+
+    /**
+     * Receiving piers for imports. Other plugins should rather use
+     * {@code Bukkit.getServicesManager().load(Piers.class)}.
+     */
+    public PierFeature getPierFeature() {
+        return pierFeature;
     }
 
     /** Claim prices and sales; its parts are empty when SkysongClaims is missing or too old. */

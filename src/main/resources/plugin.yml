@@ -76,6 +76,9 @@ permissions:
   skysongeconomy.claims.sell:
     description: Allows putting your own Claim on sale and taking it off, with /se claim sell and unsell or the Sell button on a Claim sign
     default: true
+  skysongeconomy.piers.admin:
+    description: Allows the /se pier commands, to see receiving piers, open or close them and change their loss chance and modifiers
+    default: op
   skysongeconomy.*:
     description: Gives access to all SkysongEconomy features
     default: op
@@ -98,3 +101,4 @@ permissions:
       skysongeconomy.claims.admin: true
       skysongeconomy.claims.buy: true
       skysongeconomy.claims.sell: true
+      skysongeconomy.piers.admin: true
