@@ -2,6 +2,7 @@ package org.skysongdev.skysongEconomy.nodes.modifiers;
 
 import org.junit.jupiter.api.Test;
 import org.skysongdev.skysongEconomy.calendar.CalendarDay;
+import org.skysongdev.skysongEconomy.calendar.CalendarMoment;
 import org.skysongdev.skysongEconomy.calendar.CalendarNames;
 import org.skysongdev.skysongEconomy.calendar.CalendarNamesTest;
 
@@ -60,6 +61,17 @@ class CalendarWindowTest {
 
         assertTrue(festival.contains(CalendarDay.festival("vinse_er", 1), NAMES));
         assertFalse(festival.contains(dayOf("litoria", 45), NAMES));
+    }
+
+    @Test
+    void aWholeSeasonIsOnlyCoveredWhenTheWindowListsIt() {
+        CalendarWindow winter = new CalendarWindow(Set.of("vinse_er"), List.of(), false);
+        CalendarWindow frost = new CalendarWindow(Set.of(),
+                List.of(new CalendarWindow.DateRange(day("Rana 10"), day("Litoria 5"))), false);
+
+        assertTrue(winter.covers(new CalendarMoment.Season("vinse_er"), NAMES));
+        assertFalse(frost.covers(new CalendarMoment.Season("vinse_er"), NAMES), "only part of the season");
+        assertTrue(frost.covers(new CalendarMoment.Day(dayOf("rana", 12)), NAMES));
     }
 
     @Test

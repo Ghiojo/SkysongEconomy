@@ -2,6 +2,7 @@ package org.skysongdev.skysongEconomy.nodes.modifiers;
 
 import org.skysongdev.skysongEconomy.calendar.CalendarClock;
 import org.skysongdev.skysongEconomy.calendar.CalendarDay;
+import org.skysongdev.skysongEconomy.calendar.CalendarMoment;
 import org.skysongdev.skysongEconomy.calendar.CalendarNames;
 import org.skysongdev.skysongEconomy.config.FileRegistry;
 
@@ -62,6 +63,20 @@ public final class NodeModifiers {
         }
         return new ActiveModifiers(activeOn(today.get()).stream().filter(modifier ->
                 IntStream.rangeClosed(1, maxTier).anyMatch(tier -> modifier.target().matches(node, tier))).toList());
+    }
+
+    /**
+     * @return the modifiers that would hit a harvest at {@code tier} on that node at that moment,
+     *         such as for {@code /se node odds}; none when the node has them turned off
+     */
+    public ActiveModifiers activeFor(NodeFacts node, int tier, CalendarMoment moment) {
+        Optional<CalendarNames> names = calendar.names();
+        if (names.isEmpty() || !node.enabled()) {
+            return ActiveModifiers.NONE;
+        }
+        return new ActiveModifiers(modifiers.get().all().stream()
+                .filter(modifier -> modifier.window().covers(moment, names.get()))
+                .filter(modifier -> modifier.target().matches(node, tier)).toList());
     }
 
     /** @return every modifier on, on {@code day}, whatever it hits; none without a calendar */

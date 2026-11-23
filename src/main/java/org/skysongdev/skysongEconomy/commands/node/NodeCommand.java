@@ -14,11 +14,12 @@ public final class NodeCommand extends CommandGroup {
     public static final String PERMISSION = "skysongeconomy.nodes";
 
     /**
-     * @param odds   what {@code /se node odds} reads
+     * @param odds      what {@code /se node odds} reads
+     * @param modifiers what {@code /se node modifiers} and {@code odds} read about calendar modifiers
      * @param reload reads the node files again and puts them in use, for {@code /se node reload}
      */
     public NodeCommand(NodeService nodes, BusinessService businesses, Messenger messenger, OddsSources odds,
-                       Supplier<NodeFiles.Loaded> reload) {
+                       ModifierSources modifiers, Supplier<NodeFiles.Loaded> reload) {
         super("node", PERMISSION, messenger);
         NodeCommandSupport support = new NodeCommandSupport(nodes, businesses, messenger);
         register(new CreateNode(support));
@@ -31,7 +32,8 @@ public final class NodeCommand extends CommandGroup {
         register(new SetNodeModifiers(support));
         register(new NodeInfo(support));
         register(new ListNodes(support));
-        register(new NodeOdds(support, odds));
+        register(new NodeOdds(support, odds, modifiers));
+        register(new ListNodeModifiers(support, modifiers));
         register(new ReloadNodes(support, reload));
     }
 }

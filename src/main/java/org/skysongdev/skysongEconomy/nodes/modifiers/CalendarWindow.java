@@ -1,6 +1,7 @@
 package org.skysongdev.skysongEconomy.nodes.modifiers;
 
 import org.skysongdev.skysongEconomy.calendar.CalendarDay;
+import org.skysongdev.skysongEconomy.calendar.CalendarMoment;
 import org.skysongdev.skysongEconomy.calendar.CalendarNames;
 
 import java.util.List;
@@ -33,6 +34,18 @@ public record CalendarWindow(Set<String> seasonIds, List<DateRange> dates, boole
         }
         OptionalInt dayOfYear = names.dayOfYear(day);
         return dayOfYear.isPresent() && dates.stream().anyMatch(range -> range.contains(dayOfYear.getAsInt()));
+    }
+
+    /**
+     * @return whether the window is on at that moment: for a day, as {@link #contains} says; for a
+     *         whole season, only when the window lists that season (its date ranges and the festival
+     *         may cover parts of it, but not all)
+     */
+    public boolean covers(CalendarMoment moment, CalendarNames names) {
+        return switch (moment) {
+            case CalendarMoment.Day day -> contains(day.day(), names);
+            case CalendarMoment.Season season -> seasonIds.contains(season.seasonId());
+        };
     }
 
     /**
