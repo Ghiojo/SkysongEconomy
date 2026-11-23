@@ -59,8 +59,9 @@ final class FarmMenu extends HarvestMenu {
         }
         FarmHarvester harvester = menus.deps().farms().harvester();
         for (FarmTier tier : harvester.offered(node)) {
-            set(FIRST_TIER + tier.tier() - 1, tierButton(tier.tier(), Optional.of(HarvestCost.tokens(tier.cost())),
-                    harvester.requiredLevel(tier), type.skill(), tier.output()));
+            set(FIRST_TIER + tier.tier() - 1, tierButton(new TierChoice(tier.tier(),
+                    Optional.of(HarvestCost.tokens(tier.cost())), harvester.requiredLevel(tier), type.skill(),
+                    tier.output(), harvester.modifiers(node, tier))));
         }
     }
 

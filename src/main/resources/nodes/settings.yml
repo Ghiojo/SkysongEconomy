@@ -46,9 +46,11 @@ farm:
 #   view-distance  how far away players can see it, in blocks
 #   shadow         text shadow
 #   background     the default dark box behind the text
+#   show-modifiers a last line naming the calendar modifiers (nodes/modifiers) on the node today
 nameplate:
   enabled: true
   height: 0.4
   view-distance: 16
   shadow: true
   background: false
+  show-modifiers: true

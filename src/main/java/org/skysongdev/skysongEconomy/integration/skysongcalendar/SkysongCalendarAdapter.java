@@ -1,5 +1,6 @@
 package org.skysongdev.skysongEconomy.integration.skysongcalendar;
 
+import org.bukkit.plugin.Plugin;
 import org.skysongdev.skysongCalendar.api.Festival;
 import org.skysongdev.skysongCalendar.api.IcDate;
 import org.skysongdev.skysongCalendar.api.Month;
@@ -13,6 +14,7 @@ import org.skysongdev.skysongEconomy.calendar.CalendarNames;
 import org.skysongdev.skysongEconomy.integration.ApiVersion;
 
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -25,10 +27,12 @@ public final class SkysongCalendarAdapter implements CalendarClock {
     public static final ApiVersion REQUIRED_API = new ApiVersion(1, 0, 0);
 
     private final SkysongCalendarApi api;
+    private final Plugin plugin;
     private final CalendarNames names;
 
-    private SkysongCalendarAdapter(SkysongCalendarApi api) {
+    private SkysongCalendarAdapter(SkysongCalendarApi api, Plugin plugin) {
         this.api = api;
+        this.plugin = plugin;
         this.names = new CalendarNames(
                 Arrays.stream(Season.values()).map(SkysongCalendarAdapter::name).toList(),
                 Arrays.stream(Month.values())
@@ -41,15 +45,16 @@ public final class SkysongCalendarAdapter implements CalendarClock {
     /**
      * Connects to the SkysongCalendar API that the running SkysongCalendar registered.
      *
+     * @param plugin SkysongEconomy, which listens to SkysongCalendar's events
      * @throws IllegalStateException when SkysongCalendar is not enabled, or its API is older than {@link #REQUIRED_API}
      */
-    public static SkysongCalendarAdapter connect() {
+    public static SkysongCalendarAdapter connect(Plugin plugin) {
         SkysongCalendarApi api = SkysongCalendarApi.get();
         if (!ApiVersion.parse(api.apiVersion()).isAtLeast(REQUIRED_API)) {
             throw new IllegalStateException("SkysongCalendar has API " + api.apiVersion() + ", but API " + REQUIRED_API
                     + " or newer is needed: update SkysongCalendar");
         }
-        return new SkysongCalendarAdapter(api);
+        return new SkysongCalendarAdapter(api, Objects.requireNonNull(plugin, "plugin"));
     }
 
     /** @return the API version the installed SkysongCalendar implements */
@@ -65,6 +70,12 @@ public final class SkysongCalendarAdapter implements CalendarClock {
     @Override
     public Optional<CalendarNames> names() {
         return Optional.of(names);
+    }
+
+    @Override
+    public void whenDayChanges(Runnable action) {
+        Objects.requireNonNull(action, "action");
+        plugin.getServer().getPluginManager().registerEvents(new CalendarDayListener(action), plugin);
     }
 
     /** @return the date as the plugin's rules see it */

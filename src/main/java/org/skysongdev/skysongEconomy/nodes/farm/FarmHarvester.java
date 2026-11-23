@@ -106,6 +106,27 @@ public final class FarmHarvester {
         return deps.plots().type(node).id();
     }
 
+    /**
+     * @return the calendar modifiers on today for a harvest at that tier of what is growing
+     * @throws NodeException when nothing can be harvested, as {@link #growing} says
+     */
+    public ActiveModifiers modifiers(Node node, FarmTier tier) {
+        return deps.modifiers().activeFor(facts(node, deps.plots().type(node), growing(node)), tier.tier());
+    }
+
+    /** @return the calendar modifiers on today for any tier the node offers; none while nothing can be harvested */
+    public ActiveModifiers modifiersOnNode(Node node) {
+        try {
+            return deps.modifiers().activeUpTo(facts(node, deps.plots().type(node), growing(node)), node.tier());
+        } catch (NodeException nothingGrowing) {
+            return ActiveModifiers.NONE;
+        }
+    }
+
+    private static NodeFacts facts(Node node, FarmType type, FarmResource resource) {
+        return NodeFacts.farm(node.id(), type.id(), resource.id()).withModifiers(node.modifiersEnabled());
+    }
+
     /** Harvests once without a booster; see {@link #harvest(Node, CharacterRef, int, Optional)}. */
     public Harvest harvest(Node node, CharacterRef character, int tierNumber) {
         return harvest(node, character, tierNumber, Optional.empty());
@@ -133,9 +154,7 @@ public final class FarmHarvester {
         if (!deps.levels().reaches(character, type.skill(), level)) {
             throw new NodeException("node.harvest.low-level", Map.of("level", level, "skill", type.skill()));
         }
-        NodeFacts facts = NodeFacts.farm(node.id(), type.id(), resource.id())
-                .withModifiers(node.modifiersEnabled());
-        ActiveModifiers active = deps.modifiers().activeFor(facts, tier.tier());
+        ActiveModifiers active = deps.modifiers().activeFor(facts(node, type, resource), tier.tier());
         active.dormant().ifPresent(dormant -> {
             throw new NodeException("node.harvest.dormant", Map.of("modifier", dormant.name()));
         });

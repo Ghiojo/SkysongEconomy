@@ -5,9 +5,7 @@ import org.bukkit.inventory.ItemStack;
 import org.skysongdev.skysongEconomy.character.CharacterRef;
 import org.skysongdev.skysongEconomy.gui.Menu;
 import org.skysongdev.skysongEconomy.gui.MenuButton;
-import org.skysongdev.skysongEconomy.loot.LootOutput;
 import org.skysongdev.skysongEconomy.nodes.Node;
-import org.skysongdev.skysongEconomy.nodes.harvest.HarvestCost;
 
 import java.util.List;
 import java.util.Optional;
@@ -56,10 +54,9 @@ abstract class HarvestMenu extends Menu {
     protected abstract void drawNode(Node node);
 
     /** @return a tier's button, which harvests once per click with the held booster, if any */
-    protected final MenuButton tierButton(int tier, Optional<HarvestCost> cost, String level, String skill,
-                                          LootOutput output) {
-        return menus.text().tierButton(character, tier, cost, level, skill, output, click -> {
-            harvest(click.player(), tier);
+    protected final MenuButton tierButton(TierChoice choice) {
+        return menus.text().tierButton(character, choice, click -> {
+            harvest(click.player(), choice.tier());
             // The token balance, the player's level and the booster may have changed.
             redraw();
         });

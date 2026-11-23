@@ -32,8 +32,10 @@ import java.util.function.Predicate;
  *   view-distance: 16
  *   shadow: true
  *   background: false
+ *   show-modifiers: true      # a line naming the calendar modifiers on the node today
  * }</pre>
- * The nameplate text itself is {@code node.nameplate} in {@code messages.yml}.
+ * The nameplate text itself is {@code node.nameplate} in {@code messages.yml}, and the modifier
+ * line {@code node.nameplate-modifier}.
  */
 public final class NodeSettingsParser {
     /** File name used in error messages and when loading. */
@@ -76,7 +78,7 @@ public final class NodeSettingsParser {
                 menu.string("locked-tier", defaults.lockedTier()), menu.string("empty-plot", defaults.emptyPlot()),
                 menu.string("take-out", defaults.takeOut()), menu.string("booster", defaults.booster()));
         return new NodeSettings(types, tierLevels(root.section(TIER_LEVELS)), new NameplateSettingsParser().parse(root), icons,
-                primerRemovalDowntime(root.section("farm")));
+                primerRemovalDowntime(root.section("farm")), root.section("nameplate").bool("show-modifiers", true));
     }
 
     private static int primerRemovalDowntime(ConfigSection farm) {

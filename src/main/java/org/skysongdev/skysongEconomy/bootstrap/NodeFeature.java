@@ -35,6 +35,7 @@ import org.skysongdev.skysongEconomy.listeners.ProtectedBlockListener;
 import org.skysongdev.skysongEconomy.loot.LootRoller;
 import org.skysongdev.skysongEconomy.messaging.Messenger;
 import org.skysongdev.skysongEconomy.money.Wallet;
+import org.skysongdev.skysongEconomy.nodes.Node;
 import org.skysongdev.skysongEconomy.nodes.NodeBlockGuard;
 import org.skysongdev.skysongEconomy.nodes.NodeFiles;
 import org.skysongdev.skysongEconomy.nodes.NodeService;
@@ -47,6 +48,8 @@ import org.skysongdev.skysongEconomy.nodes.farm.PrimerReturns;
 import org.skysongdev.skysongEconomy.nodes.harvest.HarvestPayer;
 import org.skysongdev.skysongEconomy.nodes.harvest.NodeAccess;
 import org.skysongdev.skysongEconomy.nodes.harvest.RandomHarvester;
+import org.skysongdev.skysongEconomy.nodes.modifiers.ActiveModifiers;
+import org.skysongdev.skysongEconomy.nodes.modifiers.CalendarModifier;
 import org.skysongdev.skysongEconomy.nodes.modifiers.NodeModifiers;
 import org.skysongdev.skysongitems.api.SkysongItemsApi;
 
@@ -137,14 +140,25 @@ public final class NodeFeature implements AutoCloseable {
         FarmPlots plots = new FarmPlots(new FarmPlots.Dependencies(tables, settings, access, system.access(), skysongStats,
                 new AsyncPlantingRepository(new SqlPlantingRepository(connections, logger), writer), returns,
                 player -> hasPermission(plugin, player, FarmPlots.BYPASS_PERMISSION)));
+        HarvestPayer payer = new HarvestPayer(system.tokens(), skysongStats, wallet);
+        BukkitNodeHarvestEvents harvestEvents = new BukkitNodeHarvestEvents(events);
+        LootRoller roller = new LootRoller(new SecureRandom());
+        NodeModifiers modifiers = new NodeModifiers(tables::modifiers, calendar);
+        RandomHarvester harvester = new RandomHarvester(new RandomHarvester.Dependencies(tables, settings, access, payer,
+                skysongStats, harvestEvents, modifiers), roller);
+        FarmHarvester farmHarvester = new FarmHarvester(new FarmHarvester.Dependencies(plots, settings, access, payer,
+                skysongStats, harvestEvents, modifiers), roller);
         FloatingNames nameplates = new FloatingNames(settings.nameplate());
-        NodeNameplates nodeNameplates = new NodeNameplates(nodes, nameplates, messenger, plots::plantedName);
+        NodeNameplates nodeNameplates = new NodeNameplates(nodes, nameplates, messenger, plots::plantedName,
+                node -> settings.nameplateModifiers() ? modifierNames(node, harvester, farmHarvester) : List.of());
         nodes.addListener(nodeNameplates);
         // After the nameplates, so a primer given back on a change shows on the nameplate at once.
         nodes.addListener(plots);
         plots.addListener(nodeNameplates::refresh);
         events.registerEvents(nameplates, plugin);
         resources.add(nameplates);
+        // A new IC day can turn calendar modifiers on or off.
+        calendar.whenDayChanges(nodeNameplates::refreshAll);
         try {
             logger.info("Loaded " + returns.loadAll() + " primer(s) waiting for their planters and "
                     + plots.loadAll() + " planted farm node(s)");
@@ -157,14 +171,6 @@ public final class NodeFeature implements AutoCloseable {
         events.registerEvents(new PrimerReturnListener(returns), plugin);
         events.registerEvents(new ProtectedBlockListener(List.of(new NodeBlockGuard(nodes)), messenger), plugin);
 
-        HarvestPayer payer = new HarvestPayer(system.tokens(), skysongStats, wallet);
-        BukkitNodeHarvestEvents harvestEvents = new BukkitNodeHarvestEvents(events);
-        LootRoller roller = new LootRoller(new SecureRandom());
-        NodeModifiers modifiers = new NodeModifiers(tables::modifiers, calendar);
-        RandomHarvester harvester = new RandomHarvester(new RandomHarvester.Dependencies(tables, settings, access, payer,
-                skysongStats, harvestEvents, modifiers), roller);
-        FarmHarvester farmHarvester = new FarmHarvester(new FarmHarvester.Dependencies(plots, settings, access, payer,
-                skysongStats, harvestEvents, modifiers), roller);
         NodeMenus.Farms farms = new NodeMenus.Farms(plots, farmHarvester,
                 new PrimerItems(SkysongItemsApi.get().tags(), trade.materialIds()));
         NodeMenus menus = new NodeMenus(new NodeMenus.Dependencies(nodes, harvester, farms, system.businesses(),
@@ -184,6 +190,15 @@ public final class NodeFeature implements AutoCloseable {
         };
         List<SubCommand> commands = List.of(new NodeCommand(nodes, system.businesses(), messenger, odds, reload));
         return new NodeFeature(Optional.of(nodes), commands, resources, logger);
+    }
+
+    /** @return the names of the calendar modifiers on the node today, for its nameplate */
+    private static List<String> modifierNames(Node node, RandomHarvester random, FarmHarvester farm) {
+        ActiveModifiers active = switch (node.kind()) {
+            case RANDOM -> random.modifiersOnNode(node);
+            case FARM -> farm.modifiersOnNode(node);
+        };
+        return active.applied().stream().map(CalendarModifier::name).toList();
     }
 
     private static void logLoaded(Logger logger, NodeFiles.Loaded loaded) {

@@ -15,9 +15,10 @@ import java.util.Set;
  * @param nameplate          how the floating name above node blocks looks
  * @param menuIcons          the items the node menu shows
  * @param primerRemovalDowntime the downtime taking a primer out of a farm node costs; 0 makes it free
+ * @param nameplateModifiers whether the nameplate gets a line naming the calendar modifiers on the node today
  */
 public record NodeSettings(Set<String> ownerBusinessTypes, Map<Integer, String> tierLevels, NameplateSettings nameplate,
-                           NodeMenuIcons menuIcons, int primerRemovalDowntime) {
+                           NodeMenuIcons menuIcons, int primerRemovalDowntime, boolean nameplateModifiers) {
     /** The removal cost used when {@code nodes/settings.yml} doesn't set one. */
     public static final int DEFAULT_PRIMER_REMOVAL_DOWNTIME = 1;
 
@@ -37,6 +38,12 @@ public record NodeSettings(Set<String> ownerBusinessTypes, Map<Integer, String> 
         if (primerRemovalDowntime < 0) {
             throw new IllegalArgumentException("primerRemovalDowntime can't be negative: " + primerRemovalDowntime);
         }
+    }
+
+    /** Settings whose nameplates show the calendar modifiers on, as by default. */
+    public NodeSettings(Set<String> ownerBusinessTypes, Map<Integer, String> tierLevels, NameplateSettings nameplate,
+                        NodeMenuIcons menuIcons, int primerRemovalDowntime) {
+        this(ownerBusinessTypes, tierLevels, nameplate, menuIcons, primerRemovalDowntime, true);
     }
 
     /** @return the skill level gathering at {@code tier} needs */

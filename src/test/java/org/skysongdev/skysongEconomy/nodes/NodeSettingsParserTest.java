@@ -41,6 +41,7 @@ class NodeSettingsParserTest {
             assertEquals("expert", settings.levelFor(5));
             assertEquals(1, settings.primerRemovalDowntime());
             assertEquals(NodeMenuIcons.DEFAULTS, settings.menuIcons());
+            assertTrue(settings.nameplateModifiers());
         }
         assertEquals(List.of(), warnings);
     }
@@ -97,6 +98,12 @@ class NodeSettingsParserTest {
     @Test
     void nameplatesCanBeTurnedOff() {
         assertFalse(parse("nameplate:\n  enabled: false").nameplate().enabled());
+    }
+
+    @Test
+    void theCalendarModifierLineIsOnUnlessTurnedOff() {
+        assertTrue(parse("").nameplateModifiers());
+        assertFalse(parse("nameplate:\n  show-modifiers: false").nameplateModifiers());
     }
 
     @Test

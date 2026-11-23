@@ -35,7 +35,7 @@ public final class CalendarConnection {
             return CalendarClock.NONE;
         }
         try {
-            SkysongCalendarAdapter adapter = SkysongCalendarAdapter.connect();
+            SkysongCalendarAdapter adapter = SkysongCalendarAdapter.connect(plugin);
             logger.info("Connected to " + SKYSONG_CALENDAR + " (API " + adapter.apiVersion() + ")");
             return adapter;
         } catch (RuntimeException | LinkageError e) {

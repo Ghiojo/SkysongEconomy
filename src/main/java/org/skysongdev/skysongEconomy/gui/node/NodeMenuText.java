@@ -11,10 +11,13 @@ import org.skysongdev.skysongEconomy.loot.GroupRolls;
 import org.skysongdev.skysongEconomy.loot.LootEntry;
 import org.skysongdev.skysongEconomy.loot.LootOutput;
 import org.skysongdev.skysongEconomy.loot.WeightedEntry;
+import org.skysongdev.skysongEconomy.loot.YieldAdjuster;
 import org.skysongdev.skysongEconomy.messaging.NumberText;
 import org.skysongdev.skysongEconomy.nodes.Node;
 import org.skysongdev.skysongEconomy.nodes.NodeOwner;
-import org.skysongdev.skysongEconomy.nodes.harvest.HarvestCost;
+import org.skysongdev.skysongEconomy.nodes.modifiers.ActiveModifiers;
+import org.skysongdev.skysongEconomy.nodes.modifiers.CalendarModifier;
+import org.skysongdev.skysongEconomy.trade.IntRange;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -49,31 +52,34 @@ final class NodeMenuText {
     }
 
     /**
-     * @return a tier's button: its cost, the level it needs and what it gives, greyed out with the
-     *         reason when the player can't use it
-     * @param cost    what one harvest costs; empty when the tier isn't offered on this node, such as
-     *                a business-only tier on a public node
+     * @return a tier's button: its cost, the level it needs, the calendar modifiers on today and
+     *         what it gives with them, greyed out with the reason when the player can't use it
      * @param onClick one harvest at the tier
      */
-    MenuButton tierButton(CharacterRef character, int tier, Optional<HarvestCost> cost, String level, String skill,
-                          LootOutput output, Consumer<MenuClick> onClick) {
-        TagResolver tierNumber = unparsed("tier", String.valueOf(tier));
+    MenuButton tierButton(CharacterRef character, TierChoice choice, Consumer<MenuClick> onClick) {
+        TagResolver tierNumber = unparsed("tier", String.valueOf(choice.tier()));
         List<Component> lore = new ArrayList<>();
-        Optional<String> locked = Optional.empty();
-        if (cost.isPresent()) {
+        Optional<Component> locked = Optional.empty();
+        if (choice.cost().isPresent()) {
             lore.add(line("node.gather.tier.cost",
-                    component("cost", HarvestCostText.describe(menus.messenger(), menus.deps().wallet(), cost.get()))));
+                    component("cost", HarvestCostText.describe(menus.messenger(), menus.deps().wallet(), choice.cost().get()))));
         } else {
-            locked = Optional.of("node.gather.tier.business-only");
+            locked = Optional.of(line("node.gather.tier.business-only"));
         }
-        lore.add(line("node.gather.tier.needs", parsed("level", menus.deps().levels().levelName(level)),
-                parsed("skill", menus.deps().skills().displayName(skill))));
-        if (locked.isEmpty() && !menus.deps().levels().reaches(character, skill, level)) {
-            locked = Optional.of("node.gather.tier.too-low");
+        lore.add(line("node.gather.tier.needs", parsed("level", menus.deps().levels().levelName(choice.level())),
+                parsed("skill", menus.deps().skills().displayName(choice.skill()))));
+        if (locked.isEmpty() && !menus.deps().levels().reaches(character, choice.skill(), choice.level())) {
+            locked = Optional.of(line("node.gather.tier.too-low"));
         }
-        lore.addAll(outputLines(output));
+        ActiveModifiers modifiers = choice.modifiers();
+        Optional<CalendarModifier> dormant = modifiers.dormant();
+        if (dormant.isPresent()) {
+            locked = Optional.of(line("node.gather.tier.dormant", parsed("modifier", dormant.get().name())));
+        }
+        lore.addAll(modifierLines(modifiers));
+        lore.addAll(outputLines(choice.output(), modifiers.effect()));
         if (locked.isPresent()) {
-            lore.add(line(locked.get()));
+            lore.add(locked.get());
             return MenuButton.display(menus.theme().item(menus.icons().lockedTier(),
                     line("node.gather.tier.name-locked", tierNumber), lore));
         }
@@ -82,31 +88,52 @@ final class NodeMenuText {
                 onClick);
     }
 
-    /** @return what a tier gives: guaranteed items, chance items, then each roll's entries and their odds */
-    List<Component> outputLines(LootOutput output) {
+    /** @return one line per calendar modifier on: its name and what it changes */
+    private List<Component> modifierLines(ActiveModifiers modifiers) {
+        List<Component> lines = new ArrayList<>();
+        for (CalendarModifier modifier : modifiers.applied()) {
+            if (modifier.dormant()) {
+                continue;
+            }
+            lines.add(line("node.gather.tier.modifier", parsed("modifier", modifier.name()),
+                    unparsed("effect", modifier.effect().text())));
+        }
+        return lines;
+    }
+
+    /**
+     * @param adjuster what changes the harvest, such as the calendar modifiers on today; the lines
+     *                 show the changed amounts, chances and roll counts
+     * @return what a tier gives: guaranteed items, chance items, then each roll's entries and their odds
+     */
+    List<Component> outputLines(LootOutput output, YieldAdjuster adjuster) {
         List<Component> lines = new ArrayList<>();
         for (LootEntry.Item item : output.guaranteed()) {
-            lines.add(line("node.gather.tier.guaranteed", itemName(item), unparsed("amount", item.amount().toString())));
+            lines.add(line("node.gather.tier.guaranteed", itemName(item), amount(item, adjuster)));
         }
         for (ChanceItem chance : output.chances()) {
-            lines.add(line("node.gather.tier.chance", itemName(chance.item()),
-                    unparsed("amount", chance.item().amount().toString()),
-                    unparsed("chance", NumberText.percent(chance.percent() / 100))));
+            lines.add(line("node.gather.tier.chance", itemName(chance.item()), amount(chance.item(), adjuster),
+                    unparsed("chance", NumberText.percent(adjuster.chance(chance.percent()) / 100))));
         }
         for (GroupRolls rolls : output.rolls()) {
-            lines.add(line("node.gather.tier.rolls", unparsed("times", rolls.count().toString())));
+            IntRange times = new IntRange(Math.max(0, adjuster.rolls(rolls.count().min())),
+                    Math.max(0, adjuster.rolls(rolls.count().max())));
+            lines.add(line("node.gather.tier.rolls", unparsed("times", times.toString())));
             for (WeightedEntry entry : rolls.group().entries()) {
-                lines.add(line("node.gather.tier.roll-entry", component("entry", entryName(entry.entry())),
+                lines.add(line("node.gather.tier.roll-entry", component("entry", entryName(entry.entry(), adjuster)),
                         unparsed("chance", NumberText.percent(rolls.group().chance(entry)))));
             }
         }
         return lines;
     }
 
-    private Component entryName(LootEntry entry) {
+    private static TagResolver amount(LootEntry.Item item, YieldAdjuster adjuster) {
+        return unparsed("amount", adjuster.amount(item.amount()).toString());
+    }
+
+    private Component entryName(LootEntry entry, YieldAdjuster adjuster) {
         return switch (entry) {
-            case LootEntry.Item item -> line("node.gather.tier.entry-item", itemName(item),
-                    unparsed("amount", item.amount().toString()));
+            case LootEntry.Item item -> line("node.gather.tier.entry-item", itemName(item), amount(item, adjuster));
             case LootEntry.Group group -> group.group().isNamed()
                     ? line("node.gather.tier.entry-group", unparsed("group", group.group().id()))
                     : line("node.gather.tier.entry-mixed");
