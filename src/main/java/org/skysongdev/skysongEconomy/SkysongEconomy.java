@@ -103,7 +103,8 @@ public final class SkysongEconomy extends JavaPlugin {
         upkeepFeature = UpkeepFeature.start(this, configFiles, databaseSettings(), importItems, goodTypes, materialIds,
                 messenger, messages);
         // SkysongClaims' Claims: priced, put on sale and bought.
-        claimFeature = ClaimFeature.start(this);
+        claimFeature = ClaimFeature.start(this,
+                new ClaimFeature.Inputs(databaseSettings(), prices, priceSettings, wallet, messenger));
 
         registerCommands(messenger, materialIds);
     }
@@ -197,6 +198,7 @@ public final class SkysongEconomy extends JavaPlugin {
         businessFeature.commands().forEach(executor::register);
         nodeFeature.commands().forEach(executor::register);
         upkeepFeature.commands().forEach(executor::register);
+        claimFeature.commands().forEach(executor::register);
         command.setExecutor(executor);
     }
 
@@ -250,7 +252,7 @@ public final class SkysongEconomy extends JavaPlugin {
         return upkeepFeature;
     }
 
-    /** Claim sales; its parts are empty when SkysongClaims is missing or too old. */
+    /** Claim prices and sales; its parts are empty when SkysongClaims is missing or too old. */
     public ClaimFeature getClaimFeature() {
         return claimFeature;
     }

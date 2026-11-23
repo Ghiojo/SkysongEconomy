@@ -211,7 +211,13 @@ public final class DatabaseSchema {
             // The items stocked in an NPC for its upkeep, in Paper's own item format.
             "CREATE TABLE IF NOT EXISTS npc_upkeep_stock ("
                     + "npc_uuid CHAR(36) PRIMARY KEY NOT NULL, "
-                    + "items MEDIUMBLOB NOT NULL) ENGINE=InnoDB");
+                    + "items MEDIUMBLOB NOT NULL) ENGINE=InnoDB",
+            // SkysongClaims Claims' asking prices: a price expression per Claim id, before modifiers.
+            "CREATE TABLE IF NOT EXISTS claim_prices ("
+                    + "claim_id VARCHAR(64) PRIMARY KEY NOT NULL, "
+                    + "expression VARCHAR(255) NOT NULL, "
+                    + "set_by VARCHAR(64) NOT NULL, "
+                    + "set_at BIGINT NOT NULL) ENGINE=InnoDB");
 
     private DatabaseSchema() {
     }

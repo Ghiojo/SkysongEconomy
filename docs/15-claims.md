@@ -5,12 +5,12 @@ Claim and whether it is for sale, and leaves three things to SkysongEconomy: the
 **fourth line of every Claim sign**, where the price is shown.
 
 The full agreed design is in the project's design file `claims-integration-design.md` (revision 3, signed off
-2026-11-23). It is built in steps; this page describes what is on `master` now.
+2026-11-23). It is built in steps; this page describes what is built so far.
 
 | Part | State |
 | --- | --- |
 | Connecting to SkysongClaims | **Done** (this page) |
-| Claim prices and server listings (`/se claim price`, `sell`, `unsell`, `list`) | Not yet |
+| Claim prices and server listings (`/se claim price`, `sell`, `unsell`, `list`) | **Done** |
 | Claim modifiers (`claim-type:`, `claim:`, `on:claims`, flat amounts) | Not yet |
 | The price on sign line 4 | Not yet |
 | Buying, and `ClaimPurchaseEvent` | Not yet |
@@ -29,6 +29,34 @@ SkysongClaims is optional (`softdepend`). `bootstrap/ClaimFeature` starts after 
 
 The build uses `compileOnly 'com.github.Ghiojo:SkysongClaims:1.0.0'` (JitPack publishes only its `api` module, under
 the repository's own name).
+
+## Prices
+
+Every Claim has at most one **asking price**: what its seller asks, before any modifier (`claims/ClaimPrices`,
+table `claim_prices`). It is a price expression, usually a plain number such as `2000`, but `{item:<id>}` works too
+(`{item:architite_pound} * 600` follows the pound's base value). `{base}` has no meaning here and is refused.
+
+- A price must be worth more than 0 after truncation to the decimals in `prices.yml`.
+- Free Claims are never priced.
+- Prices are worked out when asked, never cached, so changing an item's base value changes the Claim at once.
+- A row whose expression can't be read is skipped at start-up with a warning, and stays in the table for staff to fix.
+
+## Server sales
+
+`claims/ClaimSales` holds every rule about pricing and selling, so every change goes through it:
+
+| Action | Rule |
+| --- | --- |
+| `sell <claim> [price]` | The Claim must exist, not be free, have no owners, and not be on sale by another plugin. With a price, it is saved first; without, the saved price is used (`claims.no-price` if there is none). Then SkysongClaims marks it for sale in SkysongEconomy's name, and its signs show "For sale" on line 3 |
+| `unsell <claim>` | Only Claims SkysongEconomy is selling. The price stays saved |
+| `price set` | A Claim on sale stays on sale at the new price |
+| `price clear` | A Claim the server was selling goes off sale, since it can't be sold without a price |
+| Last owner leaves | `integration/skysongclaims/ClaimChangeListener` hears `ClaimOwnerRemoveEvent`. When the Claim has no owners left, isn't free, isn't on sale and has a price, it goes back on sale at that price (`ClaimSales.abandoned`) |
+| Claim deleted | `ClaimDeleteEvent` removes its price |
+| Start-up | `ClaimSales.reconcile` removes prices of Claims that are gone or free now, and takes Claims SkysongEconomy is selling without a price off sale. It never puts anything on sale by itself |
+
+SkysongClaims only knows whether a Claim is for sale and which plugin said so (`ClaimSales.SELLER`, the plugin's
+name). The price stays here.
 
 ## The gateway
 

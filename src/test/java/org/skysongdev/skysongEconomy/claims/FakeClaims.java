@@ -20,7 +20,7 @@ import java.util.Set;
  */
 public final class FakeClaims implements ClaimGateway {
     /** The plugin name sales are made in, as SkysongClaims records it. */
-    public static final String PLUGIN = "SkysongEconomy";
+    public static final String PLUGIN = ClaimSales.SELLER;
 
     private final Map<String, Stored> claims = new LinkedHashMap<>();
     private final Map<String, Integer> limits = new HashMap<>();

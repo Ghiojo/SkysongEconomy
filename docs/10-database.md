@@ -48,6 +48,7 @@ Times are stored as epoch milliseconds (`BIGINT`), money as `DECIMAL(19, 4)`, ch
 | `business_npc_applied` | What the plugin changed on each business NPC's SkysongStats sheet, to undo exactly that | `SqlNpcAppliedRepository` | (`npc_uuid`, `kind`, `target`): `kind` `stat` with `modifier_id` and `amount`, or `kind` `proficiency` with `tier_before` and `tier_applied`. Rows go with the `business_npcs` row |
 | `npc_upkeep` | Every NPC with an upkeep, and NPCs whose upkeep staff took away by hand | `SqlUpkeepRepository` | `npc_uuid` (PK), `profile` (NULL when set to none by hand), `set_by_hand`, `state` (`MAINTAINED`/`UNMAINTAINED`), `next_due`, `changed_at` |
 | `npc_upkeep_stock` | What is in each NPC's Upkeep chest | `SqlUpkeepStockRepository` | `npc_uuid` (PK), `items` (serialised stacks, `MEDIUMBLOB`) |
+| `claim_prices` | SkysongClaims Claims' asking prices, before modifiers | `SqlClaimPriceRepository` | `claim_id` (PK, lower case), `expression` (a price expression), `set_by`, `set_at` |
 | `business_npcs` | Which SkysongNPCs belong to which business | `SqlBusinessNpcRepository` | `npc_uuid` (PK, the SkysongNPCs id), `business_id` (FK, rows go with the business), `source` (the slot it fills, e.g. `skill:martial`), `created_at` |
 
 ## Editing data by hand

@@ -122,6 +122,20 @@ Commands without an id act on the NPC you look at, within 8 blocks. See [NPC upk
 | `set <profile\|none\|template>` | Gives it a profile by hand, takes its upkeep away, or lets its template decide |
 | `mark <maintained\|unmaintained>` | Sets its state; maintained restarts the timer |
 
+## `/se claim`: SkysongClaims Claims
+
+Only there when SkysongClaims is installed. Claim ids are SkysongClaims' (`rose_house`). Prices are price expressions,
+usually a plain number. See [Claims](15-claims.md).
+
+| Command | Permission | What it does |
+| --- | --- | --- |
+| `price set <claim> <price>` | `skysongeconomy.claims.admin` | Sets a Claim's asking price. A Claim on sale stays on sale at it |
+| `price clear <claim>` | `skysongeconomy.claims.admin` | Removes it; a Claim the server was selling goes off sale |
+| `price view <claim>` | `skysongeconomy.claims.admin` | The price, its expression and who set it |
+| `sell <claim> [price]` | `skysongeconomy.claims.admin` | Puts an unowned Claim on sale for the server, at the price given or the saved one |
+| `unsell <claim>` | `skysongeconomy.claims.admin` | Takes it off sale; the price stays saved |
+| `list` | `skysongeconomy.claims.admin` | Every Claim SkysongEconomy has on sale, with its price |
+
 ## Permissions
 
 All are declared in `src/main/resources/plugin.yml`.
@@ -143,6 +157,7 @@ All are declared in `src/main/resources/plugin.yml`.
 | `skysongeconomy.nodes` | op | Every `/se node` command, and breaking node blocks |
 | `skysongeconomy.nodes.tend-bypass` | op | Plant and take out primers at every farm node, whatever its owner and groups allow |
 | `skysongeconomy.upkeep.admin` | op | Every `/se upkeep` command |
+| `skysongeconomy.claims.admin` | op | `/se claim price`, `sell`, `unsell` and `list` |
 | `skysongeconomy.*` | op | All of the above |
 
 Players use most features through menus, not commands: right-click a business block or a node. Those menus check
