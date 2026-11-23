@@ -89,14 +89,7 @@ public final class ClaimPrices {
      */
     BigDecimal set(String claimId, String text, String by) {
         PriceExpression expression = PriceExpression.parse(text);
-        if (expression.usesBase()) {
-            throw new PriceException("prices.no-base", Map.of());
-        }
-        BigDecimal value = worth(expression);
-        if (value.signum() <= 0) {
-            throw new ClaimException("claims.price-not-positive",
-                    Map.of("expression", expression.text(), "value", value.toPlainString()));
-        }
+        BigDecimal value = check(expression);
         String id = normalize(claimId);
         ClaimPrice price = new ClaimPrice(id, expression, by, clock.instant());
         prices.put(id, price);
@@ -112,6 +105,29 @@ public final class ClaimPrices {
         }
         repository.delete(id);
         return true;
+    }
+
+    /**
+     * Works out what a price would be worth, with the checks {@link #set} makes, without saving it,
+     * such as to show an owner what they'd ask before they confirm.
+     *
+     * @throws PriceException when the expression can't be used
+     * @throws ClaimException {@code claims.price-not-positive}
+     */
+    public BigDecimal check(String text) {
+        return check(PriceExpression.parse(text));
+    }
+
+    private BigDecimal check(PriceExpression expression) {
+        if (expression.usesBase()) {
+            throw new PriceException("prices.no-base", Map.of());
+        }
+        BigDecimal value = worth(expression);
+        if (value.signum() <= 0) {
+            throw new ClaimException("claims.price-not-positive",
+                    Map.of("expression", expression.text(), "value", value.toPlainString()));
+        }
+        return value;
     }
 
     private BigDecimal worth(PriceExpression expression) {

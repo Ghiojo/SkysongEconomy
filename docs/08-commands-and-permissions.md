@@ -132,8 +132,8 @@ usually a plain number. See [Claims](15-claims.md).
 | `price set <claim> <price>` | `skysongeconomy.claims.admin` | Sets a Claim's asking price. A Claim on sale stays on sale at it |
 | `price clear <claim>` | `skysongeconomy.claims.admin` | Removes it; a Claim the server was selling goes off sale |
 | `price view <claim>` | `skysongeconomy.claims.admin` | The price, its expression and who set it |
-| `sell <claim> [price]` | `skysongeconomy.claims.admin` | Puts an unowned Claim on sale for the server, at the price given or the saved one |
-| `unsell <claim>` | `skysongeconomy.claims.admin` | Takes it off sale; the price stays saved |
+| `sell <claim> [price]` | `skysongeconomy.claims.sell` | An owner puts their whole Claim on sale at the price they ask (required). Staff (`skysongeconomy.claims.admin`) put an unowned Claim on sale for the server, at the price given or the saved one |
+| `unsell <claim>` | `skysongeconomy.claims.sell` | Any owner takes their Claim off sale, whoever listed it; staff can for any Claim. The price stays saved |
 | `list` | `skysongeconomy.claims.admin` | Every Claim SkysongEconomy has on sale, with its price |
 | `buy [claim]` | `skysongeconomy.claims.buy` | Shows what the Claim (named, or the one you stand in) costs and buys it when you confirm. The Buy button on a Claim sign does the same |
 
@@ -158,8 +158,9 @@ All are declared in `src/main/resources/plugin.yml`.
 | `skysongeconomy.nodes` | op | Every `/se node` command, and breaking node blocks |
 | `skysongeconomy.nodes.tend-bypass` | op | Plant and take out primers at every farm node, whatever its owner and groups allow |
 | `skysongeconomy.upkeep.admin` | op | Every `/se upkeep` command |
-| `skysongeconomy.claims.admin` | op | `/se claim price`, `sell`, `unsell` and `list` |
+| `skysongeconomy.claims.admin` | op | `/se claim price` and `list`, and `sell`/`unsell` on any Claim for the server |
 | `skysongeconomy.claims.buy` | everyone | `/se claim buy` and the Buy button on Claim signs |
+| `skysongeconomy.claims.sell` | everyone | `/se claim sell` and `unsell` on your own Claims, and the Sell button on Claim signs |
 | `skysongeconomy.*` | op | All of the above |
 
 Players use most features through menus, not commands: right-click a business block or a node. Those menus check

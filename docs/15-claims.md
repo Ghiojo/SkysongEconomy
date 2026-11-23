@@ -14,7 +14,7 @@ The full agreed design is in the project's design file `claims-integration-desig
 | Claim modifiers (`claim-type:`, `claim:`, `on:claims`, flat amounts) | **Done** |
 | The price on sign line 4 | **Done** |
 | Buying, and `ClaimPurchaseEvent` | **Done** |
-| Player resale | Not yet |
+| Player resale | **Done** |
 
 ## Connecting
 
@@ -52,8 +52,8 @@ table `claim_prices`). It is a price expression, usually a plain number such as 
 | `price set` | A Claim on sale stays on sale at the new price |
 | `price clear` | A Claim the server was selling goes off sale, since it can't be sold without a price |
 | Last owner leaves | `integration/skysongclaims/ClaimChangeListener` hears `ClaimOwnerRemoveEvent`. When the Claim has no owners left, isn't free, isn't on sale and has a price, it goes back on sale at that price (`ClaimSales.abandoned`) |
-| Claim deleted | `ClaimDeleteEvent` removes its price |
-| Start-up | `ClaimSales.reconcile` removes prices of Claims that are gone or free now, and takes Claims SkysongEconomy is selling without a price off sale. It never puts anything on sale by itself |
+| Claim deleted | `ClaimDeleteEvent` removes its price and any owner listing |
+| Start-up | `ClaimSales.reconcile` removes prices of Claims that are gone or free now, takes Claims SkysongEconomy is selling without a price off sale, and drops owner listings of Claims no longer on sale (or with no owners left, which stay on sale for the server). It never puts anything on sale by itself |
 
 SkysongClaims only knows whether a Claim is for sale and which plugin said so (`ClaimSales.SELLER`, the plugin's
 name). The price stays here.
@@ -149,6 +149,35 @@ total, the player's balance, and the character that will own it. On **Confirm** 
 
 A server sale pays nobody: the money leaves the economy. A plugin that wants to keep part of it listens to the event.
 
+## Reselling
+
+Owners sell their own Claim with the **Sell** button in the Claim sign's menu or `/se claim sell <claim> <price>`
+(permission `skysongeconomy.claims.sell`, default everyone). The button asks for the price in chat, then shows a
+confirmation: what they ask, that it is shared between the Claim's owners, and that modifiers may make the buyer pay
+more. Rules (`ClaimSales.listByOwner`, `unsellByOwner`):
+
+- The character playing must own the Claim, and it can't be a Free Claim or on sale by another plugin.
+- The price asked becomes the Claim's price (`set_by` is the character). It stays after the sale, so if the new
+  owners ever leave, the Claim goes back on sale at it for the server.
+- Any owner can list the whole Claim; listing again changes the price. The other owners are told at once if online,
+  and every time they join while it stays on sale. **Any owner** can take it off sale (`/se claim unsell` or the same
+  button, which then reads "Take it off sale"). Staff can take any Claim off sale.
+- The listing is kept in `claim_listings` (`ClaimListings`). A Claim on sale without one is a server sale.
+- If every owner leaves while it is listed, the listing is dropped and the Claim stays on sale, for the server.
+
+When it is bought (`ClaimPurchases.buy`):
+
+1. The buyer can't be a player who owns it with any of their characters (`claims.buy.own-claim`).
+2. The old owners are removed (`clearOwners`, which also clears the build groups) and the buyer added. While that
+   happens, the Claim having no owners does not put it back on sale. If SkysongClaims refuses the buyer, the old
+   owners are put back and the buyer refunded; a failure there is logged as SEVERE for staff.
+3. The asking price is split equally between everyone who owned it (`SellerSplit`): each share is truncated as prices
+   are, and the remainder goes to the owner who listed it (or the first owner, if they left). A player with two
+   owning characters gets both shares. The modifiers' part is never theirs.
+4. Each share is deposited. One the wallet refuses (Gringotts with no room for the coins, often while offline) waits
+   in `claim_payouts` and is paid when that player next joins, with a message (`ClaimPayouts`, `ClaimNotices`).
+   Sellers online are told what they received.
+
 ## `ClaimPurchaseEvent`
 
 `org.skysongdev.skysongEconomy.api.claims` is the package other plugins compile against
@@ -160,10 +189,12 @@ the main thread after a sale is done and recorded, and can't be cancelled. `getS
 | `id` | The sale's number in `claim_sales`, counting up from 1 |
 | `claimId`, `claimTypeId` | The Claim, and its type when bought |
 | `buyer` | The `CharacterRef` that owns it now; `buyer().player()` is the account that paid |
+| `seller` | Empty for a server sale. In a resale, a `Seller`: `listedBy` (who put it on sale), `owners` (everyone who owned it), `payouts` (what each player account received; they add up to the asking price) |
 | `askingPrice` | The Claim's own price (in a resale, what the seller receives) |
 | `modifiers` | Each `AppliedModifier`: `id`, `key` (such as `district_tax`), `target` (`claim-type:house`), `kind` (`percent` or `flat`), `value`, `share` (money), `displayName` |
 | `modifierTotal` | The sum of the shares, never negative |
 | `paid` | What the buyer paid: `askingPrice + modifierTotal` |
+| `sellerPaidLater` | Whether some seller's share couldn't be paid at once and waits until they join |
 | `at` | When |
 
 A treasury keeping a district tax:

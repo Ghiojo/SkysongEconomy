@@ -60,12 +60,17 @@ public final class BusinessMenus {
                 player.hasPermission(STAFF_PERMISSION));
     }
 
-    /** @return the shared menu look, which other features' menus reuse */
     /** @return every business, for menus that start from something else than a business */
     public BusinessService businesses() {
         return businesses;
     }
 
+    /** @return the chat questions menus ask, such as a new name */
+    public ChatPrompts prompts() {
+        return prompts;
+    }
+
+    /** @return the shared menu look, which other features' menus reuse */
     public MenuTheme theme() {
         return theme;
     }
