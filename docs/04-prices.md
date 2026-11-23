@@ -100,6 +100,7 @@ flat amount), `ModifierTarget`, `ModifierArguments` (parses the command words).
 | `item:<material_id>` | trades involving that item |
 | `claim-type:<type>` | every SkysongClaims Claim of that type (Claims only) |
 | `claim:<claim id>` | one SkysongClaims Claim (Claims only) |
+| `pier:<id>` | imports unloaded at that pier, once the orderer has chosen it ([Import piers](16-import-piers.md); imports only, so `on:exports` and `on:claims` are refused) |
 
 For an import, "involving" means any item its bundle can deliver; for an export, the items actually sold.
 

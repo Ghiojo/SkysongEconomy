@@ -4,8 +4,8 @@ This folder explains every part of the SkysongEconomy plugin: what each feature 
 configured, and how the code behind it is organised. It is written so that someone who has never seen the
 code can maintain and extend it.
 
-The documentation describes the code on `master` as of 2026-11-17 (after the NPC upkeep PRs #51 to #55), which
-includes node boosters, business NPCs, business modules and NPC upkeep.
+The documentation describes the code on `master` as of 2026-11-23 (after the import piers PRs #64 to #67), which
+includes node boosters, business NPCs, business modules, NPC upkeep, SkysongClaims and import piers.
 
 ## Reading order
 
@@ -23,6 +23,7 @@ If you are new to the code, read these in order:
 | [Prices](04-prices.md) | The price database (`/se ledger`), price expressions, good types (`/se good`), price modifiers (`/se modifier`) |
 | [Businesses](05-businesses.md) | Business types, tiers, owners (including `#server`), workers, skill picks, access groups, the vault, shifts, training, Gathering Tokens, the business menu, business NPCs (slots, what an NPC receives, who may use them), modules and their effects |
 | [Economy and Logistics](06-economy-and-logistics.md) | Trade ledgers, imports and deliveries, exports, slots |
+| [Import piers](16-import-piers.md) | Receiving piers, choosing one per import, loss chance and loss modifiers, tags, the Piers API and shipment events, `/se pier` |
 | [Nodes](07-nodes.md) | Random nodes, farm nodes, loot groups, primers, harvest costs, boosters, `/se node` |
 | [Claims](15-claims.md) | SkysongClaims Claims: connecting to SkysongClaims (prices, sales and sign prices are being built) |
 | [NPC upkeep](14-npc-upkeep.md) | Items NPCs eat every cycle, the Upkeep chest, Unmaintained (name line, sheet line, menu, item trait), the crafting repair, `/se upkeep` |
@@ -53,5 +54,6 @@ If you are new to the code, read these in order:
 | Business NPC | An NPC of the SkysongNPCs plugin that fills one of a business's NPC slots. A skill in `businesses/npcs.yml` or a module gives the slots. |
 | Module | A premade specialisation a business picks, one file in `modules/`. A skill in `businesses/modules.yml` gives the picks. |
 | Level (of a skill) | How many of its skill picks a business spent on that skill. Amounts in config can follow it, or the tier. |
+| Pier | A receiving pier: where an import is unloaded. Each has a loss chance that a shipment collected there is lost (seized). |
 | Upkeep | Items an NPC registered for it eats every cycle from its Upkeep chest. One that misses a cycle is Unmaintained until its item is repaired by crafting or staff mark it maintained. |
 | Refusal | A player action the rules don't allow. The code throws a `RefusedException` naming the `messages.yml` key that explains why. |
