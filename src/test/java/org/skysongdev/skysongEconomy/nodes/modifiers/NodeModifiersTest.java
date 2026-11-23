@@ -3,6 +3,7 @@ package org.skysongdev.skysongEconomy.nodes.modifiers;
 import org.junit.jupiter.api.Test;
 import org.skysongdev.skysongEconomy.calendar.CalendarClock;
 import org.skysongdev.skysongEconomy.calendar.CalendarDay;
+import org.skysongdev.skysongEconomy.calendar.CalendarMoment;
 import org.skysongdev.skysongEconomy.calendar.FixedCalendar;
 import org.skysongdev.skysongEconomy.config.FileRegistry;
 import org.skysongdev.skysongEconomy.loot.YieldEffect;
@@ -69,6 +70,19 @@ class NodeModifiersTest {
         assertTrue(modifiers.activeUpTo(FIELD, 2).isEmpty());
         assertEquals(List.of("deep-frost"), modifiers.activeUpTo(FIELD, 3).ids());
         assertTrue(modifiers.activeUpTo(FIELD.withModifiers(false), 5).isEmpty());
+    }
+
+    @Test
+    void oddsCanAskAboutAnyTimeOfYear() {
+        FileRegistry<CalendarModifier> files = new FileRegistry<>(List.of(winter("frost", "max-50%")));
+        NodeModifiers modifiers = new NodeModifiers(() -> files, FixedCalendar.on("celestine", 1));
+
+        assertEquals(List.of("frost"), modifiers.activeFor(FIELD, 1, new CalendarMoment.Season("vinse_er")).ids());
+        assertEquals(List.of("frost"), modifiers.activeFor(FIELD, 1,
+                new CalendarMoment.Day(FixedCalendar.dayOf("litoria", 3))).ids());
+        assertTrue(modifiers.activeFor(FIELD, 1, new CalendarMoment.Season("altrue")).isEmpty());
+        assertTrue(new NodeModifiers(() -> files, CalendarClock.NONE)
+                .activeFor(FIELD, 1, new CalendarMoment.Season("vinse_er")).isEmpty());
     }
 
     @Test

@@ -5,6 +5,7 @@ import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.skysongdev.skysongEconomy.calendar.CalendarClock;
 import org.skysongdev.skysongEconomy.commands.SubCommand;
+import org.skysongdev.skysongEconomy.commands.node.ModifierSources;
 import org.skysongdev.skysongEconomy.commands.node.NodeCommand;
 import org.skysongdev.skysongEconomy.commands.node.OddsSources;
 import org.skysongdev.skysongEconomy.config.ConfigException;
@@ -188,17 +189,22 @@ public final class NodeFeature implements AutoCloseable {
             nodes.refresh();
             return reloaded;
         };
-        List<SubCommand> commands = List.of(new NodeCommand(nodes, system.businesses(), messenger, odds, reload));
+        List<SubCommand> commands = List.of(new NodeCommand(nodes, system.businesses(), messenger, odds,
+                new ModifierSources(modifiers, calendar, node -> modifiersOnNode(node, harvester, farmHarvester)), reload));
         return new NodeFeature(Optional.of(nodes), commands, resources, logger);
     }
 
     /** @return the names of the calendar modifiers on the node today, for its nameplate */
     private static List<String> modifierNames(Node node, RandomHarvester random, FarmHarvester farm) {
-        ActiveModifiers active = switch (node.kind()) {
+        return modifiersOnNode(node, random, farm).applied().stream().map(CalendarModifier::name).toList();
+    }
+
+    /** @return the calendar modifiers on the node today, at any tier it offers */
+    private static ActiveModifiers modifiersOnNode(Node node, RandomHarvester random, FarmHarvester farm) {
+        return switch (node.kind()) {
             case RANDOM -> random.modifiersOnNode(node);
             case FARM -> farm.modifiersOnNode(node);
         };
-        return active.applied().stream().map(CalendarModifier::name).toList();
     }
 
     private static void logLoaded(Logger logger, NodeFiles.Loaded loaded) {

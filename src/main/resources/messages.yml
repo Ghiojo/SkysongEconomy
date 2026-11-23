@@ -796,6 +796,16 @@ node:
     invalid-choice: "<red>Write on or off."
     info-on: "<white>on"
     info-off: "<white>off</white> <dark_gray>(/se node setmodifiers)"
+    # /se node modifiers [id]. <date> is node.modifiers.date or date-festival, with SkysongCalendar's names.
+    today: "<gold>Today is <date>. Calendar modifiers on (<count>):"
+    on-node: "<gold>Calendar modifiers on <node> <gold>today, <date>:"
+    node-off: "<gray>None: calendar modifiers are turned off for this node."
+    none: "<gray>None."
+    entry: "<gray>- <modifier> <dark_gray>(<id>)</dark_gray><gray>: <white><effect>"
+    dormant: "<red>dormant"
+    date: "<white><month> <day></white> <gray>(<season>)"
+    date-festival: "<white>Festival day <day></white> <gray>(<season>)"
+    no-calendar: "<red>SkysongCalendar isn't installed, so there are no calendar modifiers."
   list-header: "<gold>Nodes (<count>):"
   list-entry: "<gray>- <white><node></white> <dark_gray>(<id>, <kind>, tier <tier>, <owner>)"
   odds:
@@ -806,6 +816,10 @@ node:
     value: "<gray>Average value of one harvest: <white><value>"
     unpriced: "<gray>Not counted, no base value: <white><items>"
     no-tier: "<red>That table has no tier <yellow><tier></yellow>. Its tiers are <tiers>."
+    # /se node odds <table> <tier> <when>: the calendar modifiers counted, or the one that makes it dormant.
+    modifier: "<aqua>✦ <modifier><gray>: <white><effect></white> <gray>(counted below)"
+    dormant: "<red>Dormant then, because of <modifier><red>: nothing can be harvested."
+    bad-when: "<red><problem>."
   cost:
     free: "free"
     separator: ", "
