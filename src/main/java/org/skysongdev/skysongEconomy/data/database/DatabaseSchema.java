@@ -269,7 +269,42 @@ public final class DatabaseSchema {
                     + "percent BOOLEAN NOT NULL, "
                     + "tag VARCHAR(64) NULL, "
                     + "set_at BIGINT NOT NULL, "
-                    + "PRIMARY KEY (pier_id, modifier_id)) ENGINE=InnoDB");
+                    + "PRIMARY KEY (pier_id, modifier_id)) ENGINE=InnoDB",
+            // The economy journal: one row per movement of money or goods, never updated. trade, money, items and
+            // details are JSON; tags is ",tag,tag," so one tag is found with LIKE. ic_* are NULL without SkysongCalendar,
+            // and ic_week is NULL on festival days.
+            "CREATE TABLE IF NOT EXISTS economy_journal ("
+                    + "sequence BIGINT PRIMARY KEY NOT NULL, "
+                    + "record_id CHAR(36) NOT NULL, "
+                    + "kind VARCHAR(32) NOT NULL, "
+                    + "subject_id VARCHAR(100) NOT NULL, "
+                    + "at BIGINT NOT NULL, "
+                    + "ic_year INT NULL, "
+                    + "ic_period VARCHAR(64) NULL, "
+                    + "ic_day INT NULL, "
+                    + "ic_day_of_year INT NULL, "
+                    + "ic_week INT NULL, "
+                    + "ic_festival BOOLEAN NULL, "
+                    + "actor_uuid CHAR(36) NULL, "
+                    + "actor_profile VARCHAR(64) NULL, "
+                    + "business_id VARCHAR(64) NULL, "
+                    + "business_name VARCHAR(255) NULL, "
+                    + "pier_id VARCHAR(64) NULL, "
+                    + "node_id VARCHAR(64) NULL, "
+                    + "claim_id VARCHAR(64) NULL, "
+                    + "tags VARCHAR(512) NULL, "
+                    + "trade TEXT NULL, "
+                    + "money TEXT NOT NULL, "
+                    + "items TEXT NOT NULL, "
+                    + "details TEXT NOT NULL, "
+                    + "INDEX economy_journal_at (at), "
+                    + "INDEX economy_journal_ic_week (ic_year, ic_week), "
+                    + "INDEX economy_journal_ic_festival (ic_year, ic_festival), "
+                    + "INDEX economy_journal_kind (kind, at), "
+                    + "INDEX economy_journal_business (business_id, at), "
+                    + "INDEX economy_journal_pier (pier_id, at), "
+                    + "INDEX economy_journal_subject (subject_id), "
+                    + "INDEX economy_journal_actor (actor_uuid, at)) ENGINE=InnoDB");
 
     private DatabaseSchema() {
     }

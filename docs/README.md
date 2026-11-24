@@ -28,6 +28,7 @@ If you are new to the code, read these in order:
 | [Nodes](07-nodes.md) | Random nodes, farm nodes, loot groups, primers, harvest costs, boosters, calendar modifiers (seasons, dates, festival), `/se node` |
 | [Claims](15-claims.md) | SkysongClaims Claims: connecting to SkysongClaims (prices, sales and sign prices are being built) |
 | [NPC upkeep](14-npc-upkeep.md) | Items NPCs eat every cycle, the Upkeep chest, Unmaintained (name line, sheet line, menu, item trait), the crafting repair, `/se upkeep` |
+| [Economy journal](17-economy-journal.md) | The record of every movement of money and goods: record kinds, where the money goes, IC weeks, `journal.yml`, `EconomyRecordedEvent` |
 
 ## Reference
 

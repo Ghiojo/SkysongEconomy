@@ -32,6 +32,11 @@ public interface CalendarClock {
     /** @return the calendar's seasons and months; empty without a calendar */
     Optional<CalendarNames> names();
 
+    /** @return today's full IC date, with its year; empty without a calendar */
+    default Optional<CalendarDate> date() {
+        return Optional.empty();
+    }
+
     /**
      * Runs {@code action} on the main thread whenever a new IC day starts, and when the calendar
      * reloads. Without a calendar it never runs.

@@ -1,0 +1,14 @@
+# The economy journal: one record for every movement of money or goods SkysongEconomy makes
+# (imports, exports, shift pay, vaults, training, ledger fines, harvests, farm primers, NPC upkeep
+# and Claim sales), kept in the database table economy_journal. Each record carries the real time
+# and, with SkysongCalendar installed, the IC date and IC week.
+#
+# Other plugins read it through the EconomyJournal service and EconomyRecordedEvent; staff read it
+# with /se history.
+
+# Off, nothing is recorded and EconomyRecordedEvent never fires.
+enabled: true
+
+# How many days records are kept. Older ones are deleted when the plugin starts.
+# 0 keeps them forever.
+keep-days: 0

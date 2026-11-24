@@ -48,7 +48,7 @@ public final class BukkitShipmentEvents implements ShipmentEvents {
     public void collected(Arrival arrival, Outcome outcome) {
         plugins.callEvent(new ShipmentCollectedEvent(arrival.shipment(), arrival.pier(), arrival.collector(),
                 outcome.seized() ? ShipmentOutcome.SEIZED : ShipmentOutcome.DELIVERED,
-                outcome.seized() ? List.of() : outcome.items(), arrival.lossChance(), arrival.lostByRoll(),
+                outcome.seized() ? List.of() : outcome.items(), arrival.lossChance(), arrival.roll(), arrival.lostByRoll(),
                 arrival.items(), outcome.seized() ? outcome.seizeMessage().orElse(null) : null));
     }
 

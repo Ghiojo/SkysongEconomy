@@ -7,6 +7,7 @@ import org.skysongdev.skysongCalendar.api.Month;
 import org.skysongdev.skysongCalendar.api.Season;
 import org.skysongdev.skysongCalendar.api.SkysongCalendarApi;
 import org.skysongdev.skysongEconomy.calendar.CalendarClock;
+import org.skysongdev.skysongEconomy.calendar.CalendarDate;
 import org.skysongdev.skysongEconomy.calendar.CalendarDay;
 import org.skysongdev.skysongEconomy.calendar.CalendarMonth;
 import org.skysongdev.skysongEconomy.calendar.CalendarName;
@@ -65,6 +66,16 @@ public final class SkysongCalendarAdapter implements CalendarClock {
     @Override
     public Optional<CalendarDay> today() {
         return Optional.of(day(api.calendar().today()));
+    }
+
+    @Override
+    public Optional<CalendarDate> date() {
+        IcDate today = api.calendar().today();
+        String period = switch (today.period()) {
+            case Month month -> month.displayName();
+            case Festival festival -> festival.displayName();
+        };
+        return Optional.of(new CalendarDate(today.year(), period, today.day(), today.dayOfYear(), today.isFestival()));
     }
 
     @Override
