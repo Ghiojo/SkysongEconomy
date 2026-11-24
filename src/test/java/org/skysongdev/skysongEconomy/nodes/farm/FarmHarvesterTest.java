@@ -40,6 +40,8 @@ class FarmHarvesterTest {
         assertEquals(HarvestCost.tokens(3), harvest.paid());
         assertEquals(2, world.tokens.balance(world.worker));
         assertEquals(List.of(harvest), world.heard);
+        assertEquals(Optional.empty(), harvest.booster());
+        assertEquals(Optional.of("wheat"), harvest.resource());
     }
 
     @Test
@@ -56,6 +58,8 @@ class FarmHarvesterTest {
         Harvest harvest = harvester.harvest(world.field, world.worker, 2,
                 Optional.of(new Booster("crop", YieldEffect.parse("min-2; max-2"))));
         assertEquals(List.of(new ItemAmount("wheat", 3)), harvest.items());
+        assertEquals("crop", harvest.booster().orElseThrow().type());
+        assertEquals(Optional.of("wheat"), harvest.resource());
     }
 
     private static CalendarModifier winterOn(String resource, String effect) {

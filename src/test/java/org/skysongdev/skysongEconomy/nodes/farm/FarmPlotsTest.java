@@ -1,6 +1,7 @@
 package org.skysongdev.skysongEconomy.nodes.farm;
 
 import org.junit.jupiter.api.Test;
+import org.skysongdev.skysongEconomy.api.nodes.PlantingChange;
 import org.skysongdev.skysongEconomy.business.BlockPosition;
 import org.skysongdev.skysongEconomy.messaging.RefusedException;
 import org.skysongdev.skysongEconomy.nodes.Node;
@@ -114,6 +115,26 @@ class FarmPlotsTest {
         assertTrue(plots.planting(world.field).isEmpty());
         assertEquals(Map.of(), world.savedPlantings);
         assertEquals("node.farm.empty", refusal(() -> plots.takeOut(world.field, world.owner)));
+    }
+
+    @Test
+    void plantingTakingOutAndGivingBackAreReported() {
+        world.plantWheat();
+        world.downtime.put(world.owner.player(), 3);
+        plots.takeOut(world.field, world.owner);
+        world.letWorkersTend();
+        plots.plant(world.field, world.worker, world.resource("wheat"), FarmWorld.SEEDS);
+        world.nodes.delete(world.field);
+
+        assertEquals(List.of(
+                new PlantingChange(PlantingChange.Kind.PLANTED, "field", "wheat", "crop", "farmers", world.owner,
+                        world.owner, 0, FarmWorld.EVENT_TIME),
+                new PlantingChange(PlantingChange.Kind.TAKEN_OUT, "field", "wheat", "crop", "farmers", world.owner,
+                        world.owner, 1, FarmWorld.EVENT_TIME),
+                new PlantingChange(PlantingChange.Kind.PLANTED, "field", "wheat", "crop", "farmers", world.worker,
+                        world.worker, 0, FarmWorld.EVENT_TIME),
+                new PlantingChange(PlantingChange.Kind.RETURNED, "field", "wheat", "crop", "farmers", world.worker,
+                        world.worker, 0, FarmWorld.EVENT_TIME)), world.plantingEvents);
     }
 
     @Test

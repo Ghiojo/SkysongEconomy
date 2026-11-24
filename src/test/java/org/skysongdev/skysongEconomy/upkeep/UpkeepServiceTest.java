@@ -2,6 +2,7 @@ package org.skysongdev.skysongEconomy.upkeep;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.skysongdev.skysongEconomy.trade.ItemAmount;
 
 import java.time.Clock;
 import java.time.Duration;
@@ -39,6 +40,7 @@ class UpkeepServiceTest {
     private final FakeStock stock = new FakeStock();
     private final InMemoryUpkeepRepository repository = new InMemoryUpkeepRepository();
     private final List<String> events = new ArrayList<>();
+    private final List<String> paid = new ArrayList<>();
     private final List<UUID> lost = new ArrayList<>();
     private final MutableClock clock = new MutableClock(START);
     private UpkeepService service;
@@ -53,7 +55,17 @@ class UpkeepServiceTest {
     private UpkeepService newService() {
         UpkeepService created = new UpkeepService(SETTINGS, new UpkeepService.Dependencies(npcs, stock,
                 new UpkeepPayment(id -> id.equals("bread") ? Set.of("food") : Set.of())), repository,
-                (upkeep, cause) -> events.add(upkeep.state() + " " + cause), clock, warning -> { });
+                new UpkeepEvents() {
+                    @Override
+                    public void stateChanged(NpcUpkeep upkeep, Cause cause) {
+                        events.add(upkeep.state() + " " + cause);
+                    }
+
+                    @Override
+                    public void cyclePaid(NpcUpkeep upkeep, Instant due, List<ItemAmount> eaten) {
+                        paid.add(due + " " + eaten + " next " + upkeep.nextDue());
+                    }
+                }, clock, warning -> { });
         created.onLost(lost::add);
         return created;
     }
@@ -152,6 +164,18 @@ class UpkeepServiceTest {
         assertEquals(List.of(new StockStack("water_flask", 1)), stock.view(guard));
         assertEquals(UpkeepState.UNMAINTAINED, upkeepOf(guard).state());
         assertEquals(START.plus(DAY.multipliedBy(3)), upkeepOf(guard).nextDue());
+        assertEquals(List.of(
+                START.plus(DAY) + " [ItemAmount[materialId=water_flask, amount=1], ItemAmount[materialId=bread, amount=2]]"
+                        + " next " + START.plus(DAY.multipliedBy(2)),
+                START.plus(DAY.multipliedBy(2)) + " [ItemAmount[materialId=water_flask, amount=1], ItemAmount[materialId=bread, amount=2]]"
+                        + " next " + START.plus(DAY.multipliedBy(3))), paid, "each paid cycle is reported, the lapsed one isn't");
+    }
+
+    @Test
+    void eatenItemsAreCountedOncePerMaterial() {
+        assertEquals(List.of(new ItemAmount("bread", 5), new ItemAmount("coin", 1)), UpkeepService.eaten(
+                List.of(new StockStack("bread", 3), new StockStack(null, 4), new StockStack("coin", 2), new StockStack("bread", 2)),
+                List.of(3, 0, 1, 2)));
     }
 
     @Test

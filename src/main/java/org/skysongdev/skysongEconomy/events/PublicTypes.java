@@ -10,6 +10,7 @@ import org.skysongdev.skysongEconomy.api.business.SkillTrainedInfo;
 import org.skysongdev.skysongEconomy.api.business.TrainingInfo;
 import org.skysongdev.skysongEconomy.api.business.UpkeepChangeCause;
 import org.skysongdev.skysongEconomy.api.items.ItemCount;
+import org.skysongdev.skysongEconomy.api.nodes.BoosterInfo;
 import org.skysongdev.skysongEconomy.api.nodes.HarvestCostInfo;
 import org.skysongdev.skysongEconomy.api.prices.PriceModifierChange;
 import org.skysongdev.skysongEconomy.api.prices.PriceModifierInfo;
@@ -21,6 +22,7 @@ import org.skysongdev.skysongEconomy.business.shift.Shift;
 import org.skysongdev.skysongEconomy.business.training.SkillTrained;
 import org.skysongdev.skysongEconomy.business.training.TrainingSession;
 import org.skysongdev.skysongEconomy.character.ProficiencyTraining;
+import org.skysongdev.skysongEconomy.nodes.boost.Booster;
 import org.skysongdev.skysongEconomy.nodes.harvest.HarvestCost;
 import org.skysongdev.skysongEconomy.prices.modifier.ModifierAmount;
 import org.skysongdev.skysongEconomy.prices.modifier.PriceModifier;
@@ -71,6 +73,10 @@ public final class PublicTypes {
 
     public static HarvestCostInfo harvestCost(HarvestCost cost) {
         return new HarvestCostInfo(cost.downtime(), cost.harvestTokens(), cost.money());
+    }
+
+    public static BoosterInfo booster(Booster booster) {
+        return new BoosterInfo(booster.type(), booster.effect().text());
     }
 
     public static List<ItemCount> items(List<ItemAmount> items) {

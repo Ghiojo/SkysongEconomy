@@ -4,11 +4,13 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.skysongdev.skysongEconomy.api.items.ItemCount;
 import org.skysongdev.skysongEconomy.character.CharacterRef;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * Someone gathered at a node: the harvest is paid for and rolled, and its items are handed over
@@ -25,10 +27,18 @@ public final class NodeHarvestEvent extends Event {
     private final HarvestCostInfo cost;
     private final List<ItemCount> items;
     private final List<String> modifiers;
+    private final @Nullable BoosterInfo booster;
+    private final @Nullable String resource;
 
     public NodeHarvestEvent(@NotNull Player player, @NotNull NodeInfo node, @NotNull CharacterRef character, int tier,
                             @NotNull HarvestCostInfo cost, @NotNull List<ItemCount> items,
                             @NotNull List<String> modifiers) {
+        this(player, node, character, tier, cost, items, modifiers, null, null);
+    }
+
+    public NodeHarvestEvent(@NotNull Player player, @NotNull NodeInfo node, @NotNull CharacterRef character, int tier,
+                            @NotNull HarvestCostInfo cost, @NotNull List<ItemCount> items,
+                            @NotNull List<String> modifiers, @Nullable BoosterInfo booster, @Nullable String resource) {
         this.player = Objects.requireNonNull(player, "player");
         this.node = Objects.requireNonNull(node, "node");
         this.character = Objects.requireNonNull(character, "character");
@@ -36,6 +46,8 @@ public final class NodeHarvestEvent extends Event {
         this.cost = Objects.requireNonNull(cost, "cost");
         this.items = List.copyOf(Objects.requireNonNull(items, "items"));
         this.modifiers = List.copyOf(Objects.requireNonNull(modifiers, "modifiers"));
+        this.booster = booster;
+        this.resource = resource;
     }
 
     /** @return the player who gathered */
@@ -71,6 +83,16 @@ public final class NodeHarvestEvent extends Event {
     /** @return the ids of the calendar modifiers (files in nodes/modifiers) that changed it; empty when none did */
     public @NotNull List<String> getModifiers() {
         return modifiers;
+    }
+
+    /** @return the booster item used up on this harvest; empty when none was */
+    public @NotNull Optional<BoosterInfo> getBooster() {
+        return Optional.ofNullable(booster);
+    }
+
+    /** @return the farm resource harvested, such as {@code wheat}; empty at a random node */
+    public @NotNull Optional<String> getResource() {
+        return Optional.ofNullable(resource);
     }
 
     @Override
