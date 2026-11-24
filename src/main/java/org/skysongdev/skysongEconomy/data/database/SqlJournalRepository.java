@@ -2,23 +2,37 @@ package org.skysongdev.skysongEconomy.data.database;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import org.skysongdev.skysongEconomy.api.journal.EconomyRecord;
+import org.skysongdev.skysongEconomy.api.journal.ImportRoll;
 import org.skysongdev.skysongEconomy.api.journal.JournalIcDate;
+import org.skysongdev.skysongEconomy.api.journal.JournalQuery;
+import org.skysongdev.skysongEconomy.api.journal.MoneyAccount;
 import org.skysongdev.skysongEconomy.api.journal.MoneyMovement;
 import org.skysongdev.skysongEconomy.api.journal.RecordItem;
+import org.skysongdev.skysongEconomy.api.journal.RecordKind;
 import org.skysongdev.skysongEconomy.api.journal.TradeDetails;
 import org.skysongdev.skysongEconomy.api.trade.AppliedTradeModifier;
 import org.skysongdev.skysongEconomy.api.trade.TradePrice;
+import org.skysongdev.skysongEconomy.character.CharacterRef;
 import org.skysongdev.skysongEconomy.journal.JournalRepository;
 
+import java.math.BigDecimal;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
@@ -69,6 +83,25 @@ public final class SqlJournalRepository implements JournalRepository {
     }
 
     @Override
+    public List<EconomyRecord> query(JournalQuery query) {
+        JournalSql.Select select = JournalSql.select(query);
+        try (PreparedStatement statement = connections.getConnection().prepareStatement(select.sql())) {
+            for (int i = 0; i < select.parameters().size(); i++) {
+                statement.setObject(i + 1, select.parameters().get(i));
+            }
+            List<EconomyRecord> records = new ArrayList<>();
+            try (ResultSet rows = statement.executeQuery()) {
+                while (rows.next()) {
+                    records.add(read(rows));
+                }
+            }
+            return records;
+        } catch (SQLException | RuntimeException e) {
+            throw new StorageException("Failed to read the economy journal", e);
+        }
+    }
+
+    @Override
     public int deleteBefore(Instant time) {
         try (PreparedStatement statement = connections.getConnection().prepareStatement(
                 "DELETE FROM economy_journal WHERE recorded_at < ?")) {
@@ -109,6 +142,85 @@ public final class SqlJournalRepository implements JournalRepository {
         statement.setString(21, GSON.toJson(money(record.money())));
         statement.setString(22, GSON.toJson(items(record.items())));
         statement.setString(23, GSON.toJson(record.details()));
+    }
+
+    private static EconomyRecord read(ResultSet row) throws SQLException {
+        Optional<JournalIcDate> icDate = Optional.empty();
+        int year = row.getInt("ic_year");
+        if (!row.wasNull()) {
+            boolean festival = row.getBoolean("ic_festival");
+            icDate = Optional.of(JournalIcDate.of(year, row.getString("ic_period"), row.getInt("ic_day"),
+                    row.getInt("ic_day_of_year"), festival));
+        }
+        String actorUuid = row.getString("actor_uuid");
+        Optional<CharacterRef> actor = actorUuid == null ? Optional.empty()
+                : Optional.of(new CharacterRef(UUID.fromString(actorUuid), row.getString("actor_profile")));
+        String trade = row.getString("trade");
+        return new EconomyRecord(row.getLong("sequence"), UUID.fromString(row.getString("record_id")),
+                RecordKind.valueOf(row.getString("kind")), row.getString("subject_id"),
+                Instant.ofEpochMilli(row.getLong("recorded_at")), icDate, actor, Optional.ofNullable(row.getString("business_id")),
+                Optional.ofNullable(row.getString("business_name")),
+                trade == null ? Optional.empty() : Optional.of(readTrade(JsonParser.parseString(trade).getAsJsonObject())),
+                Optional.ofNullable(row.getString("node_id")), Optional.ofNullable(row.getString("claim_id")),
+                readMoney(JsonParser.parseString(row.getString("money")).getAsJsonArray()),
+                readItems(JsonParser.parseString(row.getString("items")).getAsJsonArray()),
+                readDetails(JsonParser.parseString(row.getString("details")).getAsJsonObject()));
+    }
+
+    private static List<MoneyMovement> readMoney(JsonArray array) {
+        List<MoneyMovement> money = new ArrayList<>();
+        for (JsonElement element : array) {
+            JsonObject json = element.getAsJsonObject();
+            money.add(new MoneyMovement(
+                    new MoneyAccount(MoneyAccount.Type.valueOf(json.get("from_type").getAsString()), json.get("from").getAsString()),
+                    new MoneyAccount(MoneyAccount.Type.valueOf(json.get("to_type").getAsString()), json.get("to").getAsString()),
+                    new BigDecimal(json.get("amount").getAsString())));
+        }
+        return money;
+    }
+
+    private static List<RecordItem> readItems(JsonArray array) {
+        List<RecordItem> items = new ArrayList<>();
+        for (JsonElement element : array) {
+            JsonObject json = element.getAsJsonObject();
+            items.add(new RecordItem(json.get("material").getAsString(), json.get("amount").getAsInt(),
+                    RecordItem.Flow.valueOf(json.get("flow").getAsString())));
+        }
+        return items;
+    }
+
+    private static Map<String, String> readDetails(JsonObject json) {
+        Map<String, String> details = new LinkedHashMap<>();
+        json.entrySet().forEach(entry -> details.put(entry.getKey(), entry.getValue().getAsString()));
+        return details;
+    }
+
+    private static TradeDetails readTrade(JsonObject json) {
+        Set<String> tags = new LinkedHashSet<>();
+        json.getAsJsonArray("tags").forEach(tag -> tags.add(tag.getAsString()));
+        Optional<ImportRoll> roll = Optional.ofNullable(json.getAsJsonObject("roll")).map(rolled -> new ImportRoll(
+                new BigDecimal(rolled.get("loss_chance").getAsString()), new BigDecimal(rolled.get("roll").getAsString()),
+                rolled.get("lost_by_roll").getAsBoolean(), optional(rolled, "seize_reason")));
+        return new TradeDetails(json.get("ledger").getAsString(), json.get("ledger_name").getAsString(),
+                json.get("offer").getAsString(), json.get("offer_name").getAsString(), optional(json, "delivery_time"),
+                optional(json, "pier"), optional(json, "pier_name"),
+                Optional.ofNullable(json.getAsJsonObject("price")).map(SqlJournalRepository::readPrice), tags, roll);
+    }
+
+    private static TradePrice readPrice(JsonObject json) {
+        List<AppliedTradeModifier> modifiers = new ArrayList<>();
+        for (JsonElement element : json.getAsJsonArray("modifiers")) {
+            JsonObject applied = element.getAsJsonObject();
+            modifiers.add(new AppliedTradeModifier(applied.get("id").getAsString(), applied.get("type").getAsString(),
+                    applied.get("target").getAsString(), new BigDecimal(applied.get("percent").getAsString()),
+                    new BigDecimal(applied.get("share").getAsString()), applied.get("display_name").getAsString()));
+        }
+        return new TradePrice(new BigDecimal(json.get("base").getAsString()), new BigDecimal(json.get("percent").getAsString()),
+                new BigDecimal(json.get("paid").getAsString()), modifiers, json.get("tax_exempt").getAsBoolean());
+    }
+
+    private static Optional<String> optional(JsonObject json, String key) {
+        return json.has(key) ? Optional.of(json.get(key).getAsString()) : Optional.empty();
     }
 
     /** @return the tags between commas, such as {@code ,contraband,wine,}, so one tag is found with LIKE */

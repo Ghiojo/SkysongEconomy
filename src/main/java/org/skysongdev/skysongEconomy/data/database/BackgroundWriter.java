@@ -1,8 +1,10 @@
 package org.skysongdev.skysongEconomy.data.database;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -38,6 +40,15 @@ public final class BackgroundWriter implements AutoCloseable {
                 logger.log(Level.SEVERE, "Failed to " + what, e);
             }
         });
+    }
+
+    /**
+     * Queues a read behind the writes already queued, so it sees them.
+     *
+     * @return what the read returns, completed on the writer's thread; completed exceptionally when it fails
+     */
+    public <T> CompletableFuture<T> read(Supplier<T> read) {
+        return CompletableFuture.supplyAsync(read, thread);
     }
 
     /** Finishes the queued writes, waiting at most a few seconds. */

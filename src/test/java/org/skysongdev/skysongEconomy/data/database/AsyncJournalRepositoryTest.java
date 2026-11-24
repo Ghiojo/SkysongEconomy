@@ -2,6 +2,7 @@ package org.skysongdev.skysongEconomy.data.database;
 
 import org.junit.jupiter.api.Test;
 import org.skysongdev.skysongEconomy.api.journal.EconomyRecord;
+import org.skysongdev.skysongEconomy.api.journal.JournalQuery;
 import org.skysongdev.skysongEconomy.api.journal.RecordKind;
 import org.skysongdev.skysongEconomy.journal.JournalRepository;
 
@@ -37,6 +38,19 @@ class AsyncJournalRepositoryTest {
         assertEquals(7, repository.lastSequence());
     }
 
+    @Test
+    void aReadWaitsForTheRecordsQueuedBeforeIt() {
+        Batches batches = new Batches();
+        BackgroundWriter writer = new BackgroundWriter(Logger.getAnonymousLogger());
+        AsyncJournalRepository repository = new AsyncJournalRepository(batches, writer);
+
+        LongStream.rangeClosed(1, 50).forEach(sequence -> repository.save(record(sequence)));
+        List<EconomyRecord> read = repository.queryAfterWrites(JournalQuery.builder().afterSequence(40).build()).join();
+        writer.close();
+
+        assertEquals(LongStream.rangeClosed(41, 50).boxed().toList(), read.stream().map(EconomyRecord::sequence).toList());
+    }
+
     private static final class Batches implements JournalRepository {
         final List<List<EconomyRecord>> batches = new CopyOnWriteArrayList<>();
 
@@ -53,6 +67,11 @@ class AsyncJournalRepositoryTest {
         @Override
         public void saveAll(List<EconomyRecord> records) {
             batches.add(List.copyOf(records));
+        }
+
+        @Override
+        public List<EconomyRecord> query(JournalQuery query) {
+            return batches.stream().flatMap(List::stream).filter(query::matches).toList();
         }
 
         @Override

@@ -90,6 +90,37 @@ treat the festival as its own book.
 
 New kinds and keys may be added; readers skip what they don't know.
 
+## Reading the journal
+
+`api.journal.EconomyJournal` is registered with Bukkit's services manager while the journal is on (`load` returns
+`null` when it is off). Call it on the main thread.
+
+```java
+EconomyJournal journal = Bukkit.getServicesManager().load(EconomyJournal.class);
+journal.query(JournalQuery.builder()
+                .kinds(RecordKind.IMPORT_ORDERED, RecordKind.IMPORT_DELIVERED, RecordKind.EXPORT_SOLD)
+                .icWeek(1203, 7)
+                .excludingTag("contraband")
+                .build())
+        .thenAccept(records -> book.write(records));   // runs on the main thread
+```
+
+- `query(JournalQuery)` reads on the journal's own background thread, **after** the records still waiting to be
+  written, so a record made just before the call is included. The future completes on the main thread, or
+  exceptionally when the database can't be read.
+- `latestSequence()` is the newest record's sequence. A plugin that was off asks for
+  `afterSequence(lastSeen)` and pages on with the last sequence it got.
+
+`JournalQuery` filters, all optional and combined: `kinds`, `business`, `pier`, `node`, `claim`, `player` (the
+actor, or either side of a payment), `withTag`, `excludingTag` (records that aren't trades stay), `from` (included) /
+`to` (excluded) real time, `icWeek(year, week)` (leaves the festival out), `icFestival(year)`, `icFrom` / `icTo`
+(IC year and day of year, both included), `afterSequence`. Then `limit` (default 500, at most 5,000), `offset` and
+`newestFirst()`. Results are in sequence order, oldest first unless `newestFirst()`. `JournalQuery.matches(record)`
+applies the same filters to one record, for plugins that filter `EconomyRecordedEvent`s live.
+
+`data/database/JournalSql` turns a query into one parameterised SELECT; it is unit tested against the same cases as
+`matches`.
+
 ## Configuration
 
 `journal.yml`: `enabled` (default `true`) and `keep-days` (default `0`, forever). See the

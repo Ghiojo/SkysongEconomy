@@ -65,8 +65,6 @@ Get the plugin instance (`(SkysongEconomy) Bukkit.getPluginManager().getPlugin("
 | `getModuleFeature().modules()` | `Optional<BusinessModules>`: the modules each business picked (`of`, `has`, `groups`, `pool`, `pick`, `clear`) and every module file with its effects (`module`, `modules`); empty when businesses are disabled or `businesses/modules.yml` can't be read |
 | `getPierFeature().piers()` | `PierService`, which implements `api.piers.Piers`. Other plugins should rather `Bukkit.getServicesManager().load(Piers.class)` |
 
-Services other plugins should use instead of the getters above, from `Bukkit.getServicesManager().load(...)`:
-`api.piers.Piers` and `api.business.Businesses` (read-only `BusinessInfo` copies: `find`, `all`, `ownedBy`).
 | `getClaimFeature().gateway()` | `Optional<ClaimGateway>`: the way into SkysongClaims, empty when it is not installed or too old |
 | `getClaimFeature().pricing()` | `Optional<ClaimPricing>`: what a Claim costs with its modifiers (`quote`), and Claim type modifiers (`setTypeModifier`, `removeTypeModifier`, `modifiersOf`) |
 | `getClaimFeature().sales()` | `Optional<ClaimSales>`: Claim asking prices (`prices()`), server sales (`sell`, `unsell`, `listed`), empty whenever `gateway()` is |
@@ -74,6 +72,11 @@ Services other plugins should use instead of the getters above, from `Bukkit.get
 | `getNpcFeature().progression()` | `Optional<NpcProgression>`: what each business NPC is owed (`owed`) and bringing it in line (`sync`) |
 | `getNpcFeature().npcAccess()` | `Optional<BusinessNpcAccess>`: what each access group may do with a business's NPCs (`grants`, `allowed`, `set`, `toggle`) |
 | `getNpcFeature().businessNpcs()` | `Optional<BusinessNpcs>`: which NPCs each business has and the slots they fill; also empty when `businesses/npcs.yml` can't be read |
+
+Services other plugins should use instead of the getters above, from `Bukkit.getServicesManager().load(...)`:
+`api.piers.Piers`, `api.business.Businesses` (read-only `BusinessInfo` copies: `find`, `all`, `ownedBy`) and
+`api.journal.EconomyJournal` (reads the [economy journal](17-economy-journal.md#reading-the-journal); not registered
+while the journal is off).
 
 `BusinessSystem` (in `bootstrap/`) is a record of every running business service: `businesses`, `types`, `access`,
 `vaults`, `tokens`, `activities`, `shifts`, `training`, `economyLogistics`, `ledgers`, `ledgerSelections`,
