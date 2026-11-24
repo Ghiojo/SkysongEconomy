@@ -7,6 +7,8 @@ import org.skysongdev.skysongEconomy.api.piers.PierDetails;
 import org.skysongdev.skysongEconomy.api.piers.LossModifier;
 import org.skysongdev.skysongEconomy.api.piers.Shipment;
 import org.skysongdev.skysongEconomy.api.piers.ShipmentItem;
+import org.skysongdev.skysongEconomy.api.trade.TradePrice;
+import org.skysongdev.skysongEconomy.business.Business;
 import org.skysongdev.skysongEconomy.business.BusinessException;
 import org.skysongdev.skysongEconomy.business.access.AccessGroup;
 import org.skysongdev.skysongEconomy.business.access.Permission;
@@ -44,15 +46,32 @@ class DeliveryServiceTest {
     /** Every shipment ordering reported, and what to answer. */
     private final List<Shipment> ordering = new ArrayList<>();
     private ShipmentEvents.Verdict verdict = ShipmentEvents.Verdict.ALLOW;
+    /** The price each ordering was told, every order that went through, and every refund. */
+    private final List<TradePrice> prices = new ArrayList<>();
+    private final List<Shipment> ordered = new ArrayList<>();
+    private final List<Shipment> refunded = new ArrayList<>();
+    private final List<Boolean> refundsPaid = new ArrayList<>();
     /** Every arrival reported, what listeners make of it, and every collection reported. */
     private final List<ShipmentEvents.Arrival> arrivals = new ArrayList<>();
     private Function<ShipmentEvents.Arrival, ShipmentEvents.Outcome> listeners = ShipmentEvents.Arrival::asRolled;
     private final List<ShipmentEvents.Outcome> collected = new ArrayList<>();
     private final ShipmentEvents events = new ShipmentEvents() {
         @Override
-        public Verdict ordering(Shipment shipment) {
+        public Verdict ordering(Shipment shipment, TradePrice price) {
             ordering.add(shipment);
+            prices.add(price);
             return verdict;
+        }
+
+        @Override
+        public void ordered(Business business, Shipment shipment, TradePrice price) {
+            ordered.add(shipment);
+        }
+
+        @Override
+        public void refunded(Business business, Shipment shipment, boolean paidBack) {
+            refunded.add(shipment);
+            refundsPaid.add(paidBack);
         }
 
         @Override
@@ -378,5 +397,39 @@ class DeliveryServiceTest {
         public void delete(String id) {
             saved.removeIf(delivery -> delivery.id().equals(id));
         }
+    }
+
+    @Test
+    void anOrderThatWentThroughIsReportedWithItsPrice() {
+        Delivery delivery = order(TradeFixture.OWNER);
+
+        assertEquals(List.of(delivery.id()), ordered.stream().map(Shipment::id).toList());
+        TradePrice price = prices.get(0);
+        assertEquals(0, new BigDecimal("56").compareTo(price.paid()));
+        assertEquals(0, delivery.price().compareTo(price.paid()));
+    }
+
+    @Test
+    void refusedOrCancelledOrdersAreNotReportedAsOrdered() {
+        trade.wallet.balances.put(TradeFixture.OWNER.player(), new BigDecimal("55"));
+        refusal(() -> order(TradeFixture.OWNER));
+        verdict = ShipmentEvents.Verdict.cancel(null);
+        trade.wallet.balances.put(TradeFixture.OWNER.player(), new BigDecimal("500"));
+        assertThrows(OrderCancelledException.class, () -> order(TradeFixture.OWNER));
+
+        assertTrue(ordered.isEmpty());
+    }
+
+    @Test
+    void deletingTheBusinessReportsEachRefund() {
+        Delivery first = order(TradeFixture.OWNER);
+        Delivery second = order(TradeFixture.OWNER);
+        trade.wallet.refuseDeposits = true;
+
+        trade.businesses.delete(trade.shop);
+
+        assertEquals(List.of(first.id(), second.id()), refunded.stream().map(Shipment::id).toList());
+        assertEquals(List.of(false, false), refundsPaid, "the payment back failed");
+        assertEquals(2, warnings.size());
     }
 }

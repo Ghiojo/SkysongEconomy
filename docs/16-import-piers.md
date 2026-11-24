@@ -117,9 +117,11 @@ orderer, price, times, tags), `ShipmentItem`, `ShipmentOutcome`.
 | Event | When | Cancellable | Can change |
 | --- | --- | --- | --- |
 | `PierChangeEvent` | A pier was created, changed or removed | No | |
-| `ShipmentOrderEvent` | An import is about to be ordered, nothing paid yet | Yes: nothing is paid | `setCancelMessage` |
+| `ShipmentOrderEvent` | An import is about to be ordered, nothing paid yet; `getPrice()` is the `TradePrice` it would cost | Yes: nothing is paid | `setCancelMessage` |
+| `ShipmentOrderedEvent` | The import was paid and its slot booked; `getPrice()` is what was paid | No | |
 | `ShipmentArriveEvent` | A delivery is being collected, after the loss roll | Yes: cancelled = seized; starts cancelled when the roll lost it | `setItems`, `setSeizeMessage` |
-| `ShipmentCollectedEvent` | The shipment was handed over or seized, slot freed | No | |
+| `ShipmentCollectedEvent` | The shipment was handed over or seized, slot freed; `getArrivedItems()` is what it carried before listeners changed it, `getSeizeMessage()` the listener's reason | No | |
+| `ShipmentRefundedEvent` | Its business was deleted while it was on its way, so its price went back to the orderer (`isPaidBack()` false when that payment failed) | No | |
 
 Example, guards that catch contraband:
 

@@ -4,6 +4,8 @@ import org.jetbrains.annotations.Nullable;
 import org.skysongdev.skysongEconomy.api.piers.Pier;
 import org.skysongdev.skysongEconomy.api.piers.Shipment;
 import org.skysongdev.skysongEconomy.api.piers.ShipmentItem;
+import org.skysongdev.skysongEconomy.api.trade.TradePrice;
+import org.skysongdev.skysongEconomy.business.Business;
 import org.skysongdev.skysongEconomy.character.CharacterRef;
 
 import java.math.BigDecimal;
@@ -77,9 +79,21 @@ public interface ShipmentEvents {
     ShipmentEvents NONE = new ShipmentEvents() {
     };
 
-    /** An import is about to be ordered, before anything is paid. */
-    default Verdict ordering(Shipment shipment) {
+    /**
+     * An import is about to be ordered, before anything is paid.
+     *
+     * @param price what it would cost, with every modifier that applies
+     */
+    default Verdict ordering(Shipment shipment, TradePrice price) {
         return Verdict.ALLOW;
+    }
+
+    /**
+     * An import was ordered: the orderer paid and a delivery slot is booked.
+     *
+     * @param price what was paid, with every modifier that applied
+     */
+    default void ordered(Business business, Shipment shipment, TradePrice price) {
     }
 
     /** @return what listeners made of an arriving shipment; by default, what the roll decided */
@@ -89,5 +103,13 @@ public interface ShipmentEvents {
 
     /** A shipment was collected or seized, and its slot is free. */
     default void collected(Arrival arrival, Outcome outcome) {
+    }
+
+    /**
+     * A deleted business gave back what a delivery still on its way had cost.
+     *
+     * @param paidBack whether the money reached the orderer; {@code false} when the payment failed
+     */
+    default void refunded(Business business, Shipment shipment, boolean paidBack) {
     }
 }

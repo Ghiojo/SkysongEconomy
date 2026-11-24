@@ -6,6 +6,7 @@ import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.skysongdev.skysongEconomy.api.trade.TradePrice;
 
 import java.util.Objects;
 import java.util.Optional;
@@ -20,6 +21,7 @@ public final class ShipmentOrderEvent extends Event implements Cancellable {
     private final Shipment shipment;
     private final Optional<Pier> pier;
     private final @Nullable Player player;
+    private final TradePrice price;
     private boolean cancelled;
     private @Nullable String cancelMessage;
 
@@ -27,11 +29,19 @@ public final class ShipmentOrderEvent extends Event implements Cancellable {
      * @param shipment what would be ordered, with the id it will have
      * @param pier     the pier it would be sent to; empty when there are no piers
      * @param player   the player ordering, when online
+     * @param price    what it would cost, with every modifier that applies
      */
-    public ShipmentOrderEvent(@NotNull Shipment shipment, @NotNull Optional<Pier> pier, @Nullable Player player) {
+    public ShipmentOrderEvent(@NotNull Shipment shipment, @NotNull Optional<Pier> pier, @Nullable Player player,
+                              @NotNull TradePrice price) {
         this.shipment = Objects.requireNonNull(shipment, "shipment");
         this.pier = Objects.requireNonNull(pier, "pier");
         this.player = player;
+        this.price = Objects.requireNonNull(price, "price");
+    }
+
+    /** @return what it would cost: the base, every modifier with its share, and the total */
+    public @NotNull TradePrice getPrice() {
+        return price;
     }
 
     /** @return what would be ordered: business, ledger, import, pier, items, price, tags */
