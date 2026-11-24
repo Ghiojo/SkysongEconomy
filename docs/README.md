@@ -4,9 +4,9 @@ This folder explains every part of the SkysongEconomy plugin: what each feature 
 configured, and how the code behind it is organised. It is written so that someone who has never seen the
 code can maintain and extend it.
 
-The documentation describes the code on `master` as of 2026-11-23 (after the calendar node modifier PRs #69 to #74),
-which includes node boosters, calendar node modifiers (SkysongCalendar), business NPCs, business modules, NPC upkeep,
-SkysongClaims and import piers.
+The documentation describes the code on `master` as of 2026-11-24 (after the economy journal PRs #76 to #89, version
+1.1), which includes node boosters, calendar node modifiers (SkysongCalendar), business NPCs, business modules, NPC
+upkeep, SkysongClaims, import piers, the public API events and the economy journal.
 
 ## Reading order
 
