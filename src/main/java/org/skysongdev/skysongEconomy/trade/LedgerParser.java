@@ -25,7 +25,7 @@ import java.util.function.Predicate;
  * icon: ENDER_CHEST
  * description: ["<gray>Goods nobody asks questions about."]
  * exempt-from: [global, good-type, item]       # optional: modifier kinds its trades ignore
- * tags: [contraband]                           # optional: put on every shipment of its imports
+ * tags: [contraband]                           # optional: put on every shipment of its imports and sale of its exports
  * imports:
  *   steel_weapons:
  *     name: "<white>Crate of steel weapons"
@@ -49,6 +49,7 @@ import java.util.function.Predicate;
  *     item: steel_ingot                          # or good-type: weapon
  *     batch: 16
  *     price: "{base} * 0.8"
+ *     tags: [metals]                             # optional: added to the ledger's for this export
  * }</pre>
  * A broken import or export is skipped with a warning so one typo doesn't hide a whole ledger.
  */
@@ -176,7 +177,7 @@ public final class LedgerParser {
             throw section.error("batch", "must be 1 or more");
         }
         return new ExportOffer(id, section.string("name", id), icon(section), section.strings("lore"), target, batch,
-                expression(section, "price"));
+                expression(section, "price"), tags(section));
     }
 
     private String materialId(ConfigSection section) {

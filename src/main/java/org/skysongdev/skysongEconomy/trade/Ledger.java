@@ -23,7 +23,8 @@ import java.util.TreeSet;
  * @param exports     by id, in file order
  * @param exemptFrom  the modifier target kinds its trades ignore; empty for a normal ledger. Modifiers
  *                    on the ledger itself always apply, so this never holds {@link TargetKind#LEDGER}.
- * @param tags        lower-case labels copied onto every shipment of its imports, such as {@code contraband}
+ * @param tags        lower-case labels copied onto every shipment of its imports and every sale of its
+ *                    exports, such as {@code contraband}
  */
 public record Ledger(String id, String displayName, String icon, List<String> description,
                      Map<String, ImportOffer> imports, Map<String, ExportOffer> exports, Set<TargetKind> exemptFrom,
@@ -61,6 +62,13 @@ public record Ledger(String id, String displayName, String icon, List<String> de
 
     /** @return the tags a shipment of that import carries: the ledger's and the import's */
     public Set<String> shipmentTags(ImportOffer offer) {
+        Set<String> all = new TreeSet<>(tags);
+        all.addAll(offer.tags());
+        return Set.copyOf(all);
+    }
+
+    /** @return the tags a sale of that export carries: the ledger's and the export's */
+    public Set<String> saleTags(ExportOffer offer) {
         Set<String> all = new TreeSet<>(tags);
         all.addAll(offer.tags());
         return Set.copyOf(all);

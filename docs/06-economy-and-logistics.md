@@ -41,7 +41,7 @@ icon: ENDER_CHEST                         # Minecraft material, default PAPER
 description:
   - "<gray>Goods nobody asks questions about."
 exempt-from: [global, good-type, item]    # optional: makes the ledger tax exempt (see below)
-tags: [contraband]                        # optional: put on every shipment of its imports (see Import piers)
+tags: [contraband]                        # optional: put on every shipment of its imports and sale of its exports
 
 imports:
   steel_weapons:                          # import id, unique in this ledger
@@ -68,6 +68,7 @@ exports:
     item: steel_ingot          # one item...
     batch: 16                  # sold 16 at a time, all or nothing
     price: "{base} * 0.8"
+    tags: [metals]             # optional: added to the ledger's tags for this export
   any_weapon:
     name: "<white>Any weapon"
     icon: STONE_SWORD
