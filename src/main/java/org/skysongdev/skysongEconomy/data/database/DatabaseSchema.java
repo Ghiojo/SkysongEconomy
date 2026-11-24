@@ -278,7 +278,7 @@ public final class DatabaseSchema {
                     + "record_id CHAR(36) NOT NULL, "
                     + "kind VARCHAR(32) NOT NULL, "
                     + "subject_id VARCHAR(100) NOT NULL, "
-                    + "at BIGINT NOT NULL, "
+                    + "recorded_at BIGINT NOT NULL, "
                     + "ic_year INT NULL, "
                     + "ic_period VARCHAR(64) NULL, "
                     + "ic_day INT NULL, "
@@ -297,14 +297,14 @@ public final class DatabaseSchema {
                     + "money TEXT NOT NULL, "
                     + "items TEXT NOT NULL, "
                     + "details TEXT NOT NULL, "
-                    + "INDEX economy_journal_at (at), "
+                    + "INDEX economy_journal_at (recorded_at), "
                     + "INDEX economy_journal_ic_week (ic_year, ic_week), "
                     + "INDEX economy_journal_ic_festival (ic_year, ic_festival), "
-                    + "INDEX economy_journal_kind (kind, at), "
-                    + "INDEX economy_journal_business (business_id, at), "
-                    + "INDEX economy_journal_pier (pier_id, at), "
+                    + "INDEX economy_journal_kind (kind, recorded_at), "
+                    + "INDEX economy_journal_business (business_id, recorded_at), "
+                    + "INDEX economy_journal_pier (pier_id, recorded_at), "
                     + "INDEX economy_journal_subject (subject_id), "
-                    + "INDEX economy_journal_actor (actor_uuid, at)) ENGINE=InnoDB");
+                    + "INDEX economy_journal_actor (actor_uuid, recorded_at)) ENGINE=InnoDB");
 
     private DatabaseSchema() {
     }

@@ -28,7 +28,7 @@ import java.util.stream.Collectors;
  */
 public final class SqlJournalRepository implements JournalRepository {
     private static final Gson GSON = new Gson();
-    private static final String INSERT = "INSERT INTO economy_journal (sequence, record_id, kind, subject_id, at, "
+    private static final String INSERT = "INSERT INTO economy_journal (sequence, record_id, kind, subject_id, recorded_at, "
             + "ic_year, ic_period, ic_day, ic_day_of_year, ic_week, ic_festival, actor_uuid, actor_profile, "
             + "business_id, business_name, pier_id, node_id, claim_id, tags, trade, money, items, details) "
             + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
@@ -71,7 +71,7 @@ public final class SqlJournalRepository implements JournalRepository {
     @Override
     public int deleteBefore(Instant time) {
         try (PreparedStatement statement = connections.getConnection().prepareStatement(
-                "DELETE FROM economy_journal WHERE at < ?")) {
+                "DELETE FROM economy_journal WHERE recorded_at < ?")) {
             statement.setLong(1, time.toEpochMilli());
             return statement.executeUpdate();
         } catch (SQLException e) {
