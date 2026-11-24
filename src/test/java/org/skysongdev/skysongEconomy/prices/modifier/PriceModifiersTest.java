@@ -2,6 +2,7 @@ package org.skysongdev.skysongEconomy.prices.modifier;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.skysongdev.skysongEconomy.api.prices.PriceModifierChange;
 import org.skysongdev.skysongEconomy.prices.PriceException;
 import org.skysongdev.skysongEconomy.prices.PriceSettings;
 
@@ -13,6 +14,7 @@ import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -247,6 +249,36 @@ class PriceModifiersTest {
         modifiers.purgeExpired();
 
         assertEquals(List.of("tax +10%", "tax +20%", "tax +20%", "festival -10%", "festival -10%"), heard);
+    }
+
+    @Test
+    void listenersHearWhatKindOfChangeItWas() {
+        List<String> heard = new ArrayList<>();
+        modifiers.addListener(new ModifierListener() {
+            @Override
+            public void modifierChanged(PriceModifier modifier) {
+            }
+
+            @Override
+            public void modifierChanged(PriceModifierChange.Kind kind, PriceModifier modifier,
+                                        Optional<PriceModifier> previous) {
+                heard.add(kind + " " + modifier.amount().signed()
+                        + previous.map(old -> " was " + old.amount().signed()).orElse(""));
+            }
+        });
+
+        PriceModifier tax = modifiers.add(draft("tax", "global", "10"));
+        modifiers.set(draft("tax", "global", "20"));
+        modifiers.set(draft("rent", "business:tavern", "5"));
+        modifiers.remove(tax.id());
+        modifiers.removeAll(new ModifierTarget.Business("tavern"));
+        modifiers.add(new ModifierDraft("festival", ModifierTarget.GLOBAL, AppliesTo.IMPORTS, percent("-10"), null,
+                START.plus(Duration.ofHours(1)), "Staff"));
+        clock.now = START.plus(Duration.ofHours(1));
+        modifiers.purgeExpired();
+
+        assertEquals(List.of("ADDED +10%", "REPLACED +20% was +10%", "ADDED +5%", "REMOVED +20%", "REMOVED +5%",
+                "ADDED -10%", "EXPIRED -10%"), heard);
     }
 
     private static ModifierAmount flat(String value) {

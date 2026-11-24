@@ -5,7 +5,8 @@
 Other plugins can listen to these like any Bukkit event. Every event lives in a public `api` package and hands out
 only public types (`api/business/BusinessInfo`, `ShiftInfo`, `NodeInfo`, `ItemCount`…), never internal classes, so
 code built against them keeps compiling when the internals change. Business, shift, NPC, module and upkeep events
-are in `api/business`, harvests in `api/nodes`, Claims in `api/claims`, piers and shipments in `api/piers`.
+are in `api/business`, harvests in `api/nodes`, Claims in `api/claims`, piers and shipments in `api/piers`, exports and ledgers in `api/trade`, price
+modifiers in `api/prices`.
 
 | Event | When | Cancellable | Getters |
 | --- | --- | --- | --- |
@@ -31,6 +32,8 @@ are in `api/business`, harvests in `api/nodes`, Claims in `api/claims`, piers an
 | `ShipmentRefundedEvent` (in `api/piers`) | A deleted business refunded an import still on its way | No | `getBusiness()`, `getShipment()`, `isPaidBack()` |
 | `ExportSellEvent` (in `api/trade`) | A batch of an export is about to be sold; nothing paid or taken yet | Yes: nothing is paid or taken, the seller sees `getCancelMessage()` or `business.exports.sale-cancelled` | `getBusiness()`, `getSale()` (`ExportSale`: ledger, export, seller, `ItemCount`s, `TradePrice`, time, tags), `getPlayer()`, `setCancelMessage(...)` |
 | `ExportSoldEvent` (in `api/trade`) | The seller was paid and the items taken | No | `getBusiness()`, `getSale()`, `getPlayer()` |
+| `LedgerSelectionChangeEvent` (in `api/trade`) | A ledger was selected, removed (fine paid) or dropped because the business lost the slot. Deleting a business fires `BusinessChangeEvent`, not this | No | `getBusiness()`, `getChange()` (`LedgerSelectionChange`: `kind` `SELECTED`/`REMOVED`/`DROPPED`, ledger, `fine`, `paidBy`, time) |
+| `PriceModifierChangeEvent` (in `api/prices`) | A price modifier was added, replaced, removed (also when its business or pier goes) or expired. Expiry is noticed the next time modifiers are read, so it can come a little late | No | `getChange()` (`PriceModifierChange`: `kind` `ADDED`/`REPLACED`/`REMOVED`/`EXPIRED`, `modifier` and `previous` as `PriceModifierInfo`, time) |
 | `NodeHarvestEvent` (in `api/nodes`) | Someone harvested at a node: paid and rolled, items handed over right after | No | `getPlayer()`, `getNode()` (`NodeInfo`), `getCharacter()`, `getTier()`, `getCost()` (`HarvestCostInfo`: downtime, Harvest Tokens, money), `getItems()` (`ItemCount`s), `getModifiers()` (ids of the calendar modifiers that changed it) |
 
 The shift message is not shown in game; `ShiftStartEvent.getMessage()` is meant for a Discord bridge or similar.

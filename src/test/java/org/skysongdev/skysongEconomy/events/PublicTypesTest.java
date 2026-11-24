@@ -10,6 +10,8 @@ import org.skysongdev.skysongEconomy.api.business.ShiftInfo;
 import org.skysongdev.skysongEconomy.api.business.UpkeepChangeCause;
 import org.skysongdev.skysongEconomy.api.items.ItemCount;
 import org.skysongdev.skysongEconomy.api.nodes.HarvestCostInfo;
+import org.skysongdev.skysongEconomy.api.prices.PriceModifierChange;
+import org.skysongdev.skysongEconomy.api.prices.PriceModifierInfo;
 import org.skysongdev.skysongEconomy.business.module.BusinessModuleEvents;
 import org.skysongdev.skysongEconomy.business.module.ModulePick;
 import org.skysongdev.skysongEconomy.business.npc.BusinessNpc;
@@ -19,6 +21,10 @@ import org.skysongdev.skysongEconomy.business.shift.Shift;
 import org.skysongdev.skysongEconomy.business.shift.ShiftPay;
 import org.skysongdev.skysongEconomy.character.CharacterRef;
 import org.skysongdev.skysongEconomy.nodes.harvest.HarvestCost;
+import org.skysongdev.skysongEconomy.prices.modifier.AppliesTo;
+import org.skysongdev.skysongEconomy.prices.modifier.ModifierAmount;
+import org.skysongdev.skysongEconomy.prices.modifier.ModifierTarget;
+import org.skysongdev.skysongEconomy.prices.modifier.PriceModifier;
 import org.skysongdev.skysongEconomy.trade.ItemAmount;
 import org.skysongdev.skysongEconomy.upkeep.NpcUpkeep;
 import org.skysongdev.skysongEconomy.upkeep.UpkeepEvents;
@@ -78,6 +84,26 @@ class PublicTypesTest {
         assertEquals(1, cost.harvestTokens());
         assertEquals(0, BigDecimal.TEN.compareTo(cost.money()));
         assertEquals(List.of(new ItemCount("iron_ore", 3)), PublicTypes.items(List.of(new ItemAmount("iron_ore", 3))));
+    }
+
+    @Test
+    void copiesPriceModifiersAndTheirChanges() {
+        PriceModifier tax = new PriceModifier("m3", "port_tax", ModifierTarget.parse("ledger:smugglers"), AppliesTo.BOTH,
+                new ModifierAmount.Percent(new BigDecimal("10")), "Port tax", null, "Staff", NOW);
+        PriceModifier fee = new PriceModifier("m4", "registry_fee", ModifierTarget.GLOBAL, AppliesTo.CLAIMS,
+                new ModifierAmount.Flat(new BigDecimal("50")), "Fee", NOW.plusSeconds(60), "CONSOLE", NOW);
+
+        PriceModifierInfo info = PublicTypes.modifier(tax);
+        assertEquals(new PriceModifierInfo("m3", "port_tax", "ledger:smugglers", PriceModifierInfo.AppliesTo.BOTH,
+                new BigDecimal("10"), false, "Port tax", Optional.empty(), "Staff", NOW), info);
+        assertTrue(PublicTypes.modifier(fee).flat());
+        assertEquals(Optional.of(NOW.plusSeconds(60)), PublicTypes.modifier(fee).expiresAt());
+
+        PriceModifierChange change = PublicTypes.modifierChange(PriceModifierChange.Kind.REPLACED, tax, Optional.of(tax), NOW);
+        assertEquals(Optional.of(info), change.previous());
+        for (AppliesTo appliesTo : AppliesTo.values()) {
+            assertEquals(appliesTo.name(), PriceModifierInfo.AppliesTo.valueOf(appliesTo.name()).name());
+        }
     }
 
     @Test

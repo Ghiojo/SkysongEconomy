@@ -3,6 +3,7 @@ package org.skysongdev.skysongEconomy.trade;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
+import org.skysongdev.skysongEconomy.api.trade.LedgerSelectionChange;
 import org.skysongdev.skysongEconomy.business.BlockPosition;
 import org.skysongdev.skysongEconomy.business.Business;
 import org.skysongdev.skysongEconomy.business.BusinessException;
@@ -23,6 +24,7 @@ import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.IntStream;
@@ -38,6 +40,7 @@ class LedgerSelectionsTest {
 
     private final MapWallet wallet = new MapWallet();
     private final InMemorySelections repository = new InMemorySelections();
+    private final List<LedgerSelectionChange> changes = new ArrayList<>();
     private BusinessService businesses;
     private LedgerSelections selections;
     private Business shop;
@@ -56,7 +59,13 @@ class LedgerSelectionsTest {
                 Map.of(1, new SlotLimits(1, 1), 2, new SlotLimits(2, 2)),
                 Map.of("slow", new DeliveryTime("slow", "Slow", Duration.ofDays(7))), new BigDecimal("50"));
         selections = new LedgerSelections(settings, new LedgerRegistry(List.of(ledger("a"), ledger("b"), ledger("c"))),
-                repository, wallet, Clock.fixed(Instant.parse("2026-11-05T12:00:00Z"), ZoneOffset.UTC));
+                repository, wallet, Clock.fixed(Instant.parse("2026-11-05T12:00:00Z"), ZoneOffset.UTC),
+                new LedgerSelectionEvents() {
+                    @Override
+                    public void changed(Business business, LedgerSelectionChange change) {
+                        changes.add(change);
+                    }
+                });
         businesses.addListener(selections);
         shop = businesses.create("shop", "trading", OWNER, new BlockPosition("world", 0, 64, 0));
         businesses.setTier(shop, 3);
@@ -119,6 +128,38 @@ class LedgerSelectionsTest {
         assertEquals(0, new BigDecimal("30").compareTo(wallet.balance(OWNER.player())));
         assertFalse(selections.isSelected(shop, "a"));
         assertTrue(repository.saved.isEmpty());
+    }
+
+    @Test
+    void everyChangeIsReportedWithTheFinePaid() {
+        businesses.pick(shop, "economical");
+        businesses.pick(shop, "economical");
+        wallet.balances.put(OWNER.player(), new BigDecimal("80"));
+        selections.select(shop, "a");
+        selections.select(shop, "b");
+        selections.remove(shop, "a");
+        selections.select(shop, "c");
+        businesses.clearPick(shop, 2);
+        businesses.delete(shop);
+
+        assertEquals(List.of("SELECTED a", "SELECTED b", "REMOVED a", "SELECTED c", "DROPPED c"),
+                changes.stream().map(change -> change.kind() + " " + change.ledgerId()).toList());
+        LedgerSelectionChange removal = changes.get(2);
+        assertEquals(0, new BigDecimal("50").compareTo(removal.fine()));
+        assertEquals(Optional.of(OWNER), removal.paidBy());
+        assertEquals("shop", removal.businessId());
+        assertEquals(Optional.empty(), changes.get(4).paidBy());
+        assertEquals(0, BigDecimal.ZERO.compareTo(changes.get(4).fine()));
+    }
+
+    @Test
+    void aServerOwnedRemovalReportsNoFineAndNoPayer() {
+        Business market = businesses.createServerOwned("market", "trading", new BlockPosition("world", 5, 64, 5));
+        businesses.pick(market, "economical");
+        selections.select(market, "a");
+        selections.remove(market, "a");
+        assertEquals(Optional.empty(), changes.get(1).paidBy());
+        assertEquals(0, BigDecimal.ZERO.compareTo(changes.get(1).fine()));
     }
 
     @Test

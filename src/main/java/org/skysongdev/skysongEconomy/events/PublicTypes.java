@@ -11,6 +11,8 @@ import org.skysongdev.skysongEconomy.api.business.TrainingInfo;
 import org.skysongdev.skysongEconomy.api.business.UpkeepChangeCause;
 import org.skysongdev.skysongEconomy.api.items.ItemCount;
 import org.skysongdev.skysongEconomy.api.nodes.HarvestCostInfo;
+import org.skysongdev.skysongEconomy.api.prices.PriceModifierChange;
+import org.skysongdev.skysongEconomy.api.prices.PriceModifierInfo;
 import org.skysongdev.skysongEconomy.business.module.BusinessModuleEvents;
 import org.skysongdev.skysongEconomy.business.module.ModulePick;
 import org.skysongdev.skysongEconomy.business.npc.BusinessNpc;
@@ -20,12 +22,16 @@ import org.skysongdev.skysongEconomy.business.training.SkillTrained;
 import org.skysongdev.skysongEconomy.business.training.TrainingSession;
 import org.skysongdev.skysongEconomy.character.ProficiencyTraining;
 import org.skysongdev.skysongEconomy.nodes.harvest.HarvestCost;
+import org.skysongdev.skysongEconomy.prices.modifier.ModifierAmount;
+import org.skysongdev.skysongEconomy.prices.modifier.PriceModifier;
 import org.skysongdev.skysongEconomy.trade.ItemAmount;
 import org.skysongdev.skysongEconomy.upkeep.NpcUpkeep;
 import org.skysongdev.skysongEconomy.upkeep.UpkeepEvents;
 import org.skysongdev.skysongEconomy.upkeep.UpkeepState;
 
+import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Turns the plugin's internal types into the public ones in {@code api}, which events hand to
@@ -72,6 +78,18 @@ public final class PublicTypes {
     }
 
     /** @return the public cause with the same name */
+    public static PriceModifierInfo modifier(PriceModifier modifier) {
+        return new PriceModifierInfo(modifier.id(), modifier.type(), modifier.target().key(),
+                PriceModifierInfo.AppliesTo.valueOf(modifier.appliesTo().name()), modifier.amount().value(),
+                modifier.amount() instanceof ModifierAmount.Flat, modifier.displayName(), modifier.expiry(),
+                modifier.createdBy(), modifier.createdAt());
+    }
+
+    public static PriceModifierChange modifierChange(PriceModifierChange.Kind kind, PriceModifier modifier,
+                                                     Optional<PriceModifier> previous, Instant at) {
+        return new PriceModifierChange(kind, modifier(modifier), previous.map(PublicTypes::modifier), at);
+    }
+
     public static NpcRemovalCause cause(BusinessNpcEvents.RemovalCause cause) {
         return NpcRemovalCause.valueOf(cause.name());
     }

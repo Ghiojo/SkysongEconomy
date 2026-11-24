@@ -1,5 +1,6 @@
 package org.skysongdev.skysongEconomy.prices.modifier;
 
+import org.skysongdev.skysongEconomy.api.prices.PriceModifierChange;
 import org.skysongdev.skysongEconomy.prices.PriceException;
 import org.skysongdev.skysongEconomy.prices.PriceSettings;
 
@@ -118,7 +119,7 @@ public final class PriceModifiers {
             throw new PriceException("prices.modifiers.exists", Map.of("id", existing.get().id(),
                     "type", draft.type(), "target", draft.target().key()));
         }
-        return store("m" + nextNumber++, draft);
+        return store("m" + nextNumber++, draft, Optional.empty());
     }
 
     /**
@@ -131,7 +132,7 @@ public final class PriceModifiers {
         validate(draft);
         Optional<PriceModifier> existing = find(draft.type(), draft.target());
         String id = existing.map(PriceModifier::id).orElseGet(() -> "m" + nextNumber++);
-        return new SetResult(store(id, draft), existing);
+        return new SetResult(store(id, draft, existing), existing);
     }
 
     /** What {@link #set} did. */
@@ -148,7 +149,7 @@ public final class PriceModifiers {
                 new PriceException("prices.modifiers.not-found", Map.of("id", id)));
         byId.remove(modifier.id());
         repository.delete(modifier.id());
-        changed(modifier);
+        changed(PriceModifierChange.Kind.REMOVED, modifier, Optional.empty());
         return modifier;
     }
 
@@ -162,7 +163,7 @@ public final class PriceModifiers {
         removed.forEach(modifier -> {
             byId.remove(modifier.id());
             repository.delete(modifier.id());
-            changed(modifier);
+            changed(PriceModifierChange.Kind.REMOVED, modifier, Optional.empty());
         });
         return removed.size();
     }
@@ -209,23 +210,23 @@ public final class PriceModifiers {
         expired.forEach(modifier -> {
             byId.remove(modifier.id());
             repository.delete(modifier.id());
-            changed(modifier);
+            changed(PriceModifierChange.Kind.EXPIRED, modifier, Optional.empty());
         });
     }
 
-    private PriceModifier store(String id, ModifierDraft draft) {
+    private PriceModifier store(String id, ModifierDraft draft, Optional<PriceModifier> replaced) {
         String name = draft.displayName() == null || draft.displayName().isBlank()
                 ? defaultName(draft) : draft.displayName().strip();
         PriceModifier modifier = new PriceModifier(id, draft.type(), draft.target(), draft.appliesTo(), draft.amount(),
                 name, draft.expiresAt(), draft.createdBy(), clock.instant());
         byId.put(id, modifier);
         repository.save(modifier);
-        changed(modifier);
+        changed(replaced.isPresent() ? PriceModifierChange.Kind.REPLACED : PriceModifierChange.Kind.ADDED, modifier, replaced);
         return modifier;
     }
 
-    private void changed(PriceModifier modifier) {
-        listeners.forEach(listener -> listener.modifierChanged(modifier));
+    private void changed(PriceModifierChange.Kind kind, PriceModifier modifier, Optional<PriceModifier> previous) {
+        listeners.forEach(listener -> listener.modifierChanged(kind, modifier, previous));
     }
 
     private void validate(ModifierDraft draft) {
