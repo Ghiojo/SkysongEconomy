@@ -32,7 +32,7 @@ Code map:
 | Name line | `integration/citizens/UpkeepNameLines`, `integration/citizens/CitizensNpcs` |
 | SkysongNPCs | `integration/skysongnpcs/SkysongNpcsUpkeepAdapter`, `UpkeepMenuButton`, `UpkeepSheetLine`, `UpkeepNpcListener` |
 | Database | `data/database/SqlUpkeepRepository`, `SqlUpkeepStockRepository` and their `Async*` wrappers |
-| Event | `events/NpcUpkeepChangeEvent`, `events/BukkitUpkeepEvents` |
+| Event | `api/business/NpcUpkeepChangeEvent`, `events/BukkitUpkeepEvents` |
 | Commands | `commands/upkeep/*` |
 | Wiring | `bootstrap/UpkeepFeature` |
 

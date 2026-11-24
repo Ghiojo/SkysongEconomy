@@ -1,12 +1,10 @@
-package org.skysongdev.skysongEconomy.events;
+package org.skysongdev.skysongEconomy.api.business;
 
 import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
 import org.jetbrains.annotations.NotNull;
-import org.skysongdev.skysongEconomy.upkeep.NpcUpkeep;
-import org.skysongdev.skysongEconomy.upkeep.UpkeepEvents.Cause;
-import org.skysongdev.skysongEconomy.upkeep.UpkeepState;
 
+import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -17,32 +15,32 @@ import java.util.UUID;
 public final class NpcUpkeepChangeEvent extends Event {
     private static final HandlerList HANDLERS = new HandlerList();
 
-    private final NpcUpkeep upkeep;
-    private final Cause cause;
+    private final NpcUpkeepInfo upkeep;
+    private final UpkeepChangeCause cause;
 
-    public NpcUpkeepChangeEvent(NpcUpkeep upkeep, Cause cause) {
-        this.upkeep = upkeep;
-        this.cause = cause;
-    }
-
-    /** @return the NPC's Citizens UUID */
-    public UUID getNpc() {
-        return upkeep.npc();
-    }
-
-    /** @return its state now */
-    public UpkeepState getState() {
-        return upkeep.state();
+    public NpcUpkeepChangeEvent(@NotNull NpcUpkeepInfo upkeep, @NotNull UpkeepChangeCause cause) {
+        this.upkeep = Objects.requireNonNull(upkeep, "upkeep");
+        this.cause = Objects.requireNonNull(cause, "cause");
     }
 
     /** @return its whole upkeep now: profile, state, next cycle */
-    public NpcUpkeep getUpkeep() {
+    public @NotNull NpcUpkeepInfo getUpkeep() {
         return upkeep;
     }
 
     /** @return why it changed */
-    public Cause getCause() {
+    public @NotNull UpkeepChangeCause getCause() {
         return cause;
+    }
+
+    /** @return the NPC's Citizens UUID */
+    public @NotNull UUID getNpc() {
+        return upkeep.npc();
+    }
+
+    /** @return whether it is maintained now */
+    public boolean isMaintained() {
+        return upkeep.maintained();
     }
 
     @Override
@@ -50,7 +48,7 @@ public final class NpcUpkeepChangeEvent extends Event {
         return HANDLERS;
     }
 
-    public static HandlerList getHandlerList() {
+    public static @NotNull HandlerList getHandlerList() {
         return HANDLERS;
     }
 }

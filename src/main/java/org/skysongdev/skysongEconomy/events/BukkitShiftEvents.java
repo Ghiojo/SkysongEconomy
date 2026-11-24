@@ -3,7 +3,10 @@ package org.skysongdev.skysongEconomy.events;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.PluginManager;
+import org.skysongdev.skysongEconomy.api.business.ShiftEndEvent;
+import org.skysongdev.skysongEconomy.api.business.ShiftStartEvent;
 import org.skysongdev.skysongEconomy.business.Business;
+import org.skysongdev.skysongEconomy.business.BusinessDirectory;
 import org.skysongdev.skysongEconomy.business.shift.Shift;
 import org.skysongdev.skysongEconomy.business.shift.ShiftEvents;
 import org.skysongdev.skysongEconomy.character.CharacterRef;
@@ -23,13 +26,13 @@ public final class BukkitShiftEvents implements ShiftEvents {
             // Shifts start from a menu, so the player is online; refuse rather than fire without one.
             return false;
         }
-        ShiftStartEvent event = new ShiftStartEvent(business, player, character, message);
+        ShiftStartEvent event = new ShiftStartEvent(BusinessDirectory.info(business), player, character, message);
         plugins.callEvent(event);
         return !event.isCancelled();
     }
 
     @Override
     public void ended(Business business, Shift shift) {
-        plugins.callEvent(new ShiftEndEvent(business, shift));
+        plugins.callEvent(new ShiftEndEvent(BusinessDirectory.info(business), PublicTypes.shift(shift)));
     }
 }

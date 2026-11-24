@@ -1,30 +1,35 @@
 # Events, API and integrations
 
-## Bukkit events (`events/`)
+## Bukkit events (`api/`)
 
-Other plugins can listen to these like any Bukkit event.
+Other plugins can listen to these like any Bukkit event. Every event lives in a public `api` package and hands out
+only public types (`api/business/BusinessInfo`, `ShiftInfo`, `NodeInfo`, `ItemCount`…), never internal classes, so
+code built against them keeps compiling when the internals change. Business, shift, NPC, module and upkeep events
+are in `api/business`, harvests in `api/nodes`, Claims in `api/claims`, piers and shipments in `api/piers`.
 
 | Event | When | Cancellable | Getters |
 | --- | --- | --- | --- |
 | `ShiftStartEvent` | A player is about to start a shift, after every check passed and before downtime is spent | Yes: nothing is spent and the player is told the shift was cancelled | `getBusiness()`, `getPlayer()`, `getCharacter()`, `getMessage()` (the business's shift message, placeholders filled in) |
-| `ShiftEndEvent` | A shift has its full time; its pay can now be retrieved. The player may be offline. | No | `getBusiness()`, `getShift()` (pay, times, character) |
-| `BusinessNpcCreateEvent` | A business created an NPC in one of its slots; it is waiting for its first setup | No | `getBusiness()`, `getNpc()` (`BusinessNpc`: SkysongNPCs id, business, slot source, creation time) |
+| `ShiftEndEvent` | A shift has its full time; its vault cut is in the vault and its pay can now be retrieved. The player may be offline. | No | `getBusiness()`, `getShift()` (`ShiftInfo`: character, times, `payMoney`, `payTokens`, `vaultCut`) |
+| `BusinessNpcCreateEvent` | A business created an NPC in one of its slots; it is waiting for its first setup | No | `getBusiness()`, `getNpc()` (`BusinessNpcInfo`: SkysongNPCs id, business, slot source, creation time) |
 | `BusinessNpcRemoveEvent` | A business no longer has an NPC and its slot is free. Unless the cause is `REMOVED_ELSEWHERE`, the NPC still exists while this fires and is removed right after | No | `getBusiness()`, `getNpc()`, `getCause()` (`DISMISSED`, `SLOT_LOST`, `BUSINESS_DELETED`, `REMOVED_ELSEWHERE`) |
-| `BusinessModulePickEvent` | A business picked a module; the pick is saved | No | `getBusiness()`, `getPick()` (`ModulePick`: module id, skill, order, time) |
+| `BusinessModulePickEvent` | A business picked a module; the pick is saved | No | `getBusiness()`, `getPick()` (`ModulePickInfo`: module id, skill, order, time) |
 | `BusinessModuleRemoveEvent` | A business no longer has a module it picked | No | `getBusiness()`, `getPick()`, `getCause()` (`CLEARED`, `PICK_LOST`, `BUSINESS_DELETED`) |
-| `NpcUpkeepChangeEvent` | An NPC became maintained or unmaintained | No | `getNpc()`, `getState()`, `getUpkeep()` (`NpcUpkeep`: profile, state, next cycle), `getCause()` (`CYCLE`, `REPAIR`, `STAFF`) |
+| `NpcUpkeepChangeEvent` | An NPC became maintained or unmaintained | No | `getNpc()`, `isMaintained()`, `getUpkeep()` (`NpcUpkeepInfo`: profile, maintained, next cycle), `getCause()` (`CYCLE`, `REPAIR`, `STAFF`) |
 | `ClaimPurchaseEvent` (in `api/claims`) | A Claim was bought: money taken, owner added, sale recorded | No | `getSale()` (`ClaimSale`: Claim, buyer, asking price, each modifier's share, total paid). See [Claims](15-claims.md#claimpurchaseevent) |
 | `PierChangeEvent` (in `api/piers`) | A pier was created, changed or removed (also on `/se pier reload`) | No | `getBefore()`, `getAfter()`, `getPierId()`. See [Import piers](16-import-piers.md#the-api-apipiers) |
 | `ShipmentOrderEvent` (in `api/piers`) | An import is about to be ordered; nothing paid yet | Yes: nothing is paid, the player sees `getCancelMessage()` or the default | `getShipment()`, `getPier()`, `getPlayer()`, `setCancelMessage(...)` |
 | `ShipmentArriveEvent` (in `api/piers`) | A delivery is being collected, right after its pier's loss roll | Yes: cancelled = seized (lost, no refund); starts cancelled when the roll lost it | `getShipment()`, `getPier()`, `getCollector()`, `getLossChance()`, `getRoll()`, `isLostByRoll()`, `getItems()`/`setItems(...)`, `setSeizeMessage(...)` |
 | `ShipmentCollectedEvent` (in `api/piers`) | The shipment was handed over or seized; slot freed | No | `getShipment()`, `getPier()`, `getCollector()`, `getOutcome()`, `getItems()`, `getLossChance()`, `isLostByRoll()` |
-| `NodeHarvestEvent` | Someone harvested at a node: paid and rolled, items handed over right after | No | `getPlayer()`, `getNode()`, `getCharacter()`, `getTier()`, `getPaid()` (`HarvestCost`), `getItems()`, `getModifiers()` (ids of the calendar modifiers that changed it) |
+| `NodeHarvestEvent` (in `api/nodes`) | Someone harvested at a node: paid and rolled, items handed over right after | No | `getPlayer()`, `getNode()` (`NodeInfo`), `getCharacter()`, `getTier()`, `getCost()` (`HarvestCostInfo`: downtime, Harvest Tokens, money), `getItems()` (`ItemCount`s), `getModifiers()` (ids of the calendar modifiers that changed it) |
 
 The shift message is not shown in game; `ShiftStartEvent.getMessage()` is meant for a Discord bridge or similar.
 
 The rules don't fire Bukkit events themselves: they call `business/shift/ShiftEvents`,
 `business/npc/BusinessNpcEvents` and `nodes/harvest/NodeHarvestEvents`, whose server implementations
-(`events/BukkitShiftEvents`, `BukkitBusinessNpcEvents`, `BukkitNodeHarvestEvents`) fire the events. Tests use fakes. To add an event, follow the same shape.
+(`events/BukkitShiftEvents`, `BukkitBusinessNpcEvents`, `BukkitNodeHarvestEvents`…) turn the internal types into the
+public ones and fire the events. Tests use fakes. To add an event, follow the same shape: the event and its public
+types in `api/`, the Bukkit implementation in `events/`.
 
 ## Calling the plugin from another plugin
 
@@ -41,6 +46,9 @@ Get the plugin instance (`(SkysongEconomy) Bukkit.getPluginManager().getPlugin("
 | `getNodeFeature().nodes()` | `Optional<NodeService>`, empty when nodes are disabled |
 | `getModuleFeature().modules()` | `Optional<BusinessModules>`: the modules each business picked (`of`, `has`, `groups`, `pool`, `pick`, `clear`) and every module file with its effects (`module`, `modules`); empty when businesses are disabled or `businesses/modules.yml` can't be read |
 | `getPierFeature().piers()` | `PierService`, which implements `api.piers.Piers`. Other plugins should rather `Bukkit.getServicesManager().load(Piers.class)` |
+
+Services other plugins should use instead of the getters above, from `Bukkit.getServicesManager().load(...)`:
+`api.piers.Piers` and `api.business.Businesses` (read-only `BusinessInfo` copies: `find`, `all`, `ownedBy`).
 | `getClaimFeature().gateway()` | `Optional<ClaimGateway>`: the way into SkysongClaims, empty when it is not installed or too old |
 | `getClaimFeature().pricing()` | `Optional<ClaimPricing>`: what a Claim costs with its modifiers (`quote`), and Claim type modifiers (`setTypeModifier`, `removeTypeModifier`, `modifiersOf`) |
 | `getClaimFeature().sales()` | `Optional<ClaimSales>`: Claim asking prices (`prices()`), server sales (`sell`, `unsell`, `listed`), empty whenever `gateway()` is |
