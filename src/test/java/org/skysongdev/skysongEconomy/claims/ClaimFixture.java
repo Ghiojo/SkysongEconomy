@@ -1,5 +1,6 @@
 package org.skysongdev.skysongEconomy.claims;
 
+import org.skysongdev.skysongEconomy.api.claims.ClaimSaleChange;
 import org.skysongdev.skysongEconomy.character.CharacterRef;
 import org.skysongdev.skysongEconomy.prices.BaseValueRepository;
 import org.skysongdev.skysongEconomy.prices.PriceDatabase;
@@ -9,6 +10,8 @@ import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -32,7 +35,8 @@ final class ClaimFixture {
     final ClaimPrices prices = new ClaimPrices(storage, database, new PriceSettings(1), Clock.fixed(NOW, ZoneOffset.UTC));
     final InMemoryClaimListingRepository listingStorage = new InMemoryClaimListingRepository();
     final ClaimListings listings = new ClaimListings(listingStorage, Clock.fixed(NOW, ZoneOffset.UTC));
-    final ClaimSales sales = new ClaimSales(claims, prices, listings);
+    final List<ClaimSaleChange> saleChanges = new ArrayList<>();
+    final ClaimSales sales = new ClaimSales(claims, prices, listings, saleChanges::add, Clock.fixed(NOW, ZoneOffset.UTC));
 
     ClaimFixture() {
         database.set("architite_pound", "10");

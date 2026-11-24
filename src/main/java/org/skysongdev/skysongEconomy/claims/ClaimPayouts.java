@@ -16,11 +16,18 @@ import java.util.UUID;
 public final class ClaimPayouts {
     private final ClaimPayoutRepository repository;
     private final Wallet wallet;
+    private final ClaimPayoutEvents events;
     private final Map<UUID, List<PendingPayout>> byAccount = new HashMap<>();
 
     public ClaimPayouts(ClaimPayoutRepository repository, Wallet wallet) {
+        this(repository, wallet, ClaimPayoutEvents.NONE);
+    }
+
+    /** @param events told about every waiting share that gets paid */
+    public ClaimPayouts(ClaimPayoutRepository repository, Wallet wallet, ClaimPayoutEvents events) {
         this.repository = Objects.requireNonNull(repository, "repository");
         this.wallet = Objects.requireNonNull(wallet, "wallet");
+        this.events = Objects.requireNonNull(events, "events");
     }
 
     /** Loads every payout still owed. Call once at start-up. */
@@ -52,6 +59,7 @@ public final class ClaimPayouts {
                 byAccount.get(account).remove(payout);
                 repository.delete(payout.saleId(), account);
                 paid.add(payout);
+                events.paidOut(payout);
             }
         }
         if (byAccount.containsKey(account) && byAccount.get(account).isEmpty()) {

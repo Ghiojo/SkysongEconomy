@@ -3,6 +3,7 @@ package org.skysongdev.skysongEconomy.claims;
 import org.junit.jupiter.api.Test;
 import org.skysongdev.skysongEconomy.money.MapWallet;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -41,6 +42,21 @@ class ClaimPayoutsTest {
 
         assertEquals(List.of(rose), payouts.owed(ANNA.player()));
         assertEquals(List.of(rose), storage.saved);
+    }
+
+    @Test
+    void eachShareActuallyPaidIsReported() {
+        List<PendingPayout> heard = new ArrayList<>();
+        ClaimPayouts told = new ClaimPayouts(storage, wallet, heard::add);
+        told.owe(rose);
+        told.owe(oak);
+        wallet.refuseDeposits = true;
+        told.payOut(ANNA.player());
+        assertTrue(heard.isEmpty(), "nothing is reported while the wallet refuses");
+
+        wallet.refuseDeposits = false;
+        told.payOut(ANNA.player());
+        assertEquals(List.of(rose, oak), heard);
     }
 
     @Test

@@ -31,6 +31,7 @@ import org.skysongdev.skysongEconomy.data.database.SqlClaimPayoutRepository;
 import org.skysongdev.skysongEconomy.data.database.SqlClaimPriceRepository;
 import org.skysongdev.skysongEconomy.data.database.SqlClaimSaleRepository;
 import org.skysongdev.skysongEconomy.data.database.StorageException;
+import org.skysongdev.skysongEconomy.events.BukkitClaimEvents;
 import org.skysongdev.skysongEconomy.gui.ChatPrompts;
 import org.skysongdev.skysongEconomy.gui.MenuTheme;
 import org.skysongdev.skysongEconomy.gui.claim.ClaimBuyScreens;
@@ -141,7 +142,8 @@ public final class ClaimFeature implements AutoCloseable {
                 inputs.prices(), inputs.priceSettings(), Clock.systemUTC());
         ClaimListings listings = new ClaimListings(
                 new AsyncClaimListingRepository(new SqlClaimListingRepository(connections), writer), Clock.systemUTC());
-        ClaimSales sales = new ClaimSales(adapter, prices, listings);
+        BukkitClaimEvents claimEvents = new BukkitClaimEvents(plugin.getServer().getPluginManager());
+        ClaimSales sales = new ClaimSales(adapter, prices, listings, claimEvents, Clock.systemUTC());
         ClaimPricing pricing = new ClaimPricing(adapter, prices, inputs.modifiers().orElse(null), inputs.priceSettings(),
                 Clock.systemUTC());
         SignPriceUpdater signs = new SignPriceUpdater(adapter, sales, pricing, signText(inputs), logger::warning);
@@ -165,7 +167,8 @@ public final class ClaimFeature implements AutoCloseable {
         signs.redrawAll();
         plugin.getServer().getPluginManager().registerEvents(new ClaimChangeListener(sales, pricing, signs, logger), plugin);
         ClaimPayouts payouts = new ClaimPayouts(
-                new AsyncClaimPayoutRepository(new SqlClaimPayoutRepository(connections), writer), inputs.wallet());
+                new AsyncClaimPayoutRepository(new SqlClaimPayoutRepository(connections), writer), inputs.wallet(),
+                claimEvents);
         ClaimNotices notices = new ClaimNotices(plugin.getServer(), adapter, sales, payouts, inputs.wallet(),
                 inputs.messenger());
         plugin.getServer().getPluginManager().registerEvents(notices, plugin);

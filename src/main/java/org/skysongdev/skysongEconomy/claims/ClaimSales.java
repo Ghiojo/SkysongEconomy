@@ -1,10 +1,12 @@
 package org.skysongdev.skysongEconomy.claims;
 
 import org.jetbrains.annotations.Nullable;
+import org.skysongdev.skysongEconomy.api.claims.ClaimSaleChange;
 import org.skysongdev.skysongEconomy.character.CharacterRef;
 import org.skysongdev.skysongEconomy.prices.PriceException;
 
 import java.math.BigDecimal;
+import java.time.Clock;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -17,7 +19,8 @@ import java.util.function.Supplier;
 
 /**
  * The rules for pricing Claims and putting them on sale. Every change to a Claim's price or sale
- * goes through here, so the checks are in one place. Main thread only.
+ * goes through here, so the checks are in one place, and is told to the {@link ClaimSaleEvents}.
+ * Main thread only.
  * <ul>
  *     <li>Free Claims are never priced or sold.</li>
  *     <li>The server only sells Claims nobody owns, and only with a price.</li>
@@ -35,14 +38,24 @@ public final class ClaimSales {
     private final ClaimGateway claims;
     private final ClaimPrices prices;
     private final ClaimListings listings;
+    private final ClaimSaleEvents events;
+    private final Clock clock;
     private final List<Consumer<String>> listeners = new ArrayList<>();
     /** Claims changing hands right now, whose owners briefly being none is not an abandonment. */
     private final Set<String> transferring = new HashSet<>();
 
     public ClaimSales(ClaimGateway claims, ClaimPrices prices, ClaimListings listings) {
+        this(claims, prices, listings, ClaimSaleEvents.NONE, Clock.systemUTC());
+    }
+
+    /** @param events told about every change to a price or sale */
+    public ClaimSales(ClaimGateway claims, ClaimPrices prices, ClaimListings listings, ClaimSaleEvents events,
+                      Clock clock) {
         this.claims = Objects.requireNonNull(claims, "claims");
         this.prices = Objects.requireNonNull(prices, "prices");
         this.listings = Objects.requireNonNull(listings, "listings");
+        this.events = Objects.requireNonNull(events, "events");
+        this.clock = Objects.requireNonNull(clock, "clock");
     }
 
     /**
@@ -75,6 +88,7 @@ public final class ClaimSales {
         refuseFree(claim);
         BigDecimal value = prices.set(claim.id(), text, by);
         changed(claim.id());
+        report(ClaimSaleChange.Kind.PRICE_SET, claim.id(), Optional.empty());
         return value;
     }
 
@@ -90,12 +104,17 @@ public final class ClaimSales {
         if (!prices.remove(id)) {
             throw ClaimException.about("claims.no-price", id);
         }
+        Optional<CharacterRef> listedBy = listings.find(id).map(ClaimListing::listedBy);
         boolean wasListed = claims.find(id).filter(this::isOurs).map(claim -> {
             claims.setForSale(claim.id(), false);
             return true;
         }).orElse(false);
         listings.remove(id);
         changed(id);
+        if (wasListed) {
+            report(ClaimSaleChange.Kind.UNLISTED, id, listedBy);
+        }
+        report(ClaimSaleChange.Kind.PRICE_CLEARED, id, Optional.empty());
         return wasListed;
     }
 
@@ -124,10 +143,16 @@ public final class ClaimSales {
         } else {
             value = prices.value(claim.id()).orElseThrow(() -> ClaimException.about("claims.no-price", claim.id()));
         }
-        if (!isOurs(claim)) {
+        boolean wasOurs = isOurs(claim);
+        if (!wasOurs) {
             claims.setForSale(claim.id(), true);
         }
         changed(claim.id());
+        if (!wasOurs) {
+            report(ClaimSaleChange.Kind.SERVER_LISTED, claim.id(), Optional.empty());
+        } else if (text != null) {
+            report(ClaimSaleChange.Kind.PRICE_SET, claim.id(), Optional.empty());
+        }
         return value;
     }
 
@@ -154,6 +179,7 @@ public final class ClaimSales {
             claims.setForSale(claim.id(), true);
         }
         changed(claim.id());
+        report(ClaimSaleChange.Kind.OWNER_LISTED, claim.id(), Optional.of(owner));
         return value;
     }
 
@@ -178,9 +204,11 @@ public final class ClaimSales {
         if (!isOurs(claim)) {
             throw ClaimException.about("claims.not-for-sale", claim.id());
         }
+        Optional<CharacterRef> listedBy = listings.find(claim.id()).map(ClaimListing::listedBy);
         claims.setForSale(claim.id(), false);
         listings.remove(claim.id());
         changed(claim.id());
+        report(ClaimSaleChange.Kind.UNLISTED, claim.id(), listedBy);
     }
 
     /**
@@ -188,9 +216,11 @@ public final class ClaimSales {
      * goes back on sale at that price if its owners ever leave.
      */
     public void sold(String claimId) {
+        Optional<CharacterRef> listedBy = listings.find(claimId).map(ClaimListing::listedBy);
         claims.find(claimId).filter(this::isOurs).ifPresent(claim -> claims.setForSale(claim.id(), false));
         listings.remove(claimId);
         changed(claimId);
+        report(ClaimSaleChange.Kind.SOLD, claimId, listedBy);
     }
 
     /** @return every Claim SkysongEconomy has on sale */
@@ -207,9 +237,11 @@ public final class ClaimSales {
         if (transferring.contains(claimId)) {
             return false;
         }
+        Optional<CharacterRef> listedBy = listings.find(claimId).map(ClaimListing::listedBy);
         if (claims.find(claimId).filter(claim -> !claim.isOwned()).isPresent() && listings.remove(claimId)) {
             // Its sellers are gone: whoever buys it now buys it from the server.
             changed(claimId);
+            report(ClaimSaleChange.Kind.OWNER_LISTING_ENDED, claimId, listedBy);
             return false;
         }
         return claims.find(claimId)
@@ -218,14 +250,20 @@ public final class ClaimSales {
                 .map(claim -> {
                     claims.setForSale(claim.id(), true);
                     changed(claim.id());
+                    report(ClaimSaleChange.Kind.RELISTED, claim.id(), Optional.empty());
                     return true;
                 }).orElse(false);
     }
 
     /** A Claim was deleted in SkysongClaims: its price goes too. */
     public void deleted(String claimId) {
-        prices.remove(claimId);
-        listings.remove(claimId);
+        Optional<CharacterRef> listedBy = listings.find(claimId).map(ClaimListing::listedBy);
+        boolean hadPrice = prices.remove(claimId);
+        boolean hadListing = listings.remove(claimId);
+        if (hadPrice || hadListing) {
+            events.changed(new ClaimSaleChange(ClaimSaleChange.Kind.DELETED, claimId, Optional.empty(), listedBy,
+                    clock.instant()));
+        }
     }
 
     /**
@@ -256,6 +294,7 @@ public final class ClaimSales {
             if (claim.isEmpty() || claim.get().free()) {
                 prices.remove(id);
                 changed(id);
+                report(ClaimSaleChange.Kind.PRICE_CLEARED, id, Optional.empty());
                 changes.accept("Removed the price of " + id + ": "
                         + (claim.isEmpty() ? "SkysongClaims no longer has it" : "it is a Free Claim now"));
             }
@@ -264,6 +303,7 @@ public final class ClaimSales {
             if (prices.find(claim.id()).isEmpty() || claim.free()) {
                 claims.setForSale(claim.id(), false);
                 changed(claim.id());
+                report(ClaimSaleChange.Kind.UNLISTED, claim.id(), listings.find(claim.id()).map(ClaimListing::listedBy));
                 changes.accept("Took " + claim.id() + " off sale: it has no price");
             }
         }
@@ -271,6 +311,9 @@ public final class ClaimSales {
             Optional<ClaimView> claim = claims.find(listing.claimId());
             if (claim.isEmpty() || !isOurs(claim.get()) || !claim.get().isOwned()) {
                 listings.remove(listing.claimId());
+                if (claim.isPresent() && isOurs(claim.get())) {
+                    report(ClaimSaleChange.Kind.OWNER_LISTING_ENDED, listing.claimId(), Optional.of(listing.listedBy()));
+                }
                 changes.accept("Dropped the owner listing of " + listing.claimId() + ": "
                         + (claim.isPresent() && isOurs(claim.get()) ? "it has no owners left, so the server sells it" : "it is no longer on sale"));
             }
@@ -284,6 +327,10 @@ public final class ClaimSales {
 
     private void changed(String claimId) {
         listeners.forEach(listener -> listener.accept(claimId));
+    }
+
+    private void report(ClaimSaleChange.Kind kind, String claimId, Optional<CharacterRef> listedBy) {
+        events.changed(new ClaimSaleChange(kind, claimId, prices.value(claimId), listedBy, clock.instant()));
     }
 
     private ClaimView require(String claimId) {
