@@ -24,6 +24,7 @@ import org.skysongdev.skysongEconomy.trade.ExportQuote;
 import org.skysongdev.skysongEconomy.trade.ExportService;
 import org.skysongdev.skysongEconomy.trade.Ledger;
 import org.skysongdev.skysongEconomy.trade.LedgerSelections;
+import org.skysongdev.skysongEconomy.trade.SaleCancelledException;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -124,6 +125,11 @@ final class ExportsMenu extends PagedMenu<ExportsMenu.Choice> {
                     Placeholder.parsed("export", choice.offer().displayName()),
                     Placeholder.unparsed("batch", String.valueOf(choice.offer().batch())),
                     Placeholder.unparsed("price", screens.wallet().format(sold.price().price())));
+        } catch (SaleCancelledException cancelled) {
+            cancelled.reason().ifPresentOrElse(
+                    reason -> screens.messenger().send(player, "business.exports.sale-cancelled-reason",
+                            Placeholder.parsed("reason", reason)),
+                    () -> screens.messenger().send(player, cancelled));
         } catch (RefusedException refusal) {
             screens.messenger().send(player, refusal);
         }

@@ -313,6 +313,10 @@ business:
     not-enough: "<red>Each sale is exactly <white><batch></white> item(s), and you have <white><have></white>."
     pay-failed: "<red>Couldn't pay you <white><price></white>. Make room for the coins and try again; nothing was taken."
     sold: "<green>Sold <white><batch></white> item(s) to <export><green> for <white><price></white>."
+    # Another plugin stopped the sale (ExportSellEvent); nothing was paid or taken.
+    sale-cancelled: "<red>This export can't be sold right now."
+    # When it gives one: <reason> is its text.
+    sale-cancelled-reason: "<red><reason>"
     button:
       name: "<gold>Exports"
       lore:
