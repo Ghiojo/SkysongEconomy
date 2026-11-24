@@ -42,10 +42,14 @@ import java.util.function.Consumer;
  * Not thread-safe: use it on the main thread.
  */
 public final class TrainingService implements BusinessChangeListener {
-    /** Collaborators the service charges and rewards through. */
+    /**
+     * Collaborators the service charges and rewards through.
+     *
+     * @param events told when sessions start and finish
+     */
     public record Dependencies(BusinessService businesses, BusinessTypeRegistry types, BusinessTiers tiers,
                                AccessService access, ActivityLock activities, BusinessVaults vaults, Wallet wallet,
-                               DowntimeWallet downtime, SkillProgression progression) {
+                               DowntimeWallet downtime, SkillProgression progression, TrainingEvents events) {
     }
 
     private final TrainingSettings settings;
@@ -120,6 +124,7 @@ public final class TrainingService implements BusinessChangeListener {
         deps.activities().claim(player, activity(session));
         active.put(player, session);
         repository.save(session);
+        deps.events().started(business, session);
         return session;
     }
 
@@ -167,7 +172,9 @@ public final class TrainingService implements BusinessChangeListener {
         unlock(session);
         repository.delete(session.id());
         List<SkillTrained> skills = business.map(at -> reward(at, session.character())).orElse(List.of());
-        return new TrainingResult(session, skills);
+        TrainingResult result = new TrainingResult(session, skills);
+        deps.events().finished(business, result);
+        return result;
     }
 
     private List<SkillTrained> reward(Business business, CharacterRef character) {

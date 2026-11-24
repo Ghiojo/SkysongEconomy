@@ -6,6 +6,8 @@ import org.skysongdev.skysongEconomy.api.business.ModuleRemovalCause;
 import org.skysongdev.skysongEconomy.api.business.NpcRemovalCause;
 import org.skysongdev.skysongEconomy.api.business.NpcUpkeepInfo;
 import org.skysongdev.skysongEconomy.api.business.ShiftInfo;
+import org.skysongdev.skysongEconomy.api.business.SkillTrainedInfo;
+import org.skysongdev.skysongEconomy.api.business.TrainingInfo;
 import org.skysongdev.skysongEconomy.api.business.UpkeepChangeCause;
 import org.skysongdev.skysongEconomy.api.items.ItemCount;
 import org.skysongdev.skysongEconomy.api.nodes.HarvestCostInfo;
@@ -14,6 +16,9 @@ import org.skysongdev.skysongEconomy.business.module.ModulePick;
 import org.skysongdev.skysongEconomy.business.npc.BusinessNpc;
 import org.skysongdev.skysongEconomy.business.npc.BusinessNpcEvents;
 import org.skysongdev.skysongEconomy.business.shift.Shift;
+import org.skysongdev.skysongEconomy.business.training.SkillTrained;
+import org.skysongdev.skysongEconomy.business.training.TrainingSession;
+import org.skysongdev.skysongEconomy.character.ProficiencyTraining;
 import org.skysongdev.skysongEconomy.nodes.harvest.HarvestCost;
 import org.skysongdev.skysongEconomy.trade.ItemAmount;
 import org.skysongdev.skysongEconomy.upkeep.NpcUpkeep;
@@ -33,6 +38,16 @@ public final class PublicTypes {
     public static ShiftInfo shift(Shift shift) {
         return new ShiftInfo(shift.id(), shift.businessId(), shift.character(), shift.startedAt(), shift.required(),
                 shift.worked(), shift.pay().money(), shift.pay().tokens(), shift.vaultCut(), shift.finished());
+    }
+
+    public static TrainingInfo training(TrainingSession session) {
+        return new TrainingInfo(session.id(), session.businessId(), session.character(), session.startedAt(),
+                session.required(), session.price());
+    }
+
+    public static List<SkillTrainedInfo> skills(List<SkillTrained> skills) {
+        return skills.stream().map(skill -> new SkillTrainedInfo(skill.skillId(), skill.picks(), skill.xp(),
+                skill.proficiency() == ProficiencyTraining.TRAINED)).toList();
     }
 
     public static BusinessNpcInfo npc(BusinessNpc npc) {

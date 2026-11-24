@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -23,13 +24,27 @@ class BusinessVaultsTest {
     private final Business business = Business.create("smithy", "crafting", owner, null);
     private final Map<String, BigDecimal> saved = new HashMap<>();
     private final List<String> warnings = new ArrayList<>();
+    /** What other plugins are told about money leaving vaults. */
+    private final List<String> told = new ArrayList<>();
+    private final VaultEvents events = new VaultEvents() {
+        @Override
+        public void collected(Business at, UUID payee, BigDecimal amount) {
+            told.add("collected " + at.id() + " " + amount.toPlainString());
+        }
+
+        @Override
+        public void closed(Business at, Optional<UUID> payee, BigDecimal amount, boolean paid) {
+            told.add("closed " + at.id() + " " + amount.toPlainString() + (payee.isPresent() ? " to owner" : " to nobody")
+                    + (paid ? "" : " unpaid"));
+        }
+    };
     private MapWallet wallet;
     private BusinessVaults vaults;
 
     @BeforeEach
     void setUp() {
         wallet = new MapWallet();
-        vaults = new BusinessVaults(repository(), wallet, warnings::add);
+        vaults = new BusinessVaults(repository(), wallet, warnings::add, events);
     }
 
     private VaultRepository repository() {
@@ -164,5 +179,39 @@ class BusinessVaultsTest {
 
         assertEquals(1, warnings.size());
         assertTrue(warnings.get(0).contains("smithy"), warnings.get(0));
+    }
+
+    @Test
+    void tellsOtherPluginsWhenAVaultIsCollected() {
+        vaults.deposit(business, money("3"));
+
+        vaults.collect(business);
+
+        assertEquals(List.of("collected smithy 3"), told);
+    }
+
+    @Test
+    void aFailedCollectionIsNotReported() {
+        vaults.deposit(business, money("3"));
+        wallet.refuseDeposits = true;
+
+        assertThrows(BusinessException.class, () -> vaults.collect(business));
+
+        assertTrue(told.isEmpty());
+    }
+
+    @Test
+    void tellsOtherPluginsWhereADeletedBusinessesVaultWent() {
+        Business market = Business.create("market", "crafting", null, null);
+        Business empty = Business.create("empty", "crafting", owner, null);
+        vaults.deposit(business, money("4"));
+        vaults.deposit(market, money("5"));
+
+        vaults.deleted(business);
+        vaults.deleted(market);
+        vaults.deleted(empty);
+
+        assertEquals(List.of("closed smithy 4 to owner", "closed market 5 to nobody unpaid"), told,
+                "an empty vault tells nothing");
     }
 }

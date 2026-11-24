@@ -9,6 +9,7 @@ import org.skysongdev.skysongEconomy.money.Wallet;
 import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Consumer;
 
@@ -25,13 +26,23 @@ public final class BusinessVaults implements BusinessChangeListener {
     private final VaultRepository repository;
     private final Wallet wallet;
     private final Consumer<String> warnings;
+    private final VaultEvents events;
     private final Map<String, BigDecimal> balances = new HashMap<>();
 
-    /** @param warnings where to report money that could not be paid out */
-    public BusinessVaults(VaultRepository repository, Wallet wallet, Consumer<String> warnings) {
+    /**
+     * @param warnings where to report money that could not be paid out
+     * @param events   told when money leaves a vault
+     */
+    public BusinessVaults(VaultRepository repository, Wallet wallet, Consumer<String> warnings, VaultEvents events) {
         this.repository = repository;
         this.wallet = wallet;
         this.warnings = warnings;
+        this.events = events;
+    }
+
+    /** Vaults that tell nobody when money leaves them. */
+    public BusinessVaults(VaultRepository repository, Wallet wallet, Consumer<String> warnings) {
+        this(repository, wallet, warnings, VaultEvents.NONE);
     }
 
     /** Loads every saved balance. */
@@ -99,6 +110,7 @@ public final class BusinessVaults implements BusinessChangeListener {
             throw new BusinessException("business.vault.collect-failed", Map.of("amount", wallet.format(amount)));
         }
         setBalance(business, BigDecimal.ZERO);
+        events.collected(business, payee, amount);
         return amount;
     }
 
@@ -114,14 +126,20 @@ public final class BusinessVaults implements BusinessChangeListener {
     @Override
     public void deleted(Business business) {
         BigDecimal amount = balances.remove(business.id());
-        if (amount == null || amount.signum() == 0 || business.isServerOwned()) {
+        if (amount == null || amount.signum() == 0) {
+            return;
+        }
+        if (business.isServerOwned()) {
+            events.closed(business, Optional.empty(), amount, false);
             return;
         }
         CharacterRef owner = business.owner().orElseThrow();
-        if (!wallet.deposit(owner.player(), amount)) {
+        boolean paid = wallet.deposit(owner.player(), amount);
+        if (!paid) {
             warnings.accept("Could not pay the vault of deleted business " + business.id() + " (" + amount.toPlainString()
                     + ") to its owner " + owner + "; pay them by hand");
         }
+        events.closed(business, Optional.of(owner.player()), amount, paid);
     }
 
     private void setBalance(Business business, BigDecimal balance) {

@@ -180,6 +180,7 @@ public final class ShiftService implements BusinessChangeListener {
             throw new BusinessException("business.shift.pay-failed", Map.of("amount", deps.wallet().format(total.money())));
         }
         owed.forEach(this::remove);
+        deps.events().paid(business, character, owed, total, false);
         return total;
     }
 
@@ -194,7 +195,9 @@ public final class ShiftService implements BusinessChangeListener {
                 active.remove(shift.character().player());
                 unlock(shift);
             }
-            if (!pay(shift.character(), shift.pay())) {
+            if (pay(shift.character(), shift.pay())) {
+                deps.events().paid(business, shift.character(), List.of(shift), shift.pay(), true);
+            } else {
                 warnings.accept("Could not pay " + shift.pay().money().toPlainString() + " for a shift at deleted business "
                         + business.id() + " to " + shift.character() + "; pay them by hand");
             }

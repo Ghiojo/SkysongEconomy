@@ -58,6 +58,8 @@ class ShiftServiceTest {
     private final Map<UUID, Integer> downtime = new HashMap<>();
     private final List<String> startMessages = new ArrayList<>();
     private final List<Shift> ended = new ArrayList<>();
+    /** Every payment other plugins are told about: who, how many shifts, and whether the business was deleted. */
+    private final List<String> payments = new ArrayList<>();
     private final Map<UUID, Shift> savedShifts = new LinkedHashMap<>();
     private final List<String> warnings = new ArrayList<>();
     private boolean cancelStarts;
@@ -114,6 +116,13 @@ class ShiftServiceTest {
             @Override
             public void ended(Business at, Shift shift) {
                 ended.add(shift);
+            }
+
+            @Override
+            public void paid(Business at, CharacterRef paidTo, List<Shift> paidFor, ShiftPay total,
+                             boolean businessDeleted) {
+                payments.add(paidTo.profile() + " x" + paidFor.size() + " " + total.money().stripTrailingZeros().toPlainString()
+                        + (businessDeleted ? " deleted" : ""));
             }
         };
         return new ShiftService(SETTINGS, new ShiftService.Dependencies(businesses, TIERS, activities, vaults, tokens,
@@ -264,6 +273,36 @@ class ShiftServiceTest {
         assertMoney("5", wallet.balance(worker.player()));
         assertTrue(activities.current(worker.player()).isEmpty());
         assertTrue(warnings.isEmpty(), warnings.toString());
+    }
+
+    @Test
+    void tellsOtherPluginsWhatWasPaid() {
+        finishShift(worker);
+        finishShift(worker);
+
+        shifts.retrieve(business, worker);
+
+        assertEquals(List.of("Worker x2 10"), payments);
+    }
+
+    @Test
+    void aFailedPaymentIsNotReported() {
+        finishShift(worker);
+        wallet.refuseDeposits = true;
+
+        refusal(() -> shifts.retrieve(business, worker));
+
+        assertTrue(payments.isEmpty());
+    }
+
+    @Test
+    void aDeletedBusinessReportsEachShiftItPays() {
+        finishShift(owner);
+        shifts.start(business, worker, "x");
+
+        businesses.delete(business);
+
+        assertEquals(List.of("Owner x1 5 deleted", "Worker x1 5 deleted"), payments.stream().sorted().toList());
     }
 
     @Test
