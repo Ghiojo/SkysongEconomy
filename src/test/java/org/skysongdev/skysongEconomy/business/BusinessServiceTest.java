@@ -2,6 +2,8 @@ package org.skysongdev.skysongEconomy.business;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.skysongdev.skysongEconomy.api.business.BusinessChange;
+import org.skysongdev.skysongEconomy.api.business.BusinessChange.Kind;
 import org.skysongdev.skysongEconomy.business.tier.BusinessTiers;
 import org.skysongdev.skysongEconomy.business.tier.TierSettings;
 import org.skysongdev.skysongEconomy.business.type.BusinessType;
@@ -12,7 +14,9 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.IntStream;
@@ -435,5 +439,77 @@ class BusinessServiceTest {
         public Instant instant() {
             return now;
         }
+    }
+
+    /** Every change the service describes, in order. */
+    private List<BusinessChange> describedChanges() {
+        List<BusinessChange> changes = new ArrayList<>();
+        service.addListener(new BusinessChangeListener() {
+            @Override
+            public void described(BusinessChange change) {
+                changes.add(change);
+            }
+        });
+        return changes;
+    }
+
+    @Test
+    void describesCreationRenamingAndDeletionWithTheBusinessBeforeAndAfter() {
+        List<BusinessChange> changes = describedChanges();
+
+        Business business = service.create("smithy", "service", owner, BLOCK);
+        service.rename(business, "Rose Smithy");
+        service.delete(business);
+
+        assertEquals(List.of(Kind.CREATED, Kind.RENAMED, Kind.DELETED), changes.stream().map(BusinessChange::kind).toList());
+        assertEquals(Optional.empty(), changes.get(0).before());
+        assertEquals("smithy", changes.get(1).before().orElseThrow().displayName());
+        assertEquals("Rose Smithy", changes.get(1).after().orElseThrow().displayName());
+        assertEquals(Optional.empty(), changes.get(2).after());
+        assertEquals("smithy", changes.get(2).businessId());
+    }
+
+    @Test
+    void describesOwnersBlocksWorkersAndSkillPicks() {
+        Business business = service.create("smithy", "service", owner, BLOCK);
+        service.setTier(business, 2);
+        CharacterRef worker = character("Worker");
+        List<BusinessChange> changes = describedChanges();
+
+        service.hire(business, worker);
+        service.fire(business, worker);
+        service.pick(business, "martial");
+        service.clearPick(business, 1);
+        service.move(business, OTHER_BLOCK);
+        service.unplace(business);
+        service.giveToServer(business);
+        service.setOwner(business, owner);
+
+        assertEquals(List.of(Kind.WORKER_HIRED, Kind.WORKER_FIRED, Kind.SKILL_PICKED, Kind.SKILL_CLEARED, Kind.MOVED,
+                Kind.UNPLACED, Kind.GIVEN_TO_SERVER, Kind.OWNER_CHANGED), changes.stream().map(BusinessChange::kind).toList());
+        assertEquals(Optional.of(worker), changes.get(0).character());
+        assertEquals(Optional.of("martial"), changes.get(2).skill());
+        assertTrue(changes.get(6).after().orElseThrow().serverOwned());
+        assertEquals(Optional.of(owner), changes.get(7).after().orElseThrow().owner());
+    }
+
+    @Test
+    void aLowerTierDescribesEachWorkerAndPickItCost() {
+        Business business = service.create("smithy", "service", owner, BLOCK);
+        service.setTier(business, 2);
+        service.hire(business, character("First"));
+        service.hire(business, character("Second"));
+        service.pick(business, "martial");
+        service.pick(business, "medical");
+        List<BusinessChange> changes = describedChanges();
+
+        service.setTier(business, 1);
+
+        assertEquals(List.of(Kind.TIER_CHANGED, Kind.WORKER_FIRED, Kind.SKILL_CLEARED),
+                changes.stream().map(BusinessChange::kind).toList());
+        assertEquals(2, changes.get(0).before().orElseThrow().tier());
+        assertEquals(1, changes.get(0).after().orElseThrow().tier());
+        assertEquals(Optional.of(character("Second")), changes.get(1).character());
+        assertEquals(Optional.of("medical"), changes.get(2).skill());
     }
 }

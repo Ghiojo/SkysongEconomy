@@ -9,6 +9,7 @@ are in `api/business`, harvests in `api/nodes`, Claims in `api/claims`, piers an
 
 | Event | When | Cancellable | Getters |
 | --- | --- | --- | --- |
+| `BusinessChangeEvent` (in `api/business`) | A business was created, deleted, renamed, moved, unplaced, re-tiered, changed owner, was given to the server, picked or lost a skill, or hired or lost a worker. A lower tier fires `TIER_CHANGED`, then one `WORKER_FIRED` / `SKILL_CLEARED` per worker and pick it cost | No | `getChange()` (`BusinessChange`: `kind`, `before` and `after` as `BusinessInfo`, `character` for workers, `skill` for picks), `getKind()`, `getBusinessId()` |
 | `ShiftStartEvent` | A player is about to start a shift, after every check passed and before downtime is spent | Yes: nothing is spent and the player is told the shift was cancelled | `getBusiness()`, `getPlayer()`, `getCharacter()`, `getMessage()` (the business's shift message, placeholders filled in) |
 | `ShiftEndEvent` | A shift has its full time; its vault cut is in the vault and its pay can now be retrieved. The player may be offline. | No | `getBusiness()`, `getShift()` (`ShiftInfo`: character, times, `payMoney`, `payTokens`, `vaultCut`) |
 | `BusinessNpcCreateEvent` | A business created an NPC in one of its slots; it is waiting for its first setup | No | `getBusiness()`, `getNpc()` (`BusinessNpcInfo`: SkysongNPCs id, business, slot source, creation time) |
@@ -73,7 +74,8 @@ Rules for callers:
   the tables, so the in-memory state and the listeners stay right.
 - A refused action throws a `RefusedException` subclass; show it with the plugin's `Messenger` or read its
   `messageKey()` and `placeholders()`.
-- To react to business changes, implement `BusinessChangeListener` and call `system.businesses().addListener(...)`;
+- To react to business changes, implement `BusinessChangeListener` (`changed`, `deleted`, and `described` for what
+  exactly changed) and call `system.businesses().addListener(...)`;
   for nodes, `NodeChangeListener` and `NodeService.addListener`.
 - To keep a feature's blocks away from businesses, implement `BlockGuard` and call `businesses().addBlockGuard(...)`.
 
