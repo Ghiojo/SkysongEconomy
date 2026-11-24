@@ -1150,3 +1150,13 @@ piers:
   # When the plugin that seized it gave a reason: <reason> is its text.
   seized-reason: "<red>Your cargo was seized! <gray><reason>"
   reload-warnings: "<yellow><count> problem(s) in piers.yml, see the console."
+history:
+  # /se history: <filter> is what was asked for, such as "business tavern" or "all".
+  header: "<gold>Economy history <gray>(<filter>, page <page>, newest first):"
+  empty: "<gray>No records for <white><filter></white> on page <page>."
+  # One record. <ic> is the IC date (empty without SkysongCalendar), <who> the character who did it ("-" for
+  # nobody), <business> the business's name, <items> and <money> what moved ("-" for nothing).
+  entry: "<dark_gray><time> <ic></dark_gray> <white><kind></white> <gray><who> <business><dark_gray>:</dark_gray> <items> <dark_gray>|</dark_gray> <money>"
+  unknown-kind: "<red>There is no record kind <yellow><kind></yellow>. <gray>Kinds: <kinds>"
+  invalid-page: "<red>A page is a number from 1 to <max>, not <yellow><page></yellow>."
+  failed: "<red>The economy history could not be read; see the console."

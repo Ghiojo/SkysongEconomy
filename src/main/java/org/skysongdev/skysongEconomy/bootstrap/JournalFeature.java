@@ -7,6 +7,8 @@ import org.skysongdev.skysongEconomy.api.journal.EconomyJournal;
 import org.skysongdev.skysongEconomy.api.journal.EconomyRecordedEvent;
 import org.skysongdev.skysongEconomy.business.BusinessDirectory;
 import org.skysongdev.skysongEconomy.calendar.CalendarClock;
+import org.skysongdev.skysongEconomy.commands.SubCommand;
+import org.skysongdev.skysongEconomy.commands.journal.HistoryCommand;
 import org.skysongdev.skysongEconomy.config.ConfigException;
 import org.skysongdev.skysongEconomy.config.YamlFiles;
 import org.skysongdev.skysongEconomy.data.database.AsyncJournalRepository;
@@ -22,6 +24,8 @@ import org.skysongdev.skysongEconomy.journal.JournalService;
 import org.skysongdev.skysongEconomy.journal.JournalSettings;
 import org.skysongdev.skysongEconomy.journal.LedgerTradeNames;
 import org.skysongdev.skysongEconomy.journal.TradeNames;
+import org.skysongdev.skysongEconomy.messaging.Messenger;
+import org.skysongdev.skysongEconomy.money.Wallet;
 
 import java.time.Clock;
 import java.time.Duration;
@@ -40,14 +44,16 @@ import java.util.logging.Logger;
 public final class JournalFeature implements AutoCloseable {
     private final Optional<EconomyRecorder> recorder;
     private final Optional<JournalService> journal;
+    private final List<SubCommand> commands;
     /** Closed in reverse order on shutdown. */
     private final List<AutoCloseable> resources;
     private final Logger logger;
 
     private JournalFeature(Optional<EconomyRecorder> recorder, Optional<JournalService> journal,
-                           List<AutoCloseable> resources, Logger logger) {
+                           List<SubCommand> commands, List<AutoCloseable> resources, Logger logger) {
         this.recorder = recorder;
         this.journal = journal;
+        this.commands = List.copyOf(commands);
         this.resources = List.copyOf(resources);
         this.logger = logger;
     }
@@ -57,15 +63,16 @@ public final class JournalFeature implements AutoCloseable {
      * the default: record everything, forever.
      *
      * @param businesses the business system, for business and ledger names; empty when businesses are off
+     * @param wallet     how {@code /se history} writes amounts of money
      */
     public static JournalFeature start(JavaPlugin plugin, YamlFiles configFiles, DatabaseSettings database,
                                        CalendarClock calendar, Optional<BusinessSystem> businesses,
-                                       MaterialIdResolver materialIds) {
+                                       MaterialIdResolver materialIds, Messenger messenger, Wallet wallet) {
         Logger logger = plugin.getLogger();
         JournalSettings settings = read(configFiles, logger);
         if (!settings.enabled()) {
             logger.info("The economy journal is off (" + JournalSettings.FILE + "): nothing is recorded");
-            return new JournalFeature(Optional.empty(), Optional.empty(), List.of(), logger);
+            return new JournalFeature(Optional.empty(), Optional.empty(), List.of(), List.of(), logger);
         }
         List<AutoCloseable> resources = new ArrayList<>();
         ConnectionProvider connections = new ConnectionProvider(database, logger);
@@ -86,7 +93,7 @@ public final class JournalFeature implements AutoCloseable {
             // Numbering again from 1 would clash with saved records, so record nothing this run.
             logger.log(Level.SEVERE, "The economy journal could not be read, so nothing is recorded until the "
                     + "database is reachable and the plugin restarts", e);
-            return new JournalFeature(Optional.empty(), Optional.empty(), resources, logger);
+            return new JournalFeature(Optional.empty(), Optional.empty(), List.of(), resources, logger);
         }
         if (settings.keepDays() > 0) {
             repository.deleteBefore(Clock.systemUTC().instant().minus(Duration.ofDays(settings.keepDays())));
@@ -97,7 +104,8 @@ public final class JournalFeature implements AutoCloseable {
                 task -> plugin.getServer().getScheduler().runTask(plugin, task));
         plugin.getServer().getServicesManager().register(EconomyJournal.class, journal, plugin, ServicePriority.Normal);
         resources.add(() -> plugin.getServer().getServicesManager().unregister(EconomyJournal.class, journal));
-        return new JournalFeature(Optional.of(recorder), Optional.of(journal), resources, logger);
+        return new JournalFeature(Optional.of(recorder), Optional.of(journal),
+                List.of(new HistoryCommand(journal, messenger, wallet, logger)), resources, logger);
     }
 
     private static JournalSettings read(YamlFiles configFiles, Logger logger) {
@@ -118,6 +126,11 @@ public final class JournalFeature implements AutoCloseable {
     /** @return what reads the journal; empty when it is off */
     public Optional<JournalService> journal() {
         return journal;
+    }
+
+    /** @return the {@code /se history} command; none while the journal is off */
+    public List<SubCommand> commands() {
+        return commands;
     }
 
     /** Writes the records still queued, then closes the database connection. */

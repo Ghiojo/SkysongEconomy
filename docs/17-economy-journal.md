@@ -121,6 +121,14 @@ applies the same filters to one record, for plugins that filter `EconomyRecorded
 `data/database/JournalSql` turns a query into one parameterised SELECT; it is unit tested against the same cases as
 `matches`.
 
+## `/se history`
+
+Staff read the journal in game with `/se history [business <id> | pier <id> | player <name> | kind <kind>] [page]`
+(permission `skysongeconomy.history`): ten records a page, newest first, each as real time, IC date, kind, the
+character who did it, business, items and money. The parsing and the line are `journal/HistoryRequest` and
+`journal/HistoryLine` (unit tested); `commands/journal/HistoryCommand` reads through `EconomyJournal`, so the chat
+lines arrive on the main thread when the database answers. The texts are under `history` in `messages.yml`.
+
 ## Configuration
 
 `journal.yml`: `enabled` (default `true`) and `keep-days` (default `0`, forever). See the

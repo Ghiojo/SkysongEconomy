@@ -153,6 +153,18 @@ Permission `skysongeconomy.piers.admin`. See [Import piers](16-import-piers.md).
 | `modifier remove <pier> <modifier>` | Removes one set by a command or plugin (one from `piers.yml` can only be replaced) |
 | `reload` | Reads `piers.yml` again; changes made by commands and plugins stay |
 
+## `/se history`: the economy journal (staff)
+
+Permission `skysongeconomy.history`. Only there while the [economy journal](17-economy-journal.md) is on.
+
+| Command | What it does |
+| --- | --- |
+| `/se history [page]` | The newest records, ten a page: real time, IC date, kind, who, business, items and money |
+| `/se history business <id> [page]` | Only that business's records |
+| `/se history pier <id> [page]` | Only imports to that pier |
+| `/se history player <name> [page]` | Records the player did, or paid or received money in (their characters' records too) |
+| `/se history kind <kind> [page]` | Only one record kind, such as `import-ordered` or `claim-bought` (tab completes) |
+
 ## Permissions
 
 All are declared in `src/main/resources/plugin.yml`.
@@ -178,6 +190,7 @@ All are declared in `src/main/resources/plugin.yml`.
 | `skysongeconomy.claims.buy` | everyone | `/se claim buy` and the Buy button on Claim signs |
 | `skysongeconomy.claims.sell` | everyone | `/se claim sell` and `unsell` on your own Claims, and the Sell button on Claim signs |
 | `skysongeconomy.piers.admin` | op | Every `/se pier` command |
+| `skysongeconomy.history` | op | `/se history` |
 | `skysongeconomy.*` | op | All of the above |
 
 Players use most features through menus, not commands: right-click a business block or a node. Those menus check
