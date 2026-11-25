@@ -210,6 +210,16 @@ public void onClaimPurchase(ClaimPurchaseEvent event) {
 }
 ```
 
+### Other Claim events
+
+- `ClaimPayoutEvent` fires when a seller's share that waited (`sellerPaidLater`) is paid into their balance, usually
+  as they join: `getAccount()`, `getClaimId()`, `getSaleId()` (the `ClaimSale` id), `getAmount()`, `getSoldAt()`.
+- `ClaimSaleChangeEvent` fires after every change to a Claim's asking price or to whether SkysongEconomy has it on
+  sale. `getChange()` gives a `ClaimSaleChange`: `kind`, `claimId`, `price` (the asking price after the change, empty
+  when it has none), `listedBy` (the owner listing involved) and `at`. The kinds are `PRICE_SET`, `PRICE_CLEARED`,
+  `SERVER_LISTED`, `OWNER_LISTED`, `UNLISTED`, `SOLD`, `OWNER_LISTING_ENDED`, `RELISTED` and `DELETED`. A sale fires
+  `SOLD` here as well as `ClaimPurchaseEvent`.
+
 ## The gateway
 
 The Claim rules live in the pure package `claims/` and only see SkysongClaims through `claims/ClaimGateway`:

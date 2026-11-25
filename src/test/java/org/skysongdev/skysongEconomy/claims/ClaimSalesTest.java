@@ -251,4 +251,52 @@ class ClaimSalesTest {
         assertTrue(fixture.listings.all().isEmpty());
         assertFalse(claim("rose_house").isForSale());
     }
+
+    private List<String> heard() {
+        return fixture.saleChanges.stream().map(change -> change.kind() + " " + change.claimId()
+                + change.price().map(price -> " " + price.toPlainString()).orElse("")
+                + change.listedBy().map(owner -> " by " + owner.profile()).orElse("")).toList();
+    }
+
+    @Test
+    void everyServerSaleChangeIsReportedWithThePriceAfterIt() {
+        sales.setPrice("rose_house", "2000", "Staff");
+        sales.sell("rose_house", null, "Staff");
+        sales.sell("rose_house", "2500", "Staff");
+        sales.unsell("rose_house");
+        sales.sell("rose_house", null, "Staff");
+        sales.clearPrice("rose_house");
+
+        assertEquals(List.of("PRICE_SET rose_house 2000.0", "SERVER_LISTED rose_house 2000.0",
+                "PRICE_SET rose_house 2500.0", "UNLISTED rose_house 2500.0", "SERVER_LISTED rose_house 2500.0",
+                "UNLISTED rose_house", "PRICE_CLEARED rose_house"), heard());
+        assertEquals(NOW, fixture.saleChanges.get(0).at());
+    }
+
+    @Test
+    void ownerListingsReportWhoListedWhenTheyEnd() {
+        claims.addOwner("rose_house", ANNA);
+        claims.addOwner("oak_house", BRAM);
+        sales.listByOwner(ANNA, "rose_house", "3000");
+        sales.listByOwner(BRAM, "oak_house", "1000");
+        sales.sold("rose_house");
+        claims.removeOwner("oak_house", BRAM);
+        sales.abandoned("oak_house");
+        sales.deleted("oak_house");
+        sales.deleted("hovel_1");
+
+        assertEquals(List.of("OWNER_LISTED rose_house 3000.0 by Anna", "OWNER_LISTED oak_house 1000.0 by Bram",
+                "SOLD rose_house 3000.0 by Anna", "OWNER_LISTING_ENDED oak_house 1000.0 by Bram",
+                "DELETED oak_house"), heard(), "a Claim with no price or listing reports nothing when deleted");
+    }
+
+    @Test
+    void anAbandonedPricedClaimIsReportedRelisted() {
+        sales.setPrice("rose_house", "2000", "Staff");
+        claims.addOwner("rose_house", ANNA);
+        claims.removeOwner("rose_house", ANNA);
+        sales.abandoned("rose_house");
+
+        assertEquals(List.of("PRICE_SET rose_house 2000.0", "RELISTED rose_house 2000.0"), heard());
+    }
 }
