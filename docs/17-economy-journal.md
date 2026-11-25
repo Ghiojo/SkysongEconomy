@@ -90,6 +90,14 @@ treat the festival as its own book.
 
 New kinds and keys may be added; readers skip what they don't know.
 
+## Building against SkysongEconomy
+
+Another plugin reads the journal and the events in `api/` with
+`compileOnly 'com.github.Ghiojo:SkysongEconomy:<tag>'` from JitPack and `depend: [SkysongEconomy]` (or `softdepend`)
+in its `plugin.yml`. The public API is the `api` packages only; anything else may change without notice. Version 1.1
+is the first with the stable `api` packages and the journal. JitPack builds from a git tag, so a version can only be
+used once it is tagged.
+
 ## Reading the journal
 
 `api.journal.EconomyJournal` is registered with Bukkit's services manager while the journal is on (`load` returns
