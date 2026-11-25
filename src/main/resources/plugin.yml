@@ -80,6 +80,9 @@ permissions:
   skysongeconomy.piers.admin:
     description: Allows the /se pier commands, to see receiving piers, open or close them and change their loss chance and modifiers
     default: op
+  skysongeconomy.history:
+    description: Allows /se history, to read the economy journal (every movement of money and goods)
+    default: op
   skysongeconomy.*:
     description: Gives access to all SkysongEconomy features
     default: op
@@ -103,3 +106,4 @@ permissions:
       skysongeconomy.claims.buy: true
       skysongeconomy.claims.sell: true
       skysongeconomy.piers.admin: true
+      skysongeconomy.history: true

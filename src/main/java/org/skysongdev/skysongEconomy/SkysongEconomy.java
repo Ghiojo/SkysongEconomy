@@ -103,7 +103,7 @@ public final class SkysongEconomy extends JavaPlugin {
                 pierFeature.piers(), messenger, messages);
         // The economy journal listens before nodes load, which can give farm primers back.
         journalFeature = JournalFeature.start(this, configFiles, databaseSettings(), calendar, businessFeature.system(),
-                materialIds);
+                materialIds, messenger, wallet);
         nodeFeature = NodeFeature.start(this, configFiles, databaseSettings(), businessFeature.system(), skysongStats,
                 wallet, trade, calendar, messenger);
         // Module files are checked against SkysongNPCs, and business NPCs need the modules' slots:
@@ -224,6 +224,7 @@ public final class SkysongEconomy extends JavaPlugin {
         upkeepFeature.commands().forEach(executor::register);
         claimFeature.commands().forEach(executor::register);
         pierFeature.commands().forEach(executor::register);
+        journalFeature.commands().forEach(executor::register);
         command.setExecutor(executor);
     }
 
