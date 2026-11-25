@@ -14,6 +14,7 @@ import org.skysongdev.skysongEconomy.api.items.ItemCount;
 import org.skysongdev.skysongEconomy.api.journal.EconomyRecord;
 import org.skysongdev.skysongEconomy.api.journal.ImportRoll;
 import org.skysongdev.skysongEconomy.api.journal.JournalIcDate;
+import org.skysongdev.skysongEconomy.api.journal.JournalQuery;
 import org.skysongdev.skysongEconomy.api.journal.MoneyAccount;
 import org.skysongdev.skysongEconomy.api.journal.MoneyMovement;
 import org.skysongdev.skysongEconomy.api.journal.RecordItem;
@@ -316,6 +317,11 @@ class EconomyRecorderTest {
         @Override
         public void save(EconomyRecord record) {
             records.add(record);
+        }
+
+        @Override
+        public List<EconomyRecord> query(JournalQuery query) {
+            return records.stream().filter(query::matches).toList();
         }
 
         @Override

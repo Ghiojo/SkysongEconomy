@@ -1,12 +1,14 @@
 package org.skysongdev.skysongEconomy.data.database;
 
 import org.skysongdev.skysongEconomy.api.journal.EconomyRecord;
+import org.skysongdev.skysongEconomy.api.journal.JournalQuery;
 import org.skysongdev.skysongEconomy.journal.JournalRepository;
 
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -37,6 +39,22 @@ public final class AsyncJournalRepository implements JournalRepository {
         if (drainQueued.compareAndSet(false, true)) {
             writer.run("save economy journal records", this::drain);
         }
+    }
+
+    /** Reads on the calling thread, without waiting for queued records; prefer {@link #queryAfterWrites}. */
+    @Override
+    public List<EconomyRecord> query(JournalQuery query) {
+        return delegate.query(query);
+    }
+
+    /**
+     * Reads on the writer's thread, after every record queued so far is written, so the result includes
+     * records made just before.
+     *
+     * @return the records, completed on the writer's thread
+     */
+    public CompletableFuture<List<EconomyRecord>> queryAfterWrites(JournalQuery query) {
+        return writer.read(() -> delegate.query(query));
     }
 
     @Override

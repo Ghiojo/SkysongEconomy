@@ -1,7 +1,9 @@
 package org.skysongdev.skysongEconomy.bootstrap;
 
+import org.bukkit.plugin.ServicePriority;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.skysongdev.skysongEconomy.api.business.Businesses;
+import org.skysongdev.skysongEconomy.api.journal.EconomyJournal;
 import org.skysongdev.skysongEconomy.api.journal.EconomyRecordedEvent;
 import org.skysongdev.skysongEconomy.business.BusinessDirectory;
 import org.skysongdev.skysongEconomy.calendar.CalendarClock;
@@ -16,6 +18,7 @@ import org.skysongdev.skysongEconomy.data.database.StorageException;
 import org.skysongdev.skysongEconomy.events.JournalListener;
 import org.skysongdev.skysongEconomy.items.MaterialIdResolver;
 import org.skysongdev.skysongEconomy.journal.EconomyRecorder;
+import org.skysongdev.skysongEconomy.journal.JournalService;
 import org.skysongdev.skysongEconomy.journal.JournalSettings;
 import org.skysongdev.skysongEconomy.journal.LedgerTradeNames;
 import org.skysongdev.skysongEconomy.journal.TradeNames;
@@ -29,18 +32,22 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * The economy journal: {@code journal.yml}, the {@code economy_journal} table, and the listener that
- * records SkysongEconomy's own events. Start it before the features whose start-up can record
+ * The economy journal: {@code journal.yml}, the {@code economy_journal} table, the listener that
+ * records SkysongEconomy's own events, and the {@link EconomyJournal} service other plugins
+ * {@code load(EconomyJournal.class)} to read it. Start it before the features whose start-up can record
  * something (farm primers given back when nodes load).
  */
 public final class JournalFeature implements AutoCloseable {
     private final Optional<EconomyRecorder> recorder;
+    private final Optional<JournalService> journal;
     /** Closed in reverse order on shutdown. */
     private final List<AutoCloseable> resources;
     private final Logger logger;
 
-    private JournalFeature(Optional<EconomyRecorder> recorder, List<AutoCloseable> resources, Logger logger) {
+    private JournalFeature(Optional<EconomyRecorder> recorder, Optional<JournalService> journal,
+                           List<AutoCloseable> resources, Logger logger) {
         this.recorder = recorder;
+        this.journal = journal;
         this.resources = List.copyOf(resources);
         this.logger = logger;
     }
@@ -58,7 +65,7 @@ public final class JournalFeature implements AutoCloseable {
         JournalSettings settings = read(configFiles, logger);
         if (!settings.enabled()) {
             logger.info("The economy journal is off (" + JournalSettings.FILE + "): nothing is recorded");
-            return new JournalFeature(Optional.empty(), List.of(), logger);
+            return new JournalFeature(Optional.empty(), Optional.empty(), List.of(), logger);
         }
         List<AutoCloseable> resources = new ArrayList<>();
         ConnectionProvider connections = new ConnectionProvider(database, logger);
@@ -79,14 +86,18 @@ public final class JournalFeature implements AutoCloseable {
             // Numbering again from 1 would clash with saved records, so record nothing this run.
             logger.log(Level.SEVERE, "The economy journal could not be read, so nothing is recorded until the "
                     + "database is reachable and the plugin restarts", e);
-            return new JournalFeature(Optional.empty(), resources, logger);
+            return new JournalFeature(Optional.empty(), Optional.empty(), resources, logger);
         }
         if (settings.keepDays() > 0) {
             repository.deleteBefore(Clock.systemUTC().instant().minus(Duration.ofDays(settings.keepDays())));
         }
         plugin.getServer().getPluginManager().registerEvents(
                 new JournalListener(recorder, materialIds::fromItem, logger), plugin);
-        return new JournalFeature(Optional.of(recorder), resources, logger);
+        JournalService journal = new JournalService(repository::queryAfterWrites, recorder::latestSequence,
+                task -> plugin.getServer().getScheduler().runTask(plugin, task));
+        plugin.getServer().getServicesManager().register(EconomyJournal.class, journal, plugin, ServicePriority.Normal);
+        resources.add(() -> plugin.getServer().getServicesManager().unregister(EconomyJournal.class, journal));
+        return new JournalFeature(Optional.of(recorder), Optional.of(journal), resources, logger);
     }
 
     private static JournalSettings read(YamlFiles configFiles, Logger logger) {
@@ -102,6 +113,11 @@ public final class JournalFeature implements AutoCloseable {
     /** @return what records the journal; empty when it is off */
     public Optional<EconomyRecorder> recorder() {
         return recorder;
+    }
+
+    /** @return what reads the journal; empty when it is off */
+    public Optional<JournalService> journal() {
+        return journal;
     }
 
     /** Writes the records still queued, then closes the database connection. */
