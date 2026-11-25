@@ -1,7 +1,11 @@
 package org.skysongdev.skysongEconomy.trade;
 
+import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
+import org.skysongdev.skysongEconomy.api.items.ItemCount;
+import org.skysongdev.skysongEconomy.api.trade.ExportSale;
+import org.skysongdev.skysongEconomy.business.Business;
 import org.skysongdev.skysongEconomy.business.BusinessException;
 import org.skysongdev.skysongEconomy.business.access.AccessGroup;
 import org.skysongdev.skysongEconomy.business.access.Permission;
@@ -17,9 +21,11 @@ import org.skysongdev.skysongEconomy.trade.ExportBatch.Take;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -35,8 +41,29 @@ class ExportServiceTest {
     private static final Ledger LEDGER = TradeFixture.SMUGGLERS;
 
     private final TradeFixture trade = new TradeFixture();
+    private final RecordingExportEvents events = new RecordingExportEvents();
     private final ExportService exports = new ExportService(trade.settings, trade.selections, trade.access, trade.pricing,
-            id -> trade.goodTypes.getOrDefault(id, Set.of()), trade.wallet);
+            id -> trade.goodTypes.getOrDefault(id, Set.of()), trade.wallet, events, trade.clock);
+
+    /** Remembers every sale it is told about, and cancels sales while {@link #cancel} is set. */
+    private static final class RecordingExportEvents implements ExportEvents {
+        final List<ExportSale> selling = new ArrayList<>();
+        final List<ExportSale> sold = new ArrayList<>();
+        @Nullable ExportEvents.Verdict cancel;
+
+        @Override
+        public Verdict selling(Business business, ExportSale sale) {
+            selling.add(sale);
+            return cancel != null ? cancel : Verdict.ALLOW;
+        }
+
+        @Override
+        public void sold(Business business, ExportSale sale) {
+            assertEquals(List.of(sale), selling.subList(selling.size() - 1, selling.size()),
+                    "sold follows selling with the same sale");
+            sold.add(sale);
+        }
+    }
 
     private static String refusal(Executable action) {
         return assertThrows(BusinessException.class, action).messageKey();
@@ -115,5 +142,63 @@ class ExportServiceTest {
         assertEquals("business.exports.pay-failed", refusal(() -> exports.sell(trade.shop, TradeFixture.OWNER, LEDGER, SWORDS,
                 List.of(new Stack(0, "sword", 3)), removed::addAll)));
         assertTrue(removed.isEmpty());
+    }
+
+    @Test
+    void tellsOtherPluginsWhatIsSoldBeforeAndAfter() {
+        ExportOffer tagged = new ExportOffer("swords", "Swords", "IRON_SWORD", List.of(),
+                new ExportOffer.Target.Item("sword"), 3, PriceExpression.parse("{base} * 0.5"), Set.of("contraband"));
+        List<Stack> inventory = List.of(new Stack(0, "sword", 2), new Stack(4, "sword", 2));
+
+        exports.sell(trade.shop, TradeFixture.OWNER, LEDGER, tagged, inventory, takes -> { });
+
+        assertEquals(1, events.sold.size());
+        ExportSale sale = events.sold.get(0);
+        assertEquals(trade.shop.id(), sale.businessId());
+        assertEquals(LEDGER.id(), sale.ledgerId());
+        assertEquals("swords", sale.exportId());
+        assertEquals(TradeFixture.OWNER, sale.seller());
+        assertEquals(List.of(new ItemCount("sword", 3)), sale.items(), "one entry per material");
+        assertEquals(0, new BigDecimal("15").compareTo(sale.price().base()), "the export's price before modifiers");
+        assertEquals(0, new BigDecimal("15").compareTo(sale.price().paid()));
+        assertEquals(TradeFixture.NOW, sale.soldAt());
+        assertTrue(sale.hasTag("contraband"));
+    }
+
+    @Test
+    void eachSaleHasItsOwnId() {
+        List<Stack> inventory = List.of(new Stack(0, "sword", 6));
+
+        exports.sell(trade.shop, TradeFixture.OWNER, LEDGER, SWORDS, inventory, takes -> { });
+        exports.sell(trade.shop, TradeFixture.OWNER, LEDGER, SWORDS, inventory, takes -> { });
+
+        assertNotEquals(events.sold.get(0).id(), events.sold.get(1).id());
+    }
+
+    @Test
+    void aCancelledSalePaysAndTakesNothing() {
+        events.cancel = ExportEvents.Verdict.cancel("<red>The harbour is closed");
+        List<Take> removed = new ArrayList<>();
+
+        SaleCancelledException cancelled = assertThrows(SaleCancelledException.class, () -> exports.sell(trade.shop,
+                TradeFixture.OWNER, LEDGER, SWORDS, List.of(new Stack(0, "sword", 3)), removed::addAll));
+
+        assertEquals(Optional.of("<red>The harbour is closed"), cancelled.reason());
+        assertEquals("business.exports.sale-cancelled", cancelled.messageKey());
+        assertTrue(removed.isEmpty());
+        assertEquals(0, trade.wallet.balance(TradeFixture.OWNER.player()).signum());
+        assertTrue(events.sold.isEmpty());
+    }
+
+    @Test
+    void refusedOrUnpaidSalesAreNotReportedAsSold() {
+        assertEquals("business.exports.not-enough", refusal(() -> exports.sell(trade.shop, TradeFixture.OWNER, LEDGER,
+                SWORDS, List.of(new Stack(0, "sword", 1)), takes -> { })));
+        assertTrue(events.selling.isEmpty(), "checks run before other plugins are asked");
+
+        trade.wallet.refuseDeposits = true;
+        assertEquals("business.exports.pay-failed", refusal(() -> exports.sell(trade.shop, TradeFixture.OWNER, LEDGER,
+                SWORDS, List.of(new Stack(0, "sword", 3)), takes -> { })));
+        assertTrue(events.sold.isEmpty());
     }
 }

@@ -58,6 +58,7 @@ import org.skysongdev.skysongEconomy.data.database.SqlTokenRepository;
 import org.skysongdev.skysongEconomy.data.database.SqlTrainingRepository;
 import org.skysongdev.skysongEconomy.data.database.SqlVaultRepository;
 import org.skysongdev.skysongEconomy.data.database.StorageException;
+import org.skysongdev.skysongEconomy.events.BukkitExportEvents;
 import org.skysongdev.skysongEconomy.events.BukkitShiftEvents;
 import org.skysongdev.skysongEconomy.gui.ChatPrompts;
 import org.skysongdev.skysongEconomy.gui.MenuListener;
@@ -195,7 +196,7 @@ public final class BusinessFeature implements AutoCloseable {
                 new AsyncDeliveryRepository(new SqlDeliveryRepository(connections), writer), Clock.systemUTC(),
                 new SecureRandom(), logger::warning);
         ExportService exports = new ExportService(settings.economyLogistics(), ledgerSelections, access, pricing,
-                trade.goodTypes(), wallet);
+                trade.goodTypes(), wallet, new BukkitExportEvents(events), Clock.systemUTC());
         businesses.addListener(new BusinessChangeListener() {
             @Override
             public void deleted(Business business) {
