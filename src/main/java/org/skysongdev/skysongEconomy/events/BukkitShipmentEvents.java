@@ -7,7 +7,12 @@ import org.skysongdev.skysongEconomy.api.piers.Shipment;
 import org.skysongdev.skysongEconomy.api.piers.ShipmentArriveEvent;
 import org.skysongdev.skysongEconomy.api.piers.ShipmentCollectedEvent;
 import org.skysongdev.skysongEconomy.api.piers.ShipmentOrderEvent;
+import org.skysongdev.skysongEconomy.api.piers.ShipmentOrderedEvent;
 import org.skysongdev.skysongEconomy.api.piers.ShipmentOutcome;
+import org.skysongdev.skysongEconomy.api.piers.ShipmentRefundedEvent;
+import org.skysongdev.skysongEconomy.api.trade.TradePrice;
+import org.skysongdev.skysongEconomy.business.Business;
+import org.skysongdev.skysongEconomy.business.BusinessDirectory;
 import org.skysongdev.skysongEconomy.trade.delivery.ShipmentEvents;
 
 import java.util.List;
@@ -24,9 +29,9 @@ public final class BukkitShipmentEvents implements ShipmentEvents {
     }
 
     @Override
-    public Verdict ordering(Shipment shipment) {
+    public Verdict ordering(Shipment shipment, TradePrice price) {
         ShipmentOrderEvent event = new ShipmentOrderEvent(shipment, shipment.pierId().flatMap(piers::find),
-                Bukkit.getPlayer(shipment.orderedBy().player()));
+                Bukkit.getPlayer(shipment.orderedBy().player()), price);
         plugins.callEvent(event);
         return event.isCancelled() ? Verdict.cancel(event.getCancelMessage().orElse(null)) : Verdict.ALLOW;
     }
@@ -43,6 +48,18 @@ public final class BukkitShipmentEvents implements ShipmentEvents {
     public void collected(Arrival arrival, Outcome outcome) {
         plugins.callEvent(new ShipmentCollectedEvent(arrival.shipment(), arrival.pier(), arrival.collector(),
                 outcome.seized() ? ShipmentOutcome.SEIZED : ShipmentOutcome.DELIVERED,
-                outcome.seized() ? List.of() : outcome.items(), arrival.lossChance(), arrival.lostByRoll()));
+                outcome.seized() ? List.of() : outcome.items(), arrival.lossChance(), arrival.lostByRoll(),
+                arrival.items(), outcome.seized() ? outcome.seizeMessage().orElse(null) : null));
+    }
+
+    @Override
+    public void ordered(Business business, Shipment shipment, TradePrice price) {
+        plugins.callEvent(new ShipmentOrderedEvent(BusinessDirectory.info(business), shipment,
+                shipment.pierId().flatMap(piers::find), price, Bukkit.getPlayer(shipment.orderedBy().player())));
+    }
+
+    @Override
+    public void refunded(Business business, Shipment shipment, boolean paidBack) {
+        plugins.callEvent(new ShipmentRefundedEvent(BusinessDirectory.info(business), shipment, paidBack));
     }
 }

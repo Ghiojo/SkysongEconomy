@@ -3,6 +3,7 @@ package org.skysongdev.skysongEconomy.api.piers;
 import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.skysongdev.skysongEconomy.character.CharacterRef;
 
 import java.math.BigDecimal;
@@ -25,15 +26,20 @@ public final class ShipmentCollectedEvent extends Event {
     private final List<ShipmentItem> items;
     private final BigDecimal lossChance;
     private final boolean lostByRoll;
+    private final List<ShipmentItem> arrivedItems;
+    private final @Nullable String seizeMessage;
 
     /**
      * @param items      what was handed over; empty when seized
      * @param lossChance the pier's final loss chance for this shipment
-     * @param lostByRoll whether the roll lost it, whatever listeners decided
+     * @param lostByRoll   whether the roll lost it, whatever listeners decided
+     * @param arrivedItems what it carried when it reached the pier, before any listener changed it
+     * @param seizeMessage the text a listener gave for seizing it; {@code null} for none
      */
     public ShipmentCollectedEvent(@NotNull Shipment shipment, @NotNull Optional<Pier> pier, @NotNull CharacterRef collector,
                                   @NotNull ShipmentOutcome outcome, @NotNull List<ShipmentItem> items,
-                                  @NotNull BigDecimal lossChance, boolean lostByRoll) {
+                                  @NotNull BigDecimal lossChance, boolean lostByRoll,
+                                  @NotNull List<ShipmentItem> arrivedItems, @Nullable String seizeMessage) {
         this.shipment = Objects.requireNonNull(shipment, "shipment");
         this.pier = Objects.requireNonNull(pier, "pier");
         this.collector = Objects.requireNonNull(collector, "collector");
@@ -41,6 +47,18 @@ public final class ShipmentCollectedEvent extends Event {
         this.items = List.copyOf(items);
         this.lossChance = Objects.requireNonNull(lossChance, "lossChance");
         this.lostByRoll = lostByRoll;
+        this.arrivedItems = List.copyOf(arrivedItems);
+        this.seizeMessage = seizeMessage;
+    }
+
+    /** @return what it carried when it reached the pier, before any listener changed it */
+    public @NotNull List<ShipmentItem> getArrivedItems() {
+        return arrivedItems;
+    }
+
+    /** @return the text a listener gave for seizing it; empty when none did or it was delivered */
+    public @NotNull Optional<String> getSeizeMessage() {
+        return Optional.ofNullable(seizeMessage);
     }
 
     public @NotNull Shipment getShipment() {

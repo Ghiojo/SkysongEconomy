@@ -4,6 +4,7 @@ import org.jetbrains.annotations.Nullable;
 import org.skysongdev.skysongEconomy.api.piers.Pier;
 import org.skysongdev.skysongEconomy.api.piers.Piers;
 import org.skysongdev.skysongEconomy.api.piers.Shipment;
+import org.skysongdev.skysongEconomy.api.trade.TradePrice;
 import org.skysongdev.skysongEconomy.business.Business;
 import org.skysongdev.skysongEconomy.business.BusinessChangeListener;
 import org.skysongdev.skysongEconomy.business.BusinessException;
@@ -19,6 +20,7 @@ import org.skysongdev.skysongEconomy.trade.ImportQuote;
 import org.skysongdev.skysongEconomy.trade.ItemAmount;
 import org.skysongdev.skysongEconomy.trade.Ledger;
 import org.skysongdev.skysongEconomy.trade.LedgerSelections;
+import org.skysongdev.skysongEconomy.trade.TradePrices;
 import org.skysongdev.skysongEconomy.trade.TradePricing;
 
 import java.math.BigDecimal;
@@ -152,7 +154,8 @@ public final class DeliveryService implements BusinessChangeListener {
         Delivery delivery = new Delivery(UUID.randomUUID().toString(), business.id(), ledger.id(), offer.id(), time.id(),
                 offer.contents().roll(random), character, quote.price().price(), now, now.plus(time.duration()),
                 pier.map(Pier::id), ledger.shipmentTags(offer));
-        ShipmentEvents.Verdict verdict = deps.events().ordering(Shipments.of(delivery));
+        TradePrice price = TradePrices.of(quote.price());
+        ShipmentEvents.Verdict verdict = deps.events().ordering(Shipments.of(delivery), price);
         if (verdict.cancelled()) {
             throw new OrderCancelledException(verdict.message());
         }
@@ -162,6 +165,7 @@ public final class DeliveryService implements BusinessChangeListener {
         }
         byBusiness.computeIfAbsent(business.id(), id -> new ArrayList<>()).add(delivery);
         repository.save(delivery);
+        deps.events().ordered(business, Shipments.of(delivery), price);
         return delivery;
     }
 
@@ -258,11 +262,13 @@ public final class DeliveryService implements BusinessChangeListener {
             return;
         }
         for (Delivery delivery : deliveries) {
-            if (!deps.wallet().deposit(delivery.orderedBy().player(), delivery.price())) {
+            boolean paidBack = deps.wallet().deposit(delivery.orderedBy().player(), delivery.price());
+            if (!paidBack) {
                 warnings.accept("Couldn't refund " + deps.wallet().format(delivery.price()) + " to "
                         + delivery.orderedBy() + " for a delivery of deleted business " + business.id());
             }
             repository.delete(delivery.id());
+            deps.events().refunded(business, Shipments.of(delivery), paidBack);
         }
     }
 }
