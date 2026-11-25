@@ -2,11 +2,14 @@ package org.skysongdev.skysongEconomy.bootstrap;
 
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginManager;
+import org.bukkit.plugin.ServicePriority;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.Nullable;
+import org.skysongdev.skysongEconomy.api.business.Businesses;
 import org.skysongdev.skysongEconomy.business.Business;
 import org.skysongdev.skysongEconomy.business.BusinessBlockGuard;
 import org.skysongdev.skysongEconomy.business.BusinessChangeListener;
+import org.skysongdev.skysongEconomy.business.BusinessDirectory;
 import org.skysongdev.skysongEconomy.business.BusinessService;
 import org.skysongdev.skysongEconomy.business.access.AccessDefaults;
 import org.skysongdev.skysongEconomy.business.access.AccessService;
@@ -163,6 +166,9 @@ public final class BusinessFeature implements AutoCloseable {
 
         BusinessService businesses = new BusinessService(settings.types(), settings.tiers(),
                 new AsyncBusinessRepository(new SqlBusinessRepository(connections), writer), Clock.systemUTC());
+        Businesses directory = new BusinessDirectory(businesses);
+        plugin.getServer().getServicesManager().register(Businesses.class, directory, plugin, ServicePriority.Normal);
+        resources.add(() -> plugin.getServer().getServicesManager().unregister(Businesses.class, directory));
         AccessService access = new AccessService(settings.access(),
                 new AsyncAccessRepository(new SqlAccessRepository(connections), writer));
         BusinessVaults vaults = new BusinessVaults(new AsyncVaultRepository(new SqlVaultRepository(connections), writer),
