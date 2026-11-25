@@ -1,6 +1,7 @@
 package org.skysongdev.skysongEconomy.trade;
 
 import org.jetbrains.annotations.Nullable;
+import org.skysongdev.skysongEconomy.api.trade.LedgerSelectionChange;
 import org.skysongdev.skysongEconomy.business.BlockPosition;
 import org.skysongdev.skysongEconomy.business.Business;
 import org.skysongdev.skysongEconomy.business.BusinessChangeListener;
@@ -24,7 +25,7 @@ import java.util.Optional;
  * who may, as they do for skill picks. Selecting is free; removing charges the configured fine to
  * the owner's balance, and costs nothing on a server-owned business, which has no balance. Deliveries already ordered from a removed ledger still
  * arrive. When a business loses ledger slots (a lower tier, or a cleared pick) its newest
- * selections are dropped without a fine. Ledgers whose file was removed are ignored and take no
+ * selections are dropped without a fine. Every change is told to the {@link LedgerSelectionEvents}. Ledgers whose file was removed are ignored and take no
  * slot. Kept in memory and saved right away; use it on the main thread.
  */
 public final class LedgerSelections implements BusinessChangeListener {
@@ -33,15 +34,23 @@ public final class LedgerSelections implements BusinessChangeListener {
     private final LedgerSelectionRepository repository;
     private final Wallet wallet;
     private final Clock clock;
+    private final LedgerSelectionEvents events;
     private final Map<String, List<SelectedLedger>> byBusiness = new HashMap<>();
 
     public LedgerSelections(EconomyLogisticsSettings settings, LedgerRegistry ledgers, LedgerSelectionRepository repository,
                             Wallet wallet, Clock clock) {
+        this(settings, ledgers, repository, wallet, clock, LedgerSelectionEvents.NONE);
+    }
+
+    /** @param events told about every selection, removal and drop */
+    public LedgerSelections(EconomyLogisticsSettings settings, LedgerRegistry ledgers, LedgerSelectionRepository repository,
+                            Wallet wallet, Clock clock, LedgerSelectionEvents events) {
         this.settings = settings;
         this.ledgers = ledgers;
         this.repository = repository;
         this.wallet = wallet;
         this.clock = clock;
+        this.events = events;
     }
 
     /** Loads every saved selection. */
@@ -91,6 +100,7 @@ public final class LedgerSelections implements BusinessChangeListener {
         SelectedLedger selection = new SelectedLedger(business.id(), ledgerId, clock.instant());
         byBusiness.computeIfAbsent(business.id(), id -> new ArrayList<>()).add(selection);
         repository.save(selection);
+        report(business, LedgerSelectionChange.Kind.SELECTED, ledgerId, BigDecimal.ZERO, Optional.empty());
         return ledger;
     }
 
@@ -106,6 +116,8 @@ public final class LedgerSelections implements BusinessChangeListener {
                 new BusinessException("business.ledgers.not-selected", Map.of("ledger", ledgerId)));
         BigDecimal fine = business.owner().map(owner -> chargeFine(owner, settings.ledgerRemovalFine())).orElse(BigDecimal.ZERO);
         drop(selection);
+        report(business, LedgerSelectionChange.Kind.REMOVED, ledgerId, fine,
+                fine.signum() > 0 ? business.owner() : Optional.empty());
         return fine;
     }
 
@@ -116,6 +128,7 @@ public final class LedgerSelections implements BusinessChangeListener {
         int limit = settings.limits(business).ledgers();
         for (int i = known.size() - 1; i >= limit; i--) {
             drop(known.get(i));
+            report(business, LedgerSelectionChange.Kind.DROPPED, known.get(i).ledgerId(), BigDecimal.ZERO, Optional.empty());
         }
     }
 
@@ -145,6 +158,11 @@ public final class LedgerSelections implements BusinessChangeListener {
             selections.remove(selection);
         }
         repository.delete(selection.businessId(), selection.ledgerId());
+    }
+
+    private void report(Business business, LedgerSelectionChange.Kind kind, String ledgerId, BigDecimal fine,
+                        Optional<CharacterRef> paidBy) {
+        events.changed(business, new LedgerSelectionChange(kind, business.id(), ledgerId, fine, paidBy, clock.instant()));
     }
 
     /** @return the fine, taken from the owner's balance */

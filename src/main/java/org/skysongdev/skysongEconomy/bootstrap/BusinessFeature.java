@@ -60,6 +60,8 @@ import org.skysongdev.skysongEconomy.data.database.SqlVaultRepository;
 import org.skysongdev.skysongEconomy.data.database.StorageException;
 import org.skysongdev.skysongEconomy.events.BukkitBusinessEvents;
 import org.skysongdev.skysongEconomy.events.BukkitExportEvents;
+import org.skysongdev.skysongEconomy.events.BukkitLedgerSelectionEvents;
+import org.skysongdev.skysongEconomy.events.BukkitModifierEvents;
 import org.skysongdev.skysongEconomy.events.BukkitShiftEvents;
 import org.skysongdev.skysongEconomy.events.BukkitTrainingEvents;
 import org.skysongdev.skysongEconomy.events.BukkitVaultEvents;
@@ -192,9 +194,10 @@ public final class BusinessFeature implements AutoCloseable {
         LedgerRegistry ledgers = loadLedgers(plugin, paths, settings.economyLogistics(), trade.items());
         LedgerSelections ledgerSelections = new LedgerSelections(settings.economyLogistics(), ledgers,
                 new AsyncLedgerSelectionRepository(new SqlLedgerSelectionRepository(connections), writer), wallet,
-                Clock.systemUTC());
+                Clock.systemUTC(), new BukkitLedgerSelectionEvents(events));
         PriceModifiers modifiers = new PriceModifiers(
                 new AsyncModifierRepository(new SqlModifierRepository(connections), writer), Clock.systemUTC());
+        modifiers.addListener(new BukkitModifierEvents(events, Clock.systemUTC()));
         TradePricing pricing = new TradePricing(trade.prices(), modifiers, trade.priceSettings(), trade.goodTypes());
         DeliveryService deliveries = new DeliveryService(new DeliveryService.Dependencies(settings.economyLogistics(),
                 ledgerSelections, access, pricing, wallet, piers, new BukkitShipmentEvents(events, piers)),
