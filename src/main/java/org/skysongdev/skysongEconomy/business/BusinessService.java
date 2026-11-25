@@ -1,6 +1,9 @@
 package org.skysongdev.skysongEconomy.business;
 
 import org.jetbrains.annotations.Nullable;
+import org.skysongdev.skysongEconomy.api.business.BusinessChange;
+import org.skysongdev.skysongEconomy.api.business.BusinessChange.Kind;
+import org.skysongdev.skysongEconomy.api.business.BusinessInfo;
 import org.skysongdev.skysongEconomy.blocks.BlockGuard;
 import org.skysongdev.skysongEconomy.business.tier.BusinessTiers;
 import org.skysongdev.skysongEconomy.business.type.BusinessTypeRegistry;
@@ -147,6 +150,7 @@ public final class BusinessService {
         byPosition.put(position, business);
         repository.save(business.snapshot());
         listeners.forEach(listener -> listener.changed(business, null));
+        describe(Kind.CREATED, null, business);
         return business;
     }
 
@@ -156,6 +160,8 @@ public final class BusinessService {
         business.position().ifPresent(byPosition::remove);
         repository.delete(business.id());
         listeners.forEach(listener -> listener.deleted(business));
+        describe(new BusinessChange(Kind.DELETED, Optional.of(BusinessDirectory.info(business)), Optional.empty(),
+                Optional.empty(), Optional.empty()));
     }
 
     /**
@@ -168,19 +174,23 @@ public final class BusinessService {
             return;
         }
         requireFree(position);
+        BusinessInfo before = BusinessDirectory.info(business);
         BlockPosition previous = business.position().orElse(null);
         business.position().ifPresent(byPosition::remove);
         business.setPosition(position);
         byPosition.put(position, business);
         save(business, previous);
+        describe(Kind.MOVED, before, business);
     }
 
     /** Takes the business off its block, which happens when staff break the block. */
     public void unplace(Business business) {
+        BusinessInfo before = BusinessDirectory.info(business);
         BlockPosition previous = business.position().orElse(null);
         business.position().ifPresent(byPosition::remove);
         business.setPosition(null);
         save(business, previous);
+        describe(Kind.UNPLACED, before, business);
     }
 
     /**
@@ -194,8 +204,10 @@ public final class BusinessService {
             throw new BusinessException("business.invalid-name",
                     Map.of("max", String.valueOf(MAX_DISPLAY_NAME_LENGTH)));
         }
+        BusinessInfo before = BusinessDirectory.info(business);
         business.rename(trimmed);
         save(business);
+        describe(Kind.RENAMED, before, business);
     }
 
     /**
@@ -226,10 +238,16 @@ public final class BusinessService {
             throw new BusinessException("business.invalid-tier", Map.of(
                     "min", String.valueOf(Business.MIN_TIER), "max", String.valueOf(Business.MAX_TIER)));
         }
+        BusinessInfo before = BusinessDirectory.info(business);
         business.setTier(tier);
         List<Hire> workers = business.trimWorkersTo(maxWorkers(business));
         List<SkillPick> picks = business.trimPicksTo(tier);
         save(business);
+        BusinessInfo after = BusinessDirectory.info(business);
+        describe(new BusinessChange(Kind.TIER_CHANGED, Optional.of(before), Optional.of(after), Optional.empty(),
+                Optional.empty()));
+        workers.forEach(hire -> describeWorker(Kind.WORKER_FIRED, after, hire.character()));
+        picks.forEach(pick -> describeSkill(Kind.SKILL_CLEARED, after, pick.skillId()));
         return new TierChange(workers, picks);
     }
 
@@ -250,6 +268,7 @@ public final class BusinessService {
         SkillPick pick = new SkillPick(skillId, clock.instant());
         business.addPick(pick);
         save(business);
+        describeSkill(Kind.SKILL_PICKED, BusinessDirectory.info(business), skillId);
         return pick;
     }
 
@@ -267,19 +286,24 @@ public final class BusinessService {
         }
         SkillPick cleared = business.removePick(number - 1);
         save(business);
+        describeSkill(Kind.SKILL_CLEARED, BusinessDirectory.info(business), cleared.skillId());
         return cleared;
     }
 
     /** Gives the business to another character. If they worked there, they stop being a worker. */
     public void setOwner(Business business, CharacterRef owner) {
+        BusinessInfo before = BusinessDirectory.info(business);
         business.setOwner(Objects.requireNonNull(owner, "owner"));
         save(business);
+        describe(Kind.OWNER_CHANGED, before, business);
     }
 
     /** Gives the business to the server; its previous owner, if any, loses it. Workers stay. */
     public void giveToServer(Business business) {
+        BusinessInfo before = BusinessDirectory.info(business);
         business.setOwner(null);
         save(business);
+        describe(Kind.GIVEN_TO_SERVER, before, business);
     }
 
     /**
@@ -301,6 +325,7 @@ public final class BusinessService {
         Hire hire = new Hire(character, clock.instant());
         business.addWorker(hire);
         save(business);
+        describeWorker(Kind.WORKER_HIRED, BusinessDirectory.info(business), character);
         return hire;
     }
 
@@ -314,6 +339,7 @@ public final class BusinessService {
             throw new BusinessException("business.fire.not-worker", Map.of("character", character.profile()));
         }
         save(business);
+        describeWorker(Kind.WORKER_FIRED, BusinessDirectory.info(business), character);
     }
 
     /** @return how many workers the business may have: its tier's limit, plus what was added with {@link #addWorkerSlots} */
@@ -345,6 +371,8 @@ public final class BusinessService {
         List<Hire> removed = business.trimWorkersTo(maxWorkers(business));
         if (!removed.isEmpty()) {
             save(business);
+            BusinessInfo after = BusinessDirectory.info(business);
+            removed.forEach(hire -> describeWorker(Kind.WORKER_FIRED, after, hire.character()));
         }
         return removed;
     }
@@ -368,5 +396,24 @@ public final class BusinessService {
     private void save(Business business, @Nullable BlockPosition previousPosition) {
         repository.save(business.snapshot());
         listeners.forEach(listener -> listener.changed(business, previousPosition));
+    }
+
+    private void describe(Kind kind, @Nullable BusinessInfo before, Business after) {
+        describe(new BusinessChange(kind, Optional.ofNullable(before), Optional.of(BusinessDirectory.info(after)),
+                Optional.empty(), Optional.empty()));
+    }
+
+    private void describeWorker(Kind kind, BusinessInfo business, CharacterRef worker) {
+        describe(new BusinessChange(kind, Optional.of(business), Optional.of(business), Optional.of(worker),
+                Optional.empty()));
+    }
+
+    private void describeSkill(Kind kind, BusinessInfo business, String skillId) {
+        describe(new BusinessChange(kind, Optional.of(business), Optional.of(business), Optional.empty(),
+                Optional.of(skillId)));
+    }
+
+    private void describe(BusinessChange change) {
+        listeners.forEach(listener -> listener.described(change));
     }
 }

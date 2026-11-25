@@ -58,6 +58,7 @@ import org.skysongdev.skysongEconomy.data.database.SqlTokenRepository;
 import org.skysongdev.skysongEconomy.data.database.SqlTrainingRepository;
 import org.skysongdev.skysongEconomy.data.database.SqlVaultRepository;
 import org.skysongdev.skysongEconomy.data.database.StorageException;
+import org.skysongdev.skysongEconomy.events.BukkitBusinessEvents;
 import org.skysongdev.skysongEconomy.events.BukkitExportEvents;
 import org.skysongdev.skysongEconomy.events.BukkitShiftEvents;
 import org.skysongdev.skysongEconomy.gui.ChatPrompts;
@@ -177,6 +178,7 @@ public final class BusinessFeature implements AutoCloseable {
         GatheringTokens tokens = new GatheringTokens(new AsyncTokenRepository(new SqlTokenRepository(connections), writer));
         ActivityLock activities = new ActivityLock();
         PluginManager events = plugin.getServer().getPluginManager();
+        businesses.addListener(new BukkitBusinessEvents(events));
         ShiftService shifts = new ShiftService(settings.shifts(), new ShiftService.Dependencies(businesses,
                 settings.tiers(), activities, vaults, tokens, wallet, skysongStats, new BukkitShiftEvents(events)),
                 new AsyncShiftRepository(new SqlShiftRepository(connections), writer), Clock.systemUTC(), logger::warning);
