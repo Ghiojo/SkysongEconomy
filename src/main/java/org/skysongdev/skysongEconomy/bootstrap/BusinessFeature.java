@@ -61,6 +61,8 @@ import org.skysongdev.skysongEconomy.data.database.StorageException;
 import org.skysongdev.skysongEconomy.events.BukkitBusinessEvents;
 import org.skysongdev.skysongEconomy.events.BukkitExportEvents;
 import org.skysongdev.skysongEconomy.events.BukkitShiftEvents;
+import org.skysongdev.skysongEconomy.events.BukkitTrainingEvents;
+import org.skysongdev.skysongEconomy.events.BukkitVaultEvents;
 import org.skysongdev.skysongEconomy.gui.ChatPrompts;
 import org.skysongdev.skysongEconomy.gui.MenuListener;
 import org.skysongdev.skysongEconomy.gui.MenuTheme;
@@ -173,17 +175,18 @@ public final class BusinessFeature implements AutoCloseable {
         resources.add(() -> plugin.getServer().getServicesManager().unregister(Businesses.class, directory));
         AccessService access = new AccessService(settings.access(),
                 new AsyncAccessRepository(new SqlAccessRepository(connections), writer));
+        PluginManager events = plugin.getServer().getPluginManager();
         BusinessVaults vaults = new BusinessVaults(new AsyncVaultRepository(new SqlVaultRepository(connections), writer),
-                wallet, logger::warning);
+                wallet, logger::warning, new BukkitVaultEvents(events));
         GatheringTokens tokens = new GatheringTokens(new AsyncTokenRepository(new SqlTokenRepository(connections), writer));
         ActivityLock activities = new ActivityLock();
-        PluginManager events = plugin.getServer().getPluginManager();
         businesses.addListener(new BukkitBusinessEvents(events));
         ShiftService shifts = new ShiftService(settings.shifts(), new ShiftService.Dependencies(businesses,
                 settings.tiers(), activities, vaults, tokens, wallet, skysongStats, new BukkitShiftEvents(events)),
                 new AsyncShiftRepository(new SqlShiftRepository(connections), writer), Clock.systemUTC(), logger::warning);
         TrainingService training = new TrainingService(settings.training(), new TrainingService.Dependencies(businesses,
-                settings.types(), settings.tiers(), access, activities, vaults, wallet, skysongStats, skysongStats),
+                settings.types(), settings.tiers(), access, activities, vaults, wallet, skysongStats, skysongStats,
+                new BukkitTrainingEvents(events)),
                 new AsyncTrainingRepository(new SqlTrainingRepository(connections), writer), Clock.systemUTC(),
                 logger::warning);
         LedgerRegistry ledgers = loadLedgers(plugin, paths, settings.economyLogistics(), trade.items());

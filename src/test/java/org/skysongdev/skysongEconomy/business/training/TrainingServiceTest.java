@@ -69,6 +69,20 @@ class TrainingServiceTest {
     private final List<String> xpGiven = new ArrayList<>();
     private final List<String> proficiencyTrained = new ArrayList<>();
     private final Map<UUID, TrainingSession> saved = new LinkedHashMap<>();
+    /** Every session started and every result finished, as other plugins are told. */
+    private final List<TrainingSession> started = new ArrayList<>();
+    private final List<TrainingResult> finished = new ArrayList<>();
+    private final TrainingEvents events = new TrainingEvents() {
+        @Override
+        public void started(Business business, TrainingSession session) {
+            started.add(session);
+        }
+
+        @Override
+        public void finished(Optional<Business> business, TrainingResult result) {
+            finished.add(result);
+        }
+    };
 
     private BusinessService businesses;
     private AccessService access;
@@ -130,7 +144,8 @@ class TrainingServiceTest {
             }
         };
         return new TrainingService(SETTINGS, new TrainingService.Dependencies(businesses, TYPES, TIERS, access, activities,
-                vaults, wallet, downtimeWallet, progression), new MemoryTrainingStorage(), Clock.systemUTC(), warning -> { });
+                vaults, wallet, downtimeWallet, progression, events), new MemoryTrainingStorage(), Clock.systemUTC(),
+                warning -> { });
     }
 
     private static String refusal(Runnable action) {
@@ -240,6 +255,26 @@ class TrainingServiceTest {
         assertEquals(2, xpGiven.size());
         assertTrue(activities.current(visitor.player()).isEmpty());
         assertEquals(Optional.empty(), training.active(visitor.player()));
+    }
+
+    @Test
+    void tellsOtherPluginsWhenSessionsStartAndFinish() {
+        TrainingSession session = training.start(dojo, visitor);
+        assertEquals(List.of(session), started);
+        assertTrue(finished.isEmpty());
+
+        TrainingResult result = training.work(visitor.player(), Duration.ofMinutes(20)).orElseThrow();
+
+        assertEquals(List.of(result), finished);
+    }
+
+    @Test
+    void aRefusedStartIsNotReported() {
+        downtime.put(visitor.player(), 0);
+
+        refusal(() -> training.start(dojo, visitor));
+
+        assertTrue(started.isEmpty());
     }
 
     private static final class NoBusinessStorage implements BusinessRepository {

@@ -4,12 +4,16 @@ import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.PluginManager;
 import org.skysongdev.skysongEconomy.api.business.ShiftEndEvent;
+import org.skysongdev.skysongEconomy.api.business.ShiftPayCollectedEvent;
 import org.skysongdev.skysongEconomy.api.business.ShiftStartEvent;
 import org.skysongdev.skysongEconomy.business.Business;
 import org.skysongdev.skysongEconomy.business.BusinessDirectory;
 import org.skysongdev.skysongEconomy.business.shift.Shift;
 import org.skysongdev.skysongEconomy.business.shift.ShiftEvents;
+import org.skysongdev.skysongEconomy.business.shift.ShiftPay;
 import org.skysongdev.skysongEconomy.character.CharacterRef;
+
+import java.util.List;
 
 /** Fires {@link ShiftStartEvent} and {@link ShiftEndEvent}. */
 public final class BukkitShiftEvents implements ShiftEvents {
@@ -34,5 +38,11 @@ public final class BukkitShiftEvents implements ShiftEvents {
     @Override
     public void ended(Business business, Shift shift) {
         plugins.callEvent(new ShiftEndEvent(BusinessDirectory.info(business), PublicTypes.shift(shift)));
+    }
+
+    @Override
+    public void paid(Business business, CharacterRef worker, List<Shift> shifts, ShiftPay total, boolean businessDeleted) {
+        plugins.callEvent(new ShiftPayCollectedEvent(BusinessDirectory.info(business), worker,
+                shifts.stream().map(PublicTypes::shift).toList(), total.money(), total.tokens(), businessDeleted));
     }
 }
