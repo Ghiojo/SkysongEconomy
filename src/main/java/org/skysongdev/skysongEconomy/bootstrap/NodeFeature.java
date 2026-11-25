@@ -20,6 +20,7 @@ import org.skysongdev.skysongEconomy.data.database.SqlNodeRepository;
 import org.skysongdev.skysongEconomy.data.database.SqlPlantingRepository;
 import org.skysongdev.skysongEconomy.data.database.SqlPrimerReturnRepository;
 import org.skysongdev.skysongEconomy.data.database.StorageException;
+import org.skysongdev.skysongEconomy.events.BukkitFarmPlantingEvents;
 import org.skysongdev.skysongEconomy.events.BukkitNodeHarvestEvents;
 import org.skysongdev.skysongEconomy.gui.node.NodeMenus;
 import org.skysongdev.skysongEconomy.integration.skysongstats.SkysongStatsAdapter;
@@ -55,6 +56,7 @@ import org.skysongdev.skysongEconomy.nodes.modifiers.NodeModifiers;
 import org.skysongdev.skysongitems.api.SkysongItemsApi;
 
 import java.security.SecureRandom;
+import java.time.Clock;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -140,7 +142,8 @@ public final class NodeFeature implements AutoCloseable {
                 new InventoryPrimerDelivery(plugin.getServer(), handOver, messenger));
         FarmPlots plots = new FarmPlots(new FarmPlots.Dependencies(tables, settings, access, system.access(), skysongStats,
                 new AsyncPlantingRepository(new SqlPlantingRepository(connections, logger), writer), returns,
-                player -> hasPermission(plugin, player, FarmPlots.BYPASS_PERMISSION)));
+                player -> hasPermission(plugin, player, FarmPlots.BYPASS_PERMISSION)),
+                new BukkitFarmPlantingEvents(events), Clock.systemUTC());
         HarvestPayer payer = new HarvestPayer(system.tokens(), skysongStats, wallet);
         BukkitNodeHarvestEvents harvestEvents = new BukkitNodeHarvestEvents(events);
         LootRoller roller = new LootRoller(new SecureRandom());

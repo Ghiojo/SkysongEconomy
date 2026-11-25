@@ -166,7 +166,8 @@ public final class RandomHarvester {
         HarvestCost cost = cost(node, tier);
         deps.payer().pay(character, cost);
         List<ItemAmount> items = roller.roll(tier.output(), active.effect().plus(Booster.effectOf(booster)));
-        Harvest harvest = new Harvest(node, character, tier.tier(), cost, items, active.ids());
+        Harvest harvest = new Harvest(node, character, tier.tier(), cost, items, active.ids(), booster,
+                Optional.empty());
         deps.events().harvested(harvest);
         return harvest;
     }

@@ -1,6 +1,7 @@
 package org.skysongdev.skysongEconomy.upkeep;
 
 import org.jetbrains.annotations.Nullable;
+import org.skysongdev.skysongEconomy.trade.ItemAmount;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -169,10 +170,13 @@ public final class UpkeepService {
     private boolean settleOne(NpcUpkeep upkeep, UpkeepProfile profile, Instant now) {
         Instant due = upkeep.nextDue();
         for (int cycle = 0; cycle < MAX_CYCLES_PER_SETTLE && !due.isAfter(now); cycle++) {
-            UpkeepPayment.Outcome outcome = payment.plan(profile.cost(), stock.view(upkeep.npc()));
+            List<StockStack> stacks = stock.view(upkeep.npc());
+            UpkeepPayment.Outcome outcome = payment.plan(profile.cost(), stacks);
             if (outcome instanceof UpkeepPayment.Paid paid) {
                 stock.take(upkeep.npc(), paid.taken());
+                Instant paidDue = due;
                 due = due.plus(profile.every());
+                events.cyclePaid(upkeep.withNextDue(due), paidDue, eaten(stacks, paid.taken()));
             } else {
                 NpcUpkeep lapsed = upkeep.withState(UpkeepState.UNMAINTAINED, due, now);
                 put(lapsed);
@@ -182,6 +186,18 @@ public final class UpkeepService {
         }
         put(upkeep.withNextDue(due));
         return false;
+    }
+
+    /** @return how many of each material the taken counts take from those stacks, each material once */
+    static List<ItemAmount> eaten(List<StockStack> stacks, List<Integer> taken) {
+        Map<String, Integer> byMaterial = new LinkedHashMap<>();
+        for (int i = 0; i < taken.size() && i < stacks.size(); i++) {
+            String materialId = stacks.get(i).materialId();
+            if (taken.get(i) > 0 && materialId != null) {
+                byMaterial.merge(materialId, taken.get(i), Integer::sum);
+            }
+        }
+        return byMaterial.entrySet().stream().map(entry -> new ItemAmount(entry.getKey(), entry.getValue())).toList();
     }
 
     /**

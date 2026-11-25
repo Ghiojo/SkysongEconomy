@@ -23,7 +23,8 @@ public final class BukkitNodeHarvestEvents implements NodeHarvestEvents {
         if (player != null) {
             plugins.callEvent(new NodeHarvestEvent(player, NodeInfos.of(harvest.node()), harvest.character(),
                     harvest.tier(), PublicTypes.harvestCost(harvest.paid()), PublicTypes.items(harvest.items()),
-                    harvest.modifiers()));
+                    harvest.modifiers(), harvest.booster().map(PublicTypes::booster).orElse(null),
+                    harvest.resource().orElse(null)));
         }
     }
 }

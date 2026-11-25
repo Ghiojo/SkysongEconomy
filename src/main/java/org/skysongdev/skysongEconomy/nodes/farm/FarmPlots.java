@@ -1,6 +1,7 @@
 package org.skysongdev.skysongEconomy.nodes.farm;
 
 import org.jetbrains.annotations.Nullable;
+import org.skysongdev.skysongEconomy.api.nodes.PlantingChange;
 import org.skysongdev.skysongEconomy.business.BlockPosition;
 import org.skysongdev.skysongEconomy.business.Business;
 import org.skysongdev.skysongEconomy.business.access.AccessService;
@@ -17,6 +18,7 @@ import org.skysongdev.skysongEconomy.nodes.NodeSettings;
 import org.skysongdev.skysongEconomy.nodes.NodeTables;
 import org.skysongdev.skysongEconomy.nodes.harvest.NodeAccess;
 
+import java.time.Clock;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -34,7 +36,8 @@ import java.util.function.Predicate;
  * {@code tend-farms} permission. Planting is free; taking a primer out costs the downtime set in
  * {@code nodes/settings.yml} and gives the exact items back. A primer also goes back to whoever
  * planted it, at once or the next time they are online, when its node is removed or changes owner
- * or farm type, which includes its business being deleted. Not thread-safe: use it on the main
+ * or farm type, which includes its business being deleted. Every planting, taking out and giving
+ * back is told to the {@link FarmPlantingEvents}. Not thread-safe: use it on the main
  * thread.
  */
 public final class FarmPlots implements NodeChangeListener {
@@ -74,11 +77,20 @@ public final class FarmPlots implements NodeChangeListener {
     public static final String BYPASS_PERMISSION = "skysongeconomy.nodes.tend-bypass";
 
     private final Dependencies deps;
+    private final FarmPlantingEvents events;
+    private final Clock clock;
     private final Map<String, Planting> plantings = new HashMap<>();
     private final List<Consumer<String>> listeners = new ArrayList<>();
 
     public FarmPlots(Dependencies deps) {
+        this(deps, FarmPlantingEvents.NONE, Clock.systemUTC());
+    }
+
+    /** @param events told about every primer planted, taken out or given back */
+    public FarmPlots(Dependencies deps, FarmPlantingEvents events, Clock clock) {
         this.deps = Objects.requireNonNull(deps, "deps");
+        this.events = Objects.requireNonNull(events, "events");
+        this.clock = Objects.requireNonNull(clock, "clock");
     }
 
     /** Tells {@code listener} the node id whenever what is planted there changes. */
@@ -200,6 +212,7 @@ public final class FarmPlots implements NodeChangeListener {
         plantings.put(node.id(), planting);
         deps.repository().save(planting);
         notifyListeners(node.id());
+        report(PlantingChange.Kind.PLANTED, planting, character, 0);
         return planting;
     }
 
@@ -220,6 +233,7 @@ public final class FarmPlots implements NodeChangeListener {
             throw new NodeException("node.farm.no-downtime", Map.of("cost", String.valueOf(cost)));
         }
         clear(planting);
+        report(PlantingChange.Kind.TAKEN_OUT, planting, character, Math.max(0, cost));
         return planting.primer();
     }
 
@@ -255,6 +269,12 @@ public final class FarmPlots implements NodeChangeListener {
     private void giveBack(Planting planting) {
         clear(planting);
         deps.returns().giveBack(planting.planter().player(), planting.primer());
+        report(PlantingChange.Kind.RETURNED, planting, planting.planter(), 0);
+    }
+
+    private void report(PlantingChange.Kind kind, Planting planting, CharacterRef actor, int downtime) {
+        events.changed(new PlantingChange(kind, planting.nodeId(), planting.resourceId(), planting.farmType(),
+                planting.businessId(), planting.planter(), actor, downtime, clock.instant()), planting);
     }
 
     private void clear(Planting planting) {

@@ -161,7 +161,8 @@ public final class FarmHarvester {
         HarvestCost cost = HarvestCost.tokens(tier.cost());
         deps.payer().pay(character, cost);
         List<ItemAmount> items = roller.roll(tier.output(), active.effect().plus(Booster.effectOf(booster)));
-        Harvest harvest = new Harvest(node, character, tier.tier(), cost, items, active.ids());
+        Harvest harvest = new Harvest(node, character, tier.tier(), cost, items, active.ids(), booster,
+                Optional.of(resource.id()));
         deps.events().harvested(harvest);
         return harvest;
     }

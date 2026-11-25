@@ -1,5 +1,6 @@
 package org.skysongdev.skysongEconomy.nodes.farm;
 
+import org.skysongdev.skysongEconomy.api.nodes.PlantingChange;
 import org.skysongdev.skysongEconomy.business.BlockPosition;
 import org.skysongdev.skysongEconomy.business.Business;
 import org.skysongdev.skysongEconomy.business.BusinessService;
@@ -43,6 +44,8 @@ import org.skysongdev.skysongEconomy.trade.ItemAmount;
 
 import java.math.BigDecimal;
 import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -67,6 +70,7 @@ final class FarmWorld {
     static final NodeSettings SETTINGS = new NodeSettings(Set.of("gathering"),
             Map.of(1, "unskilled", 2, "novice", 3, "competent", 4, "journeyman", 5, "expert"),
             new NameplateSettings(true, 0.4, 16, true, false), NodeMenuIcons.DEFAULTS, 1);
+    static final Instant EVENT_TIME = Instant.parse("2026-11-24T12:00:00Z");
     static final StoredItems SEEDS = StoredItems.of(List.of(new byte[] {1}));
     static final StoredItems SHEEP = StoredItems.of(List.of(new byte[] {2}, new byte[] {3}));
 
@@ -85,6 +89,7 @@ final class FarmWorld {
     final Map<String, Planting> savedPlantings = new LinkedHashMap<>();
     final Map<UUID, PrimerReturn> savedReturns = new LinkedHashMap<>();
     final List<String> plantingChanges = new ArrayList<>();
+    final List<PlantingChange> plantingEvents = new ArrayList<>();
     final GatheringTokens tokens;
     final BusinessService businesses;
     final AccessService access;
@@ -178,7 +183,12 @@ final class FarmWorld {
                     public void delete(String nodeId) {
                         savedPlantings.remove(nodeId);
                     }
-                }, returns, bypassing::contains));
+                }, returns, bypassing::contains), new FarmPlantingEvents() {
+                    @Override
+                    public void changed(PlantingChange change, Planting planting) {
+                        plantingEvents.add(change);
+                    }
+                }, Clock.fixed(EVENT_TIME, ZoneOffset.UTC));
         plots.addListener(plantingChanges::add);
         nodes.addListener(plots);
         businesses.addListener(nodes);

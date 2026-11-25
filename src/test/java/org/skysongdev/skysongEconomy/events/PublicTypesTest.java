@@ -9,6 +9,7 @@ import org.skysongdev.skysongEconomy.api.business.NpcUpkeepInfo;
 import org.skysongdev.skysongEconomy.api.business.ShiftInfo;
 import org.skysongdev.skysongEconomy.api.business.UpkeepChangeCause;
 import org.skysongdev.skysongEconomy.api.items.ItemCount;
+import org.skysongdev.skysongEconomy.api.nodes.BoosterInfo;
 import org.skysongdev.skysongEconomy.api.nodes.HarvestCostInfo;
 import org.skysongdev.skysongEconomy.api.prices.PriceModifierChange;
 import org.skysongdev.skysongEconomy.api.prices.PriceModifierInfo;
@@ -20,6 +21,8 @@ import org.skysongdev.skysongEconomy.business.npc.SlotSource;
 import org.skysongdev.skysongEconomy.business.shift.Shift;
 import org.skysongdev.skysongEconomy.business.shift.ShiftPay;
 import org.skysongdev.skysongEconomy.character.CharacterRef;
+import org.skysongdev.skysongEconomy.loot.YieldEffect;
+import org.skysongdev.skysongEconomy.nodes.boost.Booster;
 import org.skysongdev.skysongEconomy.nodes.harvest.HarvestCost;
 import org.skysongdev.skysongEconomy.prices.modifier.AppliesTo;
 import org.skysongdev.skysongEconomy.prices.modifier.ModifierAmount;
@@ -104,6 +107,12 @@ class PublicTypesTest {
         for (AppliesTo appliesTo : AppliesTo.values()) {
             assertEquals(appliesTo.name(), PriceModifierInfo.AppliesTo.valueOf(appliesTo.name()).name());
         }
+    }
+
+    @Test
+    void copiesBoostersWithTheirEffectAsWritten() {
+        assertEquals(new BoosterInfo("crop", "max+25%; rolls+1"),
+                PublicTypes.booster(new Booster("crop", YieldEffect.parse("max+25%; rolls+1"))));
     }
 
     @Test
