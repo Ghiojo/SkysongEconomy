@@ -16,13 +16,13 @@ Code map:
 | Types and tiers | `business/type/*` (`businesses/types.yml`), `business/tier/*` (`businesses/tiers.yml`) |
 | Access groups | `business/access/*` (`businesses/access.yml`) |
 | Vault | `business/vault/BusinessVaults` |
-| Shifts | `business/shift/*` (`businesses/shifts.yml`), `events/ShiftStartEvent`, `ShiftEndEvent` |
+| Shifts | `business/shift/*` (`businesses/shifts.yml`), `api/business/ShiftStartEvent`, `ShiftEndEvent` |
 | Training | `business/training/*` (`businesses/training.yml`) |
 | One activity at a time | `business/activity/ActivityLock`, `listeners/ActivityTimer` |
 | Tokens | `tokens/*`, `integration/placeholderapi/TokenExpansion` |
 | Block and nameplate | `business/BusinessBlockGuard`, `listeners/ProtectedBlockListener`, `listeners/BusinessNameplates`, `listeners/FloatingNames` (`businesses/block.yml`) |
-| Business NPCs | `business/npc/*`, `business/npc/benefit/*` and `business/npc/access/*` (`businesses/npcs.yml`), `integration/skysongnpcs/*`, `events/BusinessNpcCreateEvent`, `BusinessNpcRemoveEvent` |
-| Modules | `business/module/*` (`businesses/modules.yml`, `modules/<id>.yml`), `bootstrap/ModuleFeature`, `events/BusinessModulePickEvent`, `BusinessModuleRemoveEvent` |
+| Business NPCs | `business/npc/*`, `business/npc/benefit/*` and `business/npc/access/*` (`businesses/npcs.yml`), `integration/skysongnpcs/*`, `api/business/BusinessNpcCreateEvent`, `BusinessNpcRemoveEvent` |
+| Modules | `business/module/*` (`businesses/modules.yml`, `modules/<id>.yml`), `bootstrap/ModuleFeature`, `api/business/BusinessModulePickEvent`, `BusinessModuleRemoveEvent` |
 | Menus | `gui/business/*`, opened by `listeners/BusinessInteractListener` |
 | Commands | `commands/business/*`, `commands/tokens/*` |
 | Wiring | `bootstrap/BusinessFeature` |

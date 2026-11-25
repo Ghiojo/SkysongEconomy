@@ -10,7 +10,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.util.Transformation;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
-import org.skysongdev.skysongEconomy.events.NpcUpkeepChangeEvent;
+import org.skysongdev.skysongEconomy.api.business.NpcUpkeepChangeEvent;
 import org.skysongdev.skysongEconomy.upkeep.NpcUpkeep;
 import org.skysongdev.skysongEconomy.upkeep.UpkeepService;
 import org.skysongdev.skysongEconomy.upkeep.UpkeepState;

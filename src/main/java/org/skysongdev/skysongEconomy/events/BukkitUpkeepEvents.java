@@ -1,6 +1,7 @@
 package org.skysongdev.skysongEconomy.events;
 
 import org.bukkit.plugin.PluginManager;
+import org.skysongdev.skysongEconomy.api.business.NpcUpkeepChangeEvent;
 import org.skysongdev.skysongEconomy.upkeep.NpcUpkeep;
 import org.skysongdev.skysongEconomy.upkeep.UpkeepEvents;
 
@@ -14,6 +15,6 @@ public final class BukkitUpkeepEvents implements UpkeepEvents {
 
     @Override
     public void stateChanged(NpcUpkeep upkeep, Cause cause) {
-        plugins.callEvent(new NpcUpkeepChangeEvent(upkeep, cause));
+        plugins.callEvent(new NpcUpkeepChangeEvent(PublicTypes.upkeep(upkeep), PublicTypes.cause(cause)));
     }
 }

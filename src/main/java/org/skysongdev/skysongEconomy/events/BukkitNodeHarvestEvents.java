@@ -3,6 +3,8 @@ package org.skysongdev.skysongEconomy.events;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.PluginManager;
+import org.skysongdev.skysongEconomy.api.nodes.NodeHarvestEvent;
+import org.skysongdev.skysongEconomy.nodes.NodeInfos;
 import org.skysongdev.skysongEconomy.nodes.harvest.Harvest;
 import org.skysongdev.skysongEconomy.nodes.harvest.NodeHarvestEvents;
 
@@ -19,7 +21,9 @@ public final class BukkitNodeHarvestEvents implements NodeHarvestEvents {
         Player player = Bukkit.getPlayer(harvest.character().player());
         // Harvests happen from a menu, so the player is online.
         if (player != null) {
-            plugins.callEvent(new NodeHarvestEvent(player, harvest));
+            plugins.callEvent(new NodeHarvestEvent(player, NodeInfos.of(harvest.node()), harvest.character(),
+                    harvest.tier(), PublicTypes.harvestCost(harvest.paid()), PublicTypes.items(harvest.items()),
+                    harvest.modifiers()));
         }
     }
 }
