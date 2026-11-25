@@ -7,6 +7,7 @@ import org.skysongdev.skysongEconomy.bootstrap.BusinessFeature;
 import org.skysongdev.skysongEconomy.bootstrap.CalendarConnection;
 import org.skysongdev.skysongEconomy.bootstrap.BusinessSystem;
 import org.skysongdev.skysongEconomy.bootstrap.ClaimFeature;
+import org.skysongdev.skysongEconomy.bootstrap.JournalFeature;
 import org.skysongdev.skysongEconomy.bootstrap.NodeFeature;
 import org.skysongdev.skysongEconomy.bootstrap.ModuleFeature;
 import org.skysongdev.skysongEconomy.bootstrap.NpcFeature;
@@ -71,6 +72,7 @@ public final class SkysongEconomy extends JavaPlugin {
     private UpkeepFeature upkeepFeature;
     private ClaimFeature claimFeature;
     private PierFeature pierFeature;
+    private JournalFeature journalFeature;
 
     @Override
     public void onEnable() {
@@ -99,6 +101,9 @@ public final class SkysongEconomy extends JavaPlugin {
         pierFeature = PierFeature.start(this, configFiles, databaseSettings(), messenger);
         businessFeature = BusinessFeature.start(this, paths, configFiles, databaseSettings(), skysongStats, wallet, trade,
                 pierFeature.piers(), messenger, messages);
+        // The economy journal listens before nodes load, which can give farm primers back.
+        journalFeature = JournalFeature.start(this, configFiles, databaseSettings(), calendar, businessFeature.system(),
+                materialIds);
         nodeFeature = NodeFeature.start(this, configFiles, databaseSettings(), businessFeature.system(), skysongStats,
                 wallet, trade, calendar, messenger);
         // Module files are checked against SkysongNPCs, and business NPCs need the modules' slots:
@@ -146,6 +151,10 @@ public final class SkysongEconomy extends JavaPlugin {
         }
         if (pierFeature != null) {
             pierFeature.close();
+        }
+        // Last, so records made while the others closed are written too.
+        if (journalFeature != null) {
+            journalFeature.close();
         }
         if (connections != null) {
             connections.close();

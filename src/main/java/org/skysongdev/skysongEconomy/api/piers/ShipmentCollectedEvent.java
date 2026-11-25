@@ -25,6 +25,7 @@ public final class ShipmentCollectedEvent extends Event {
     private final ShipmentOutcome outcome;
     private final List<ShipmentItem> items;
     private final BigDecimal lossChance;
+    private final BigDecimal roll;
     private final boolean lostByRoll;
     private final List<ShipmentItem> arrivedItems;
     private final @Nullable String seizeMessage;
@@ -32,13 +33,14 @@ public final class ShipmentCollectedEvent extends Event {
     /**
      * @param items      what was handed over; empty when seized
      * @param lossChance the pier's final loss chance for this shipment
+     * @param roll       the number rolled against it, 0 (included) to 100 (excluded)
      * @param lostByRoll   whether the roll lost it, whatever listeners decided
      * @param arrivedItems what it carried when it reached the pier, before any listener changed it
      * @param seizeMessage the text a listener gave for seizing it; {@code null} for none
      */
     public ShipmentCollectedEvent(@NotNull Shipment shipment, @NotNull Optional<Pier> pier, @NotNull CharacterRef collector,
                                   @NotNull ShipmentOutcome outcome, @NotNull List<ShipmentItem> items,
-                                  @NotNull BigDecimal lossChance, boolean lostByRoll,
+                                  @NotNull BigDecimal lossChance, @NotNull BigDecimal roll, boolean lostByRoll,
                                   @NotNull List<ShipmentItem> arrivedItems, @Nullable String seizeMessage) {
         this.shipment = Objects.requireNonNull(shipment, "shipment");
         this.pier = Objects.requireNonNull(pier, "pier");
@@ -46,6 +48,7 @@ public final class ShipmentCollectedEvent extends Event {
         this.outcome = Objects.requireNonNull(outcome, "outcome");
         this.items = List.copyOf(items);
         this.lossChance = Objects.requireNonNull(lossChance, "lossChance");
+        this.roll = Objects.requireNonNull(roll, "roll");
         this.lostByRoll = lostByRoll;
         this.arrivedItems = List.copyOf(arrivedItems);
         this.seizeMessage = seizeMessage;
@@ -87,6 +90,11 @@ public final class ShipmentCollectedEvent extends Event {
     /** @return the pier's final loss chance for this shipment, 0 to 100 */
     public @NotNull BigDecimal getLossChance() {
         return lossChance;
+    }
+
+    /** @return the number rolled against the loss chance, 0 (included) to 100 (excluded) */
+    public @NotNull BigDecimal getRoll() {
+        return roll;
     }
 
     /** @return whether the roll lost it, whatever listeners decided */

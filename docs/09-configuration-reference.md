@@ -44,6 +44,15 @@ Every player-facing text, by key, in MiniMessage. See [Messages and menus](12-me
 | `delivery-times.<id>.hours` | Real hours from order to arrival |
 | `ledger-removal-fine` | Money the owner pays to remove a selected ledger |
 
+## `journal.yml` (`journal/JournalSettings`)
+
+| Key | Default | Meaning |
+| --- | --- | --- |
+| `enabled` | `true` | Whether the [economy journal](17-economy-journal.md) records anything. Off, nothing is recorded and `EconomyRecordedEvent` never fires |
+| `keep-days` | `0` | Days records are kept; older ones are deleted when the plugin starts. `0` keeps them forever |
+
+A broken file keeps the defaults, with a console warning.
+
 ## `ledgers/<id>.yml` (`trade/LedgerParser`)
 
 See [Economy and Logistics](06-economy-and-logistics.md#ledgers) for a full example.
