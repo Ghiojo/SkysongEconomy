@@ -69,6 +69,22 @@ class LedgerParserTest {
     }
 
     @Test
+    void readsTagsOfExports() {
+        Ledger ledger = parse("""
+                name: Test
+                tags: [contraband]
+                exports:
+                  swords: {item: steel_sword, price: "1", tags: [" Weapons ", ""]}
+                  plain: {item: steel_sword, price: "1"}
+                """);
+
+        ExportOffer swords = ledger.exportOffer("swords").orElseThrow();
+        assertEquals(Set.of("weapons"), swords.tags());
+        assertEquals(Set.of("contraband", "weapons"), ledger.saleTags(swords));
+        assertEquals(Set.of("contraband"), ledger.saleTags(ledger.exportOffer("plain").orElseThrow()));
+    }
+
+    @Test
     void readsEveryKindOfBundlePart() {
         Ledger ledger = parse("""
                 name: Test
