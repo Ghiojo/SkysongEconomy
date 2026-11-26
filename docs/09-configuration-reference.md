@@ -243,6 +243,12 @@ effects:
 
 The text is `business.nameplate` in `messages.yml`.
 
+## `businesses/benches.yml` (`business/bench/BenchSettingsParser`)
+
+| Key | Meaning |
+| --- | --- |
+| `business-staff-can-use` | `true` (default) lets a business's owner and workers open its private SkysongCrafting benches while playing that character, without being bench members. A broken file turns it off |
+
 ## `nodes/settings.yml` (`nodes/NodeSettingsParser`)
 
 | Key | Meaning |

@@ -110,7 +110,7 @@ public final class SkysongEconomy extends JavaPlugin {
         businessFeature = BusinessFeature.start(this, paths, configFiles, databaseSettings(), skysongStats, wallet, trade,
                 pierFeature.piers(), messenger, messages);
         // SkysongCrafting benches tied to businesses.
-        benchFeature = BenchFeature.start(this, databaseSettings(), businessFeature.system());
+        benchFeature = BenchFeature.start(this, configFiles, databaseSettings(), businessFeature.system(), skysongStats);
         // The economy journal listens before nodes load, which can give farm primers back.
         journalFeature = JournalFeature.start(this, configFiles, databaseSettings(), calendar, businessFeature.system(),
                 materialIds, messenger, wallet);

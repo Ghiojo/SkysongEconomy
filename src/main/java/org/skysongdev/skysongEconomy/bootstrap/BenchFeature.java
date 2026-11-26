@@ -5,9 +5,15 @@ import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.ServicePriority;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.skysongdev.skysongEconomy.api.benches.BusinessBenches;
+import org.skysongdev.skysongEconomy.business.bench.BenchAccess;
 import org.skysongdev.skysongEconomy.business.bench.BenchLookup;
 import org.skysongdev.skysongEconomy.business.bench.BenchRegistry;
 import org.skysongdev.skysongEconomy.business.bench.BenchService;
+import org.skysongdev.skysongEconomy.business.bench.BenchSettings;
+import org.skysongdev.skysongEconomy.business.bench.BenchSettingsParser;
+import org.skysongdev.skysongEconomy.character.CharacterDirectory;
+import org.skysongdev.skysongEconomy.config.ConfigException;
+import org.skysongdev.skysongEconomy.config.YamlFiles;
 import org.skysongdev.skysongEconomy.data.database.AsyncBenchRepository;
 import org.skysongdev.skysongEconomy.data.database.BackgroundWriter;
 import org.skysongdev.skysongEconomy.data.database.ConnectionProvider;
@@ -16,6 +22,7 @@ import org.skysongdev.skysongEconomy.data.database.SqlBenchRepository;
 import org.skysongdev.skysongEconomy.data.database.StorageException;
 import org.skysongdev.skysongEconomy.events.BukkitBenchEvents;
 import org.skysongdev.skysongEconomy.integration.skysongcrafting.SkysongCraftingBenches;
+import org.skysongdev.skysongEconomy.integration.skysongcrafting.WorkstationAccessListener;
 import org.skysongdev.skysongEconomy.integration.skysongcrafting.WorkstationRemovalListener;
 
 import java.time.Clock;
@@ -51,9 +58,11 @@ public final class BenchFeature implements AutoCloseable {
     /**
      * Loads the saved links and registers the service; does nothing when businesses are disabled.
      *
-     * @param database the database to keep links in; the feature opens its own connection
+     * @param database   the database to keep links in; the feature opens its own connection
+     * @param characters whose character a player is playing, for business staff's access to benches
      */
-    public static BenchFeature start(JavaPlugin plugin, DatabaseSettings database, Optional<BusinessSystem> businesses) {
+    public static BenchFeature start(JavaPlugin plugin, YamlFiles configFiles, DatabaseSettings database,
+                                     Optional<BusinessSystem> businesses, CharacterDirectory characters) {
         Logger logger = plugin.getLogger();
         if (businesses.isEmpty()) {
             return new BenchFeature(null, List.of(), logger);
@@ -79,6 +88,8 @@ public final class BenchFeature implements AutoCloseable {
         system.businesses().addListener(benches);
         if (lookup.installed()) {
             events.registerEvents(new WorkstationRemovalListener(benches), plugin);
+            events.registerEvents(new WorkstationAccessListener(new BenchAccess(settings(configFiles, logger), benches,
+                    system.businesses(), characters)), plugin);
             // One tick later, once every plugin has loaded what it keeps: untie benches that were
             // removed while this plugin wasn't running.
             plugin.getServer().getScheduler().runTask(plugin, () -> benches.removeMissing(link -> logger.info(
@@ -88,6 +99,16 @@ public final class BenchFeature implements AutoCloseable {
         plugin.getServer().getServicesManager().register(BusinessBenches.class, service, plugin, ServicePriority.Normal);
         resources.add(() -> plugin.getServer().getServicesManager().unregister(BusinessBenches.class, service));
         return new BenchFeature(benches, resources, logger);
+    }
+
+    /** A broken benches.yml only turns business staff's access off. */
+    private static BenchSettings settings(YamlFiles configFiles, Logger logger) {
+        try {
+            return new BenchSettingsParser().parse(configFiles.load(BenchSettingsParser.FILE));
+        } catch (ConfigException e) {
+            logger.warning("Business staff can't use their benches until this is fixed: " + e.getMessage());
+            return BenchSettings.OFF;
+        }
     }
 
     /** @return SkysongCrafting's benches; {@link BenchLookup#NONE}, saying why, when it can't be used */

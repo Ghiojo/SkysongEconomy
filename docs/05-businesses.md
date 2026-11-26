@@ -436,6 +436,20 @@ still works.
   `skysongeconomy:business`): the business it works for, where its slot comes from, and the modules that give it
   something.
 
+## Crafting benches
+
+Staff can tie SkysongCrafting benches (workstations) to a business. A bench belongs to at most one business; a business
+can have any number. Tying a bench that belongs to another business moves it. Other plugins read and change the links
+through [`BusinessBenches`](11-events-and-api.md#crafting-benches-tied-to-businesses-apibenchesbusinessbenches) and
+the bench events. Needs SkysongCrafting 1.0.0 or newer.
+
+- **Business staff can use their benches.** When SkysongCrafting would refuse a player on a private bench, and the
+  bench belongs to a business whose owner or worker is the player's active character, they are let in. It is checked
+  on every click, so firing a worker or changing the owner takes it away at once. They don't become bench members.
+  Switch: `business-staff-can-use` in `businesses/benches.yml`.
+- **Links go away** when the business is deleted, when SkysongCrafting removes the bench (`/sc workbench delete`,
+  breaking it, or creating another bench on its block), and on startup for benches removed while the plugin was off.
+
 ## Deleting a business
 
 `/se business delete <id> confirm` removes it for good. Each listener cleans up its part, in this order:
@@ -448,8 +462,9 @@ still works.
 6. ledger selections are removed;
 7. every delivery is **refunded** to whoever paid for it;
 8. the nameplate is removed;
-9. its NPCs are removed;
-10. its gathering nodes become **unowned** (nobody can gather until staff give them a new owner), and primers planted
+9. its crafting benches are untied;
+10. its NPCs are removed;
+11. its gathering nodes become **unowned** (nobody can gather until staff give them a new owner), and primers planted
    in its farm nodes go back to their planters.
 
 A payment that fails during deletion is logged as a warning asking staff to pay by hand. The database removes the
