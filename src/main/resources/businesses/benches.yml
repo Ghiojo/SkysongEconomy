@@ -1,0 +1,7 @@
+# SkysongCrafting benches tied to businesses (/se business bench).
+#
+# business-staff-can-use: true lets a business's owner and workers open its private benches
+#   while they play the character who owns or works there, without being added as bench members.
+#   It is checked on every click, so firing a worker takes it away at once. Bench owners, members
+#   and players with SkysongCrafting's bypass permission can always use a bench.
+business-staff-can-use: true
