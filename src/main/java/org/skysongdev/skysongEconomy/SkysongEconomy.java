@@ -5,6 +5,7 @@ import org.bukkit.command.PluginCommand;
 import org.bukkit.plugin.ServicePriority;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.skysongdev.skysongEconomy.api.items.ItemCatalog;
+import org.skysongdev.skysongEconomy.bootstrap.BenchFeature;
 import org.skysongdev.skysongEconomy.bootstrap.BusinessFeature;
 import org.skysongdev.skysongEconomy.bootstrap.CalendarConnection;
 import org.skysongdev.skysongEconomy.bootstrap.BusinessSystem;
@@ -71,6 +72,7 @@ public final class SkysongEconomy extends JavaPlugin {
     private SkysongItemFactory importItems;
     private SkysongStatsAdapter skysongStats;
     private BusinessFeature businessFeature;
+    private BenchFeature benchFeature;
     private NodeFeature nodeFeature;
     private ModuleFeature moduleFeature;
     private NpcFeature npcFeature;
@@ -107,6 +109,8 @@ public final class SkysongEconomy extends JavaPlugin {
         pierFeature = PierFeature.start(this, configFiles, databaseSettings(), messenger);
         businessFeature = BusinessFeature.start(this, paths, configFiles, databaseSettings(), skysongStats, wallet, trade,
                 pierFeature.piers(), messenger, messages);
+        // SkysongCrafting benches tied to businesses.
+        benchFeature = BenchFeature.start(this, databaseSettings(), businessFeature.system());
         // The economy journal listens before nodes load, which can give farm primers back.
         journalFeature = JournalFeature.start(this, configFiles, databaseSettings(), calendar, businessFeature.system(),
                 materialIds, messenger, wallet);
@@ -151,6 +155,9 @@ public final class SkysongEconomy extends JavaPlugin {
         }
         if (nodeFeature != null) {
             nodeFeature.close();
+        }
+        if (benchFeature != null) {
+            benchFeature.close();
         }
         if (businessFeature != null) {
             businessFeature.close();
@@ -271,6 +278,11 @@ public final class SkysongEconomy extends JavaPlugin {
     /** The business system; its parts are empty when its config couldn't be read. */
     public BusinessFeature getBusinessFeature() {
         return businessFeature;
+    }
+
+    /** Benches tied to businesses; empty when businesses are disabled. Other plugins should rather use {@code BusinessBenches}. */
+    public BenchFeature getBenchFeature() {
+        return benchFeature;
     }
 
     /** The nodes system; its parts are empty when its config couldn't be read. */

@@ -41,6 +41,8 @@ modifiers in `api/prices`.
 | `EconomyRecordedEvent` (in `api/journal`) | A record was added to the economy journal: once per movement of money or goods, in sequence order | No | `getRecord()` (`EconomyRecord`), `getKind()`. See [Economy journal](17-economy-journal.md) |
 | `NodeHarvestEvent` (in `api/nodes`) | Someone harvested at a node: paid and rolled, items handed over right after | No | `getPlayer()`, `getNode()` (`NodeInfo`), `getCharacter()`, `getTier()`, `getCost()` (`HarvestCostInfo`: downtime, Harvest Tokens, money), `getItems()` (`ItemCount`s), `getModifiers()` (ids of the calendar modifiers that changed it), `getBooster()` (`BoosterInfo`: type and effect, when one was used up), `getResource()` (the farm resource, at a farm node) |
 | `FarmPlantingChangeEvent` (in `api/nodes`) | A primer was planted in a farm node, taken out (removal downtime paid), or given back to its planter because its node went or changed owner or type (also when the plugin starts) | No | `getChange()` (`PlantingChange`: `kind` `PLANTED`/`TAKEN_OUT`/`RETURNED`, node, resource, farm type, business, planter, who acted, `downtimePaid`, time), `getKind()`, `getPrimer()` (copies of the exact items) |
+| `BenchAssignEvent` (in `api/benches`) | A SkysongCrafting bench was tied to a business, or moved to it from another business | No | `getLink()` (`BenchLink`: bench block, business id, bench type, who, when), `getPrevious()` (the old link when it moved) |
+| `BenchUnassignEvent` (in `api/benches`) | A bench no longer belongs to its business | No | `getLink()`, `getCause()` (`UNASSIGNED`, `BUSINESS_DELETED`, `BENCH_REMOVED` in SkysongCrafting, `BENCH_MISSING` on startup), `getBy()` (who, when `UNASSIGNED`) |
 
 The shift message is not shown in game; `ShiftStartEvent.getMessage()` is meant for a Discord bridge or similar.
 
@@ -76,7 +78,8 @@ Get the plugin instance (`(SkysongEconomy) Bukkit.getPluginManager().getPlugin("
 
 Services other plugins should use instead of the getters above, from `Bukkit.getServicesManager().load(...)`:
 `api.piers.Piers`, `api.business.Businesses` (read-only `BusinessInfo` copies: `find`, `all`, `ownedBy`),
-`api.items.ItemCatalog` (read-only base values and good types, see below) and
+`api.items.ItemCatalog` (read-only base values and good types, see below), `api.benches.BusinessBenches`
+(crafting benches tied to businesses, see below; registered while businesses are enabled) and
 `api.journal.EconomyJournal` (reads the [economy journal](17-economy-journal.md#reading-the-journal); not registered
 while the journal is off).
 
@@ -104,6 +107,28 @@ main thread.
 ItemCatalog items = Bukkit.getServicesManager().load(ItemCatalog.class);
 Optional<BigDecimal> worth = items.baseValue("steel_sword");
 boolean weapon = items.hasGoodType("steel_sword", "weapon");
+```
+
+### Crafting benches tied to businesses: `api.benches.BusinessBenches`
+
+Which SkysongCrafting benches belong to which business. A bench (identified by its block, `BenchPosition`) belongs to
+at most one business; a business can have any number. Implementation: `business/bench/BenchRegistry` (rules, Bukkit-free,
+tested) wrapped by `business/bench/BenchService`; saved in `business_benches`.
+
+| Method | Does |
+| --- | --- |
+| `at(bench)` | The bench's `BenchLink`; empty when it isn't tied |
+| `of(businessId)` | The business's benches, oldest first |
+| `all()` | Every link, by business id |
+| `assign(bench, businessId, by)` | Ties it; a bench of another business moves in one step. Throws `BenchException` (`business.not-found`, `business.bench.no-crafting`, `business.bench.not-a-bench`, `business.bench.already-assigned`) |
+| `unassign(bench, by)` | Unties it; returns the removed link |
+
+`by` is a player's or plugin's name. Links go with a deleted business, and are untied when SkysongCrafting removes the
+bench (or it is found gone on startup). Without SkysongCrafting, links can be read and untied but not made.
+
+```java
+BusinessBenches benches = Bukkit.getServicesManager().load(BusinessBenches.class);
+benches.at(BenchPosition.of(block)).ifPresent(link -> { /* link.businessId() */ });
 ```
 
 `BusinessSystem` (in `bootstrap/`) is a record of every running business service: `businesses`, `types`, `access`,
@@ -184,6 +209,13 @@ adapter, and `SkysongClaimsAdapter.connect` refuses an API older than `REQUIRED_
 `claims/ClaimGateway` (read Claims as `ClaimView`, `canOwn`, `addOwner`, `clearOwners`, `setForSale`, the sign price
 line), which is all the Claim rules see. Version checks for both SkysongNPCs and SkysongClaims use
 `integration/ApiVersion`. See [Claims](15-claims.md).
+
+### SkysongCrafting: `integration/skysongcrafting/SkysongCraftingBenches`
+
+SkysongCrafting is optional. `bootstrap/BenchFeature` checks that it is enabled before loading anything from it, then
+`SkysongCraftingBenches` (the only class that reads SkysongCrafting's `Workstations` service) implements
+`business/bench/BenchLookup` (`typeAt(block)`). `WorkstationRemovalListener` unties a bench on `WorkstationRemoveEvent`.
+Without it, or with one older than 1.0.0 (no `Workstations` service), the lookup is `BenchLookup.NONE`.
 
 ### SkysongCalendar: `integration/skysongcalendar/SkysongCalendarAdapter`
 
