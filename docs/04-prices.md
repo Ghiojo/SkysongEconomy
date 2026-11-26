@@ -74,6 +74,9 @@ A good type is a tag such as `weapon` or `food` on a material id (`good_types` t
 `data/database/CachedGoodTypes`). Good types are used by category exports (sell "any weapon") and by
 `good-type:` modifiers.
 
+Other plugins read base values and good types through `api.items.ItemCatalog` (see
+[Events, API and integrations](11-events-and-api.md#item-values-and-good-types-apiitemsitemcatalog)).
+
 | Command | Permission | What it does |
 | --- | --- | --- |
 | `/se good add [materialId] <goodType>` | `skysongeconomy.good.manage` | Tags an item. Without an id, the held item. |
