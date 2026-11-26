@@ -1,5 +1,7 @@
 package org.skysongdev.skysongEconomy.commands.business;
 
+import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
+import org.skysongdev.skysongEconomy.business.bench.BenchRegistry;
 import org.jetbrains.annotations.Nullable;
 import org.skysongdev.skysongEconomy.business.BusinessService;
 import org.skysongdev.skysongEconomy.business.access.AccessService;
@@ -99,6 +101,17 @@ public final class BusinessCommand extends CommandGroup {
         if (moduleText != null) {
             moduleText.enableNpcs(targets);
         }
+    }
+
+    /**
+     * Adds {@code bench}: tying SkysongCrafting benches to businesses, and the bench count in
+     * {@code info}. Call it once.
+     */
+    public void enableBenches(BenchRegistry benches) {
+        register(new BenchCommand(support, benches));
+        support.addInfoReport((sender, business) -> support.messenger.send(sender, "business.bench.info-count",
+                Placeholder.unparsed("count",
+                        String.valueOf(benches.of(business.id()).size()))));
     }
 
     /**

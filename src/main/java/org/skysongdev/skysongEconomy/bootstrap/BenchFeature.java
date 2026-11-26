@@ -96,6 +96,7 @@ public final class BenchFeature implements AutoCloseable {
                     "Untied the bench at " + link.bench() + " from " + link.businessId() + ": it is no longer a "
                             + SKYSONG_CRAFTING + " bench")));
         }
+        system.command().enableBenches(benches);
         plugin.getServer().getServicesManager().register(BusinessBenches.class, service, plugin, ServicePriority.Normal);
         resources.add(() -> plugin.getServer().getServicesManager().unregister(BusinessBenches.class, service));
         return new BenchFeature(benches, resources, logger);
