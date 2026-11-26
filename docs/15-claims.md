@@ -134,6 +134,10 @@ we sell, with what it costs) or `/se claim buy [claim]` (the Claim named, or the
 `skysongeconomy.claims.buy`, default everyone. Buying uses the business menus, so it is off while businesses are
 disabled (the console says so).
 
+Before the confirmation opens, and again on **Confirm**, `ClaimPurchaseAttemptEvent` fires for a Claim on sale. A
+plugin that cancels it stops the purchase before SkysongClaims is asked and before any money moves; the player gets
+the plugin's message, or `claims.buy.cancelled` when it gave none.
+
 Both open a confirmation listing the Claim's type, the seller, the asking price, each modifier and its share, the
 total, the player's balance, and the character that will own it. On **Confirm** (`claims/ClaimPurchases.buy`):
 
@@ -206,6 +210,23 @@ public void onClaimPurchase(ClaimPurchaseEvent event) {
         if (modifier.key().equals("district_tax")) {
             treasury.store(modifier.share());
         }
+    }
+}
+```
+
+### `ClaimPurchaseAttemptEvent`
+
+Fires on the main thread when a character tries to buy a Claim SkysongEconomy has on sale: as the confirmation is
+about to open, and again on **Confirm** (`gui/claim/ClaimBuyScreens`). It comes before SkysongClaims' checks (so a
+plugin can explain a limit in its own words) and before any money moves. `getBuyer()` (the `CharacterRef`),
+`getClaimId()`, `getClaimTypeId()`. `setCancelled(Component reason)` stops it and tells the buyer why, after
+SkysongEconomy's prefix; `setCancelled(true)` stops it with `claims.buy.cancelled`.
+
+```java
+@EventHandler
+public void onClaimPurchaseAttempt(ClaimPurchaseAttemptEvent event) {
+    if (!titles.mayOwn(event.getBuyer(), event.getClaimTypeId())) {
+        event.setCancelled(Component.text("You need to be a Citizen to own this Claim.", NamedTextColor.RED));
     }
 }
 ```

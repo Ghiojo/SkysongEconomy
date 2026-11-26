@@ -1017,6 +1017,8 @@ claims:
     no-character: "<red>Choose a character first: Claims are owned by characters."
     menus-off: "<red>Buying Claims is off while businesses are disabled, since it uses their menus."
     type-limit: "<red>Your character already owns as many Claims of this type as allowed."
+    # Another plugin stopped the purchase without saying why (ClaimPurchaseAttemptEvent).
+    cancelled: "<red>You can't buy <yellow><claim></yellow> right now."
     full: "<red><yellow><claim></yellow> has no room for another owner."
     already-owner: "<red>Your character already owns <yellow><claim></yellow>."
     own-claim: "<red>One of your characters owns <yellow><claim></yellow>, so you can't buy it."

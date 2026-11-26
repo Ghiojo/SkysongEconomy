@@ -185,8 +185,9 @@ public final class ClaimFeature implements AutoCloseable {
     }
 
     /**
-     * Lets players buy Claims: the Buy button on Claim signs and the confirmation. Every purchase
-     * fires {@link ClaimPurchaseEvent} and tells the sellers.
+     * Lets players buy Claims: the Buy button on Claim signs and the confirmation. Other plugins may
+     * stop a purchase through {@code ClaimPurchaseAttemptEvent}; every purchase fires
+     * {@link ClaimPurchaseEvent} and tells the sellers.
      *
      * @return the confirmation screens, or {@code null} when buying is off (no menus, or past sales
      *         or waiting payouts can't be read, which would reuse sale numbers or lose money owed)
@@ -212,7 +213,7 @@ public final class ClaimFeature implements AutoCloseable {
             return null;
         }
         ClaimBuyScreens screens = new ClaimBuyScreens(purchases, adapter, inputs.characters(), inputs.wallet(),
-                inputs.menus().get().theme(), inputs.messenger());
+                inputs.menus().get().theme(), inputs.messenger(), plugin.getServer().getPluginManager());
         adapter.addMenuButton(BUY_BUTTON, new ClaimSignButton(screens::buttonIcon, screens::open));
         return screens;
     }
