@@ -1,8 +1,9 @@
 package org.skysongdev.skysongEconomy.data.database;
 
-import org.skysongdev.skysongEconomy.trade.GoodTypes;
+import org.skysongdev.skysongEconomy.trade.GoodTypeIndex;
 
 import java.sql.SQLException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
@@ -13,7 +14,7 @@ import java.util.Set;
  * and written through to the {@link GoodTypeRepository}. {@code /se good} changes them through
  * this class so the copy stays current.
  */
-public final class CachedGoodTypes implements GoodTypes {
+public final class CachedGoodTypes implements GoodTypeIndex {
     private final GoodTypeRepository repository;
     private final Map<String, Set<String>> byItem = new HashMap<>();
 
@@ -30,6 +31,11 @@ public final class CachedGoodTypes implements GoodTypes {
     @Override
     public Set<String> of(String materialId) {
         return Set.copyOf(byItem.getOrDefault(materialId, Set.of()));
+    }
+
+    @Override
+    public Map<String, Set<String>> all() {
+        return Collections.unmodifiableMap(byItem);
     }
 
     /** @return whether at least one item has this good type */

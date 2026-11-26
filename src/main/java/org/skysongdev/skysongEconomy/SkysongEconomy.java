@@ -2,7 +2,9 @@ package org.skysongdev.skysongEconomy;
 
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.command.PluginCommand;
+import org.bukkit.plugin.ServicePriority;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.skysongdev.skysongEconomy.api.items.ItemCatalog;
 import org.skysongdev.skysongEconomy.bootstrap.BusinessFeature;
 import org.skysongdev.skysongEconomy.bootstrap.CalendarConnection;
 import org.skysongdev.skysongEconomy.bootstrap.BusinessSystem;
@@ -38,6 +40,8 @@ import org.skysongdev.skysongEconomy.items.SkysongItemFactory;
 import org.skysongdev.skysongEconomy.messaging.MessageCatalog;
 import org.skysongdev.skysongEconomy.messaging.Messenger;
 import org.skysongdev.skysongEconomy.money.Wallet;
+import org.skysongdev.skysongEconomy.prices.CatalogService;
+import org.skysongdev.skysongEconomy.prices.ItemLookup;
 import org.skysongdev.skysongEconomy.prices.PriceDatabase;
 import org.skysongdev.skysongEconomy.prices.PriceSettings;
 import org.skysongdev.skysongitems.api.SkysongItemsApi;
@@ -63,6 +67,7 @@ public final class SkysongEconomy extends JavaPlugin {
     private PriceDatabase prices;
     private PriceSettings priceSettings;
     private CachedGoodTypes goodTypes;
+    private ItemCatalog itemCatalog;
     private SkysongItemFactory importItems;
     private SkysongStatsAdapter skysongStats;
     private BusinessFeature businessFeature;
@@ -93,6 +98,7 @@ public final class SkysongEconomy extends JavaPlugin {
         Messenger messenger = new Messenger(MiniMessage.miniMessage(), messages);
         loadPrices(configFiles);
         MaterialIdResolver materialIds = new MaterialIdResolver(skysongItems.tags());
+        registerItemCatalog(materialIds);
         Wallet wallet = new GringottsWallet();
         // The IC calendar, when SkysongCalendar is installed; calendar node modifiers follow it.
         CalendarClock calendar = CalendarConnection.connect(this);
@@ -156,6 +162,9 @@ public final class SkysongEconomy extends JavaPlugin {
         if (journalFeature != null) {
             journalFeature.close();
         }
+        if (itemCatalog != null) {
+            getServer().getServicesManager().unregister(ItemCatalog.class, itemCatalog);
+        }
         if (connections != null) {
             connections.close();
         }
@@ -189,6 +198,12 @@ public final class SkysongEconomy extends JavaPlugin {
         } catch (StorageException e) {
             getLogger().log(Level.SEVERE, "The price database could not be loaded", e);
         }
+    }
+
+    /** Lets other plugins read base values and good types through the public {@link ItemCatalog}. */
+    private void registerItemCatalog(MaterialIdResolver materialIds) {
+        itemCatalog = new CatalogService(new ItemLookup(prices, priceSettings, goodTypes), materialIds::fromItem);
+        getServer().getServicesManager().register(ItemCatalog.class, itemCatalog, this, ServicePriority.Normal);
     }
 
     private DatabaseSettings databaseSettings() {

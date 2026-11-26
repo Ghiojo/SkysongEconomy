@@ -56,9 +56,9 @@ Get the plugin instance (`(SkysongEconomy) Bukkit.getPluginManager().getPlugin("
 
 | Getter | Returns |
 | --- | --- |
-| `getPrices()` | `PriceDatabase`: every item's base value (`value(materialId)`, `set`, `remove`, `context`) |
+| `getPrices()` | `PriceDatabase`: every item's base value (`value(materialId)`, `set`, `remove`, `context`). To only read values, use `ItemCatalog` |
 | `getPriceSettings()` | `PriceSettings`: decimals and `truncate` |
-| `getGoodTypes()` | `CachedGoodTypes`: `of(materialId)` and changes |
+| `getGoodTypes()` | `CachedGoodTypes`: `of(materialId)`, `all()` and changes. To only read good types, use `ItemCatalog` |
 | `getImportItems()` | `SkysongItemFactory` for the `items/` folder |
 | `getSkysongStats()` | `SkysongStatsAdapter` |
 | `getBusinessFeature().system()` | `Optional<BusinessSystem>`, empty when businesses are disabled |
@@ -75,9 +75,36 @@ Get the plugin instance (`(SkysongEconomy) Bukkit.getPluginManager().getPlugin("
 | `getNpcFeature().businessNpcs()` | `Optional<BusinessNpcs>`: which NPCs each business has and the slots they fill; also empty when `businesses/npcs.yml` can't be read |
 
 Services other plugins should use instead of the getters above, from `Bukkit.getServicesManager().load(...)`:
-`api.piers.Piers`, `api.business.Businesses` (read-only `BusinessInfo` copies: `find`, `all`, `ownedBy`) and
+`api.piers.Piers`, `api.business.Businesses` (read-only `BusinessInfo` copies: `find`, `all`, `ownedBy`),
+`api.items.ItemCatalog` (read-only base values and good types, see below) and
 `api.journal.EconomyJournal` (reads the [economy journal](17-economy-journal.md#reading-the-journal); not registered
 while the journal is off).
+
+### Item values and good types: `api.items.ItemCatalog`
+
+The stable, read-only way to read the price database and the good types; use it rather than `getPrices()` and
+`getGoodTypes()`. It is registered for as long as the plugin is enabled. Implementation: `prices/ItemLookup` (Bukkit-free, tested), wrapped by `prices/CatalogService`.
+
+| Method | Returns |
+| --- | --- |
+| `baseValue(materialId)` | The item's base value, truncated to `prices.yml` decimals as players see it; empty when it has none or it can't be worked out |
+| `baseValues()` | Every base value by lower-case material id, alphabetically (values that can't be worked out are left out) |
+| `decimals()` | How many decimals prices keep |
+| `goodTypes(materialId)` | The item's good types, alphabetically |
+| `hasGoodType(materialId, goodType)` | Whether the item has that good type |
+| `allGoodTypes()` | Every good type at least one item has |
+| `itemsOf(goodType)` | The lower-case material ids that have that good type |
+| `materialId(itemStack)` | The Skysong material id of a stack; empty for air or a non-Skysong item |
+
+Material ids and good types ignore case and surrounding spaces, and everything returned is an immutable copy.
+Values are worked out on every call, so they follow `/se ledger` and `/se good` changes at once. Call it on the
+main thread.
+
+```java
+ItemCatalog items = Bukkit.getServicesManager().load(ItemCatalog.class);
+Optional<BigDecimal> worth = items.baseValue("steel_sword");
+boolean weapon = items.hasGoodType("steel_sword", "weapon");
+```
 
 `BusinessSystem` (in `bootstrap/`) is a record of every running business service: `businesses`, `types`, `access`,
 `vaults`, `tokens`, `activities`, `shifts`, `training`, `economyLogistics`, `ledgers`, `ledgerSelections`,
