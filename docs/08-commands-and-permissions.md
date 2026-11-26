@@ -71,7 +71,11 @@ child may add a stricter one.
 | `group <id> add\|remove <group> <player> [profile]` | owner or staff | Members of custom groups |
 | `vault <id> [collect]` | owner or staff | Shows the vault; `collect` pays it out |
 | `npcs <id>` | owner or staff | NPC slots by source, and each NPC with its number and what it is waiting for. Only with SkysongNPCs |
-| `info <id>` | anyone with the group permission | Type, tier, owner, workers, picks, block |
+| `info <id>` | anyone with the group permission | Type, tier, owner, workers, picks, block, number of crafting benches |
+| `bench assign <id>` | `skysongeconomy.business.bench` | Ties the looked-at SkysongCrafting bench to the business; a bench of another business moves. Only with SkysongCrafting |
+| `bench unassign` | `skysongeconomy.business.bench` | Unties the looked-at bench from its business |
+| `bench info` | `skysongeconomy.business.bench` | The looked-at bench's type, business, who tied it and when |
+| `bench list <id>` | `skysongeconomy.business.bench` | The business's benches: type, block, who and when (also from the console) |
 
 ## `/se tokens`: Gathering Tokens
 
@@ -178,6 +182,7 @@ All are declared in `src/main/resources/plugin.yml`.
 | `skysongeconomy.ledger.remove` | op | `/se ledger remove` |
 | `skysongeconomy.business` | everyone | `/se business`; owners can manage only their own businesses |
 | `skysongeconomy.business.admin` | op | Every business command on every business; staff options in business menus |
+| `skysongeconomy.business.bench` | op | `/se business bench`: tying SkysongCrafting benches to businesses |
 | `skysongeconomy.business.break` | op | Breaking business blocks (the business keeps its data until moved) |
 | `skysongeconomy.tokens` | everyone | `/se tokens balance` for yourself |
 | `skysongeconomy.tokens.admin` | op | Seeing and changing anyone's tokens |

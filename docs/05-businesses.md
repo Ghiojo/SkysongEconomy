@@ -443,6 +443,9 @@ can have any number. Tying a bench that belongs to another business moves it. Ot
 through [`BusinessBenches`](11-events-and-api.md#crafting-benches-tied-to-businesses-apibenchesbusinessbenches) and
 the bench events. Needs SkysongCrafting 1.0.0 or newer.
 
+Staff (`skysongeconomy.business.bench`) look at a bench and use `/se business bench assign <id>`, `unassign` or `info`;
+`/se business bench list <id>` lists a business's benches, and `/se business info` shows how many it has.
+
 - **Business staff can use their benches.** When SkysongCrafting would refuse a player on a private bench, and the
   bench belongs to a business whose owner or worker is the player's active character, they are let in. It is checked
   on every click, so firing a worker or changing the owner takes it away at once. They don't become bench members.

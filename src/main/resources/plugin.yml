@@ -45,6 +45,9 @@ permissions:
   skysongeconomy.business.admin:
     description: Allows every /se business command on every business (create, delete, tiers, owners)
     default: op
+  skysongeconomy.business.bench:
+    description: Allows /se business bench, to tie SkysongCrafting benches to businesses
+    default: op
   skysongeconomy.business.break:
     description: Allows breaking business blocks; the business is kept until it is moved
     default: op
@@ -95,6 +98,7 @@ permissions:
       skysongeconomy.ledger.remove: true
       skysongeconomy.business: true
       skysongeconomy.business.admin: true
+      skysongeconomy.business.bench: true
       skysongeconomy.business.break: true
       skysongeconomy.tokens: true
       skysongeconomy.tokens.admin: true
