@@ -304,7 +304,20 @@ public final class DatabaseSchema {
                     + "INDEX economy_journal_business (business_id, recorded_at), "
                     + "INDEX economy_journal_pier (pier_id, recorded_at), "
                     + "INDEX economy_journal_subject (subject_id), "
-                    + "INDEX economy_journal_actor (actor_uuid, recorded_at)) ENGINE=InnoDB");
+                    + "INDEX economy_journal_actor (actor_uuid, recorded_at)) ENGINE=InnoDB",
+            // The SkysongCrafting benches tied to each business, one row per bench block.
+            // assigned_by is a player's or plugin's name; assigned_at is epoch millis.
+            "CREATE TABLE IF NOT EXISTS business_benches ("
+                    + "world VARCHAR(128) NOT NULL, "
+                    + "x INT NOT NULL, "
+                    + "y INT NOT NULL, "
+                    + "z INT NOT NULL, "
+                    + "business_id VARCHAR(64) NOT NULL, "
+                    + "assigned_by VARCHAR(64) NOT NULL, "
+                    + "assigned_at BIGINT NOT NULL, "
+                    + "PRIMARY KEY (world, x, y, z), "
+                    + "INDEX (business_id), "
+                    + "FOREIGN KEY (business_id) REFERENCES businesses(id) ON DELETE CASCADE) ENGINE=InnoDB");
 
     private DatabaseSchema() {
     }

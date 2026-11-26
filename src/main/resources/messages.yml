@@ -506,6 +506,10 @@ business:
           - "<gray>Receives what <module><gray> gives."
           - ""
           - "<red>This can't be changed afterwards."
+  bench:
+    no-crafting: "<red>SkysongCrafting isn't installed, so benches can't be tied to businesses."
+    not-a-bench: "<red>That block isn't a SkysongCrafting bench."
+    already-assigned: "<red>That bench already belongs to <yellow><business></yellow>."
   npcs:
     no-such-source: "<red>This business has no NPC slots for <yellow><source></yellow>."
     no-free-slot: "<red>Every NPC slot of that kind is filled."
