@@ -6,6 +6,8 @@ import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.plugin.PluginManager;
+import org.skysongdev.skysongEconomy.api.claims.ClaimPurchaseAttemptEvent;
 import org.skysongdev.skysongEconomy.api.claims.ClaimSale;
 import org.skysongdev.skysongEconomy.character.CharacterDirectory;
 import org.skysongdev.skysongEconomy.character.CharacterRef;
@@ -40,15 +42,18 @@ public final class ClaimBuyScreens {
     private final Wallet wallet;
     private final MenuTheme theme;
     private final Messenger messenger;
+    private final PluginManager events;
 
+    /** @param events where {@link ClaimPurchaseAttemptEvent} is fired */
     public ClaimBuyScreens(ClaimPurchases purchases, ClaimGateway claims, CharacterDirectory characters, Wallet wallet,
-                           MenuTheme theme, Messenger messenger) {
+                           MenuTheme theme, Messenger messenger, PluginManager events) {
         this.purchases = purchases;
         this.claims = claims;
         this.characters = characters;
         this.wallet = wallet;
         this.theme = theme;
         this.messenger = messenger;
+        this.events = events;
     }
 
     /**
@@ -59,6 +64,9 @@ public final class ClaimBuyScreens {
         Optional<CharacterRef> character = characters.active(player.getUniqueId());
         if (character.isEmpty()) {
             messenger.send(player, "claims.buy.no-character");
+            return;
+        }
+        if (stoppedByAnotherPlugin(player, character.get(), claimId)) {
             return;
         }
         try {
@@ -90,6 +98,9 @@ public final class ClaimBuyScreens {
             open(player, quote.claimId());
             return;
         }
+        if (stoppedByAnotherPlugin(player, shown, quote.claimId())) {
+            return;
+        }
         try {
             ClaimSale sale = purchases.buy(shown, quote.claimId(), quote.total());
             ClaimView claim = claims.find(sale.claimId()).orElseThrow();
@@ -103,6 +114,28 @@ public final class ClaimBuyScreens {
         } catch (RefusedException refusal) {
             messenger.send(player, refusal);
         }
+    }
+
+    /**
+     * Fires {@link ClaimPurchaseAttemptEvent} for a Claim on sale, before SkysongClaims' checks and
+     * before any money moves, and tells the player when another plugin stops the purchase.
+     *
+     * @return true when it was stopped
+     */
+    private boolean stoppedByAnotherPlugin(Player player, CharacterRef buyer, String claimId) {
+        Optional<ClaimView> claim = claims.find(claimId).filter(purchases::isForSale);
+        if (claim.isEmpty()) {
+            // Not on sale here: the purchase refuses with its own message.
+            return false;
+        }
+        ClaimPurchaseAttemptEvent attempt = new ClaimPurchaseAttemptEvent(buyer, claim.get().id(), claim.get().typeId());
+        events.callEvent(attempt);
+        if (!attempt.isCancelled()) {
+            return false;
+        }
+        attempt.getReason().ifPresentOrElse(reason -> messenger.send(player, reason),
+                () -> messenger.send(player, "claims.buy.cancelled", Placeholder.unparsed("claim", claim.get().id())));
+        return true;
     }
 
     private ItemStack summary(Player player, ClaimView claim, ClaimQuote quote, CharacterRef character) {

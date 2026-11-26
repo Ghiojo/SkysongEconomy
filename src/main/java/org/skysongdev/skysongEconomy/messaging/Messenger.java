@@ -45,6 +45,11 @@ public final class Messenger {
         send(recipient, refusal.messageKey(), unparsed(refusal.placeholders()));
     }
 
+    /** Sends a text another plugin wrote, after the configured prefix. */
+    public void send(CommandSender recipient, Component message) {
+        recipient.sendMessage(miniMessage.deserialize(catalog.text(MessageCatalog.PREFIX)).append(message));
+    }
+
     /** @return the {@code messages.yml} text {@code key} as a component, without the prefix */
     public Component render(String key, TagResolver... placeholders) {
         return miniMessage.deserialize(catalog.text(key), placeholders);
