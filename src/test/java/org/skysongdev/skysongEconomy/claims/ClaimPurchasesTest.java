@@ -206,6 +206,35 @@ class ClaimPurchasesTest {
     }
 
     @Test
+    void aDiscountedResaleStillPaysTheSellersTheWholeAskingPrice() {
+        fixture.claims.addOwner("oak_house", BRAM);
+        fixture.claims.addOwner("oak_house", CARA);
+        fixture.sales.listByOwner(BRAM, "oak_house", "1000");
+        add("council_relief", new ModifierTarget.ClaimType("house"), new ModifierAmount.Percent(new BigDecimal("-10")));
+
+        ClaimSale sale = purchases.buy(ANNA, "oak_house", money("900"));
+
+        assertEquals(money("4100"), wallet.balance(ANNA.player()), "the buyer pays 900");
+        assertEquals(money("500"), wallet.balance(BRAM.player()));
+        assertEquals(money("500"), wallet.balance(CARA.player()), "the sellers still share 1000");
+        assertEquals(money("-100"), sale.modifierTotal());
+        assertEquals(money("-100"), sale.modifiers().get(0).share());
+        assertEquals(money("900"), sale.paid());
+    }
+
+    @Test
+    void aClaimDiscountedToNothingIsBoughtWithoutPaying() {
+        add("council_relief", new ModifierTarget.ClaimType("house"), new ModifierAmount.Percent(new BigDecimal("-100")));
+        wallet.balances.clear();
+
+        ClaimSale sale = purchases.buy(ANNA, "rose_house", BigDecimal.ZERO.setScale(1));
+
+        assertEquals(List.of(ANNA), fixture.claims.find("rose_house").orElseThrow().owners());
+        assertEquals(0, sale.paid().signum());
+        assertTrue(wallet.balances.isEmpty(), "nothing was taken or given");
+    }
+
+    @Test
     void theListerGetsWhatTruncationLeavesOver() {
         fixture.claims.addOwner("oak_house", BRAM);
         fixture.claims.addOwner("oak_house", CARA);

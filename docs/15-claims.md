@@ -61,8 +61,8 @@ name). The price stays here.
 ## Claim modifiers
 
 Claim modifiers are ordinary price modifiers (`/se modifier`, see [Prices](04-prices.md#price-modifiers-se-modifier))
-with `on:claims`, on `global`, `claim-type:<type>` or `claim:<claim>`. They are always positive, and can be a
-percentage (`+10%`) or a flat amount (`+50`). Trade modifiers (`on:imports`, `exports`, `both`) never change a
+with `on:claims`, on `global`, `claim-type:<type>` or `claim:<claim>`. They can be a percentage, raising or lowering
+the price (`+10%`, `-10%`), or a flat amount, which only raises it (`+50`). Trade modifiers (`on:imports`, `exports`, `both`) never change a
 Claim's price.
 
 `claims/ClaimPricing.quote` works out what a Claim costs. Every modifier's share comes from the **asking price
@@ -71,12 +71,19 @@ alone**, so each one has an exact amount:
 ```
 share of a percentage = asking price x percent / 100, truncated
 share of a flat       = its amount, truncated
-total                 = asking price + every share
+modifier total        = every share added up, never below minus the asking price
+total                 = asking price + modifier total, so never below 0
 ```
 
 Example: a house asking 2,000, with `district_tax claim-type:house +10%` (share 200) and
 `registry_fee claim-type:house +50` (share 50), costs 2,250. The seller's part is always the asking price; the
 shares never go to the seller.
+
+**Discounts.** A negative percentage has a negative share: `council_relief claim-type:house -10%` makes that house
+cost 1,800. The seller still receives the whole asking price, so in a resale the discount is new money; in a server
+sale nobody is paid anyway. A Claim discounted to 0 is bought without taking any money. Signs show
+`claims.sign-price-lowered` and the menus show the share with a `-` sign (`<sign>` in `claims.price-share` and
+`claims.buy.confirm.share`).
 
 `ClaimQuote` holds the asking price, each `Share` (the modifier and its amount), the modifier total and the total.
 `/se claim price view` lists them, and `/se claim list` shows the total with the asking price.
@@ -109,6 +116,7 @@ blanks it otherwise: a Claim nobody sells, one that is owned, or one another plu
 claims:
   sign-price: "<gold><price>"                 # e.g. "1,950 Pouches"; signs fit about 15 characters
   sign-price-raised: "<gold><price> <red>↑"   # used when modifiers add to the asking price
+  sign-price-lowered: "<gold><price> <green>↓" # used when discounts take from it
 ```
 
 SkysongClaims saves the line, so it is only written when its text changes; the last text written for each Claim is
@@ -196,7 +204,7 @@ the main thread after a sale is done and recorded, and can't be cancelled. `getS
 | `seller` | Empty for a server sale. In a resale, a `Seller`: `listedBy` (who put it on sale), `owners` (everyone who owned it), `payouts` (what each player account received; they add up to the asking price) |
 | `askingPrice` | The Claim's own price (in a resale, what the seller receives) |
 | `modifiers` | Each `AppliedModifier`: `id`, `key` (such as `district_tax`), `target` (`claim-type:house`), `kind` (`percent` or `flat`), `value`, `share` (money), `displayName` |
-| `modifierTotal` | The sum of the shares, never negative |
+| `modifierTotal` | The sum of the shares: negative when discounts outweigh the rest, never below `-askingPrice` |
 | `paid` | What the buyer paid: `askingPrice + modifierTotal` |
 | `sellerPaidLater` | Whether some seller's share couldn't be paid at once and waits until they join |
 | `at` | When |
@@ -207,7 +215,7 @@ A treasury keeping a district tax:
 @EventHandler
 public void onClaimPurchase(ClaimPurchaseEvent event) {
     for (AppliedModifier modifier : event.getSale().modifiers()) {
-        if (modifier.key().equals("district_tax")) {
+        if (modifier.key().equals("district_tax") && modifier.share().signum() > 0) {
             treasury.store(modifier.share());
         }
     }

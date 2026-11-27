@@ -22,8 +22,9 @@ import java.util.Optional;
  * @param buyer         the character that now owns it; {@code buyer.player()} is the account that paid
  * @param seller        who sold it and what each received; empty when the server sold it
  * @param askingPrice   the Claim's own price
- * @param modifiers     every modifier that raised it, with its share, in the order they were set
- * @param modifierTotal the sum of the shares, never negative
+ * @param modifiers     every modifier that raised or lowered it, with its share, in the order they were set
+ * @param modifierTotal the sum of the shares, negative when discounts outweigh the rest, never below
+ *                      {@code -askingPrice}
  * @param paid          what the buyer paid
  * @param sellerPaidLater whether some seller's share couldn't be paid at once and waits until they join
  * @param at            when it was bought

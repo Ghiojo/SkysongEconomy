@@ -85,6 +85,68 @@ class ClaimPricingTest {
     }
 
     @Test
+    void aDiscountTakesItsShareOffTheAskingPrice() {
+        fixture.sales.setPrice("rose_house", "2000", "Staff");
+        PriceModifier relief = add("council_relief", new ModifierTarget.ClaimType("house"), percent("-10"));
+
+        ClaimQuote quote = pricing.quote("rose_house");
+
+        assertEquals(List.of(new ClaimQuote.Share(relief, money("-200"))), quote.shares());
+        assertEquals(money("-200"), quote.modifierTotal());
+        assertEquals(money("1800"), quote.total());
+        assertEquals(money("2000"), quote.askingPrice(), "the seller's part never changes");
+        assertEquals(ClaimQuote.Change.LOWERED, quote.change());
+        assertEquals("-", quote.shares().get(0).sign());
+        assertEquals(money("200"), quote.shares().get(0).magnitude());
+    }
+
+    @Test
+    void raisesAndDiscountsAddUp() {
+        fixture.sales.setPrice("rose_house", "2000", "Staff");
+        add("council_tax", new ModifierTarget.ClaimType("house"), percent("10"));
+        add("festival", ModifierTarget.GLOBAL, percent("-10"));
+
+        ClaimQuote quote = pricing.quote("rose_house");
+
+        assertEquals(0, quote.modifierTotal().signum());
+        assertEquals(money("2000"), quote.total());
+        assertTrue(quote.isModified());
+        assertEquals(ClaimQuote.Change.NONE, quote.change());
+    }
+
+    @Test
+    void discountsNeverTakeTheTotalBelowZero() {
+        fixture.sales.setPrice("rose_house", "2000", "Staff");
+        add("relief", new ModifierTarget.ClaimType("house"), percent("-80"));
+        add("festival", ModifierTarget.GLOBAL, percent("-50"));
+
+        ClaimQuote quote = pricing.quote("rose_house");
+
+        assertEquals(money("-2000"), quote.modifierTotal());
+        assertEquals(0, quote.total().signum());
+    }
+
+    @Test
+    void aRaisedQuoteSaysSo() {
+        fixture.sales.setPrice("rose_house", "2000", "Staff");
+        add("council_tax", new ModifierTarget.ClaimType("house"), percent("10"));
+
+        ClaimQuote quote = pricing.quote("rose_house");
+
+        assertEquals(ClaimQuote.Change.RAISED, quote.change());
+        assertEquals("+", quote.shares().get(0).sign());
+    }
+
+    @Test
+    void typeModifierApiTakesADiscount() {
+        fixture.sales.setPrice("rose_house", "2000", "Staff");
+
+        pricing.setTypeModifier("council_relief", "house", percent("-10"), null, null, "SkysongPolitics");
+
+        assertEquals(money("1800"), pricing.quote("rose_house").total());
+    }
+
+    @Test
     void modifiersOnlyReachTheirClaims() {
         fixture.claims.addType("manor", 1).add("old_manor", "manor");
         fixture.sales.setPrice("old_manor", "5000", "Staff");
@@ -115,7 +177,8 @@ class ClaimPricingTest {
         assertEquals(replaced.modifier(), pricing.removeTypeModifier("district_tax", "house").orElseThrow());
         assertTrue(pricing.removeTypeModifier("district_tax", "house").isEmpty());
         assertEquals(money("2000"), pricing.quote("rose_house").total());
-        assertThrows(PriceException.class, () -> pricing.setTypeModifier("festival", "house", percent("-10"), null, null, "X"));
+        assertThrows(PriceException.class, () -> pricing.setTypeModifier("festival", "house", flat("-10"), null, null, "X"),
+                "a flat discount is refused");
     }
 
     @Test

@@ -126,7 +126,7 @@ public final class ClaimPurchases {
             throw new ClaimException("claims.buy.price-changed", Map.of("claim", quote.claimId(),
                     "price", wallet.format(quote.total())));
         }
-        if (!wallet.withdraw(buyer.player(), quote.total())) {
+        if (quote.total().signum() > 0 && !wallet.withdraw(buyer.player(), quote.total())) {
             throw new ClaimException("claims.buy.no-money", Map.of("claim", quote.claimId(),
                     "price", wallet.format(quote.total()), "balance", wallet.format(wallet.balance(buyer.player()))));
         }
@@ -185,7 +185,7 @@ public final class ClaimPurchases {
     }
 
     private void refund(CharacterRef buyer, ClaimQuote quote) {
-        if (!wallet.deposit(buyer.player(), quote.total())) {
+        if (quote.total().signum() > 0 && !wallet.deposit(buyer.player(), quote.total())) {
             warnings.accept("Refund failed: " + buyer.player() + " (" + buyer.profile() + ") paid "
                     + wallet.format(quote.total()) + " for the Claim " + quote.claimId()
                     + " but SkysongClaims refused them as owner, and the money could not be given back. Pay it back by hand.");

@@ -119,7 +119,8 @@ For an import, "involving" means any item its bundle can deliver; for an export,
 - `on:imports` (the default), `on:exports` or `on:both` says which trades it changes. `on:claims` makes it a
   Claim modifier instead; it is the default on `claim-type:` and `claim:` targets. `both` never reaches Claims, so
   no trade modifier changes a house price.
-- Claim modifiers only **raise** prices (`prices.modifiers.claim-discount`), and only go on `global`, `claim-type:`
+- Claim modifiers lower prices only with a **percentage** (`-10%`); a flat discount is refused
+  (`prices.modifiers.claim-discount`). They only go on `global`, `claim-type:`
   or `claim:` (`prices.modifiers.not-a-claim-target`). Claim targets need `on:claims`
   (`prices.modifiers.claims-only-target`). `claim-type:` and `claim:` ids are checked against SkysongClaims.
 - `for:<time>` makes it expire, such as `30m`, `12h`, `7d` or `1d12h`. Without it, it never expires. Expired

@@ -306,7 +306,9 @@ public final class EconomyRecorder {
 
     /**
      * A Claim was bought: buyer to each seller's account in a resale, or to the server in a server
-     * sale, and buyer to server for the modifiers' shares.
+     * sale, and buyer to server for the modifiers' shares. When discounts make the modifier total
+     * negative, the server pays the buyer that much instead, since the sellers still get the whole
+     * asking price.
      */
     public EconomyRecord claimBought(ClaimSale sale) {
         MoneyAccount buyer = MoneyAccount.player(sale.buyer().player());
@@ -322,6 +324,7 @@ public final class EconomyRecorder {
                 seller -> seller.payouts().forEach((account, amount) -> record.pay(buyer, MoneyAccount.player(account), amount)),
                 () -> record.pay(buyer, MoneyAccount.SERVER, sale.askingPrice()));
         record.pay(buyer, MoneyAccount.SERVER, sale.modifierTotal());
+        record.pay(MoneyAccount.SERVER, buyer, sale.modifierTotal().negate());
         return record.save();
     }
 
