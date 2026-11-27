@@ -31,9 +31,11 @@ import java.util.Optional;
  * <pre>
  * share of a percentage = asking price x percent / 100, truncated
  * share of a flat       = its amount, truncated
- * total                 = asking price + every share
+ * modifier total        = every share added up, but never below minus the asking price
+ * total                 = asking price + modifier total, so never below 0
  * </pre>
- * Claim modifiers are always positive, so the total is never below the asking price. When
+ * A percentage can be negative (a discount, such as a council's -10% on a Claim type), so its share
+ * is negative; flat amounts are always positive. When
  * businesses are disabled there are no price modifiers, and Claims cost their asking price.
  * Main thread only.
  */
@@ -69,7 +71,8 @@ public final class ClaimPricing {
         BigDecimal asking = prices.value(claim.id()).orElseThrow(() -> ClaimException.about("claims.no-price", claim.id()));
         List<ClaimQuote.Share> shares = applying(claim).stream()
                 .map(modifier -> new ClaimQuote.Share(modifier, share(asking, modifier.amount()))).toList();
-        BigDecimal modifierTotal = shares.stream().map(ClaimQuote.Share::amount).reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal modifierTotal = shares.stream().map(ClaimQuote.Share::amount).reduce(BigDecimal.ZERO, BigDecimal::add)
+                .max(asking.negate());
         return new ClaimQuote(claim.id(), claim.typeId(), asking, shares, modifierTotal, asking.add(modifierTotal));
     }
 
@@ -82,7 +85,7 @@ public final class ClaimPricing {
      * Adds a modifier on every Claim of a type, or replaces the one with the same key there.
      *
      * @param key         the modifier's type, such as {@code district_tax}
-     * @param amount      a positive percentage or flat amount
+     * @param amount      a percentage (negative for a discount) or a positive flat amount
      * @param duration    how long it lasts, or {@code null} for ever
      * @param displayName shown when players look at a price, or {@code null} for one made from the key and amount
      * @param by          who set it, such as a plugin's name

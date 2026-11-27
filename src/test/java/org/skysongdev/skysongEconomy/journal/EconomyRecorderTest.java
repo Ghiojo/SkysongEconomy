@@ -270,6 +270,20 @@ class EconomyRecorderTest {
     }
 
     @Test
+    void aDiscountIsPaidToTheBuyerByTheServer() {
+        CharacterRef cara = new CharacterRef(UUID.nameUUIDFromBytes("cara".getBytes()), "Cara");
+        ClaimSale resale = new ClaimSale(9, "rose_house", "house", cara,
+                Optional.of(new Seller(ANNA, List.of(ANNA), Map.of(ANNA.player(), new BigDecimal("1000")))),
+                new BigDecimal("1000"), List.of(new AppliedModifier("m2", "council_relief", "claim-type:house",
+                        "percent", new BigDecimal("-10"), new BigDecimal("-100"), "Relief")),
+                new BigDecimal("-100"), new BigDecimal("900"), false, NOW);
+
+        MoneyAccount buyer = MoneyAccount.player(cara.player());
+        assertEquals(List.of(move(buyer, MoneyAccount.player(ANNA.player()), "1000"),
+                move(MoneyAccount.SERVER, buyer, "100")), recorder.claimBought(resale).money());
+    }
+
+    @Test
     void aResalePaysEachSellerAndModifiersGoToTheServer() {
         Map<UUID, BigDecimal> payouts = new LinkedHashMap<>();
         payouts.put(ANNA.player(), new BigDecimal("600"));

@@ -149,7 +149,8 @@ public final class ClaimBuyScreens {
         lore.add(messenger.render("claims.buy.confirm.asking", price(quote.askingPrice())));
         quote.shares().forEach(share -> lore.add(messenger.render("claims.buy.confirm.share",
                 Placeholder.parsed("name", share.modifier().displayName()),
-                Placeholder.unparsed("share", wallet.format(share.amount())))));
+                Placeholder.unparsed("sign", share.sign()),
+                Placeholder.unparsed("share", wallet.format(share.magnitude())))));
         lore.add(messenger.render("claims.buy.confirm.total", price(quote.total())));
         lore.add(Component.empty());
         lore.add(messenger.render("claims.buy.confirm.balance",

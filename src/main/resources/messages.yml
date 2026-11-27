@@ -986,7 +986,7 @@ prices:
     flat-needs-claims: "<red><yellow><amount></yellow> is a flat amount, which only Claim prices take. For a percentage, write it with %, like <amount>%."
     claims-only-target: "<red><yellow><target></yellow> is a Claim target, so the modifier needs on:claims."
     not-a-claim-target: "<red>Claim modifiers go on global, claim-type:\\<type> or claim:\\<claim>, not <yellow><target></yellow>."
-    claim-discount: "<red>Claim modifiers can only raise a price, so <yellow><amount></yellow> must be positive."
+    claim-discount: "<red>A Claim discount must be a percentage, like -10%, so <yellow><amount></yellow> can't be used."
     unknown-claim-type: "<red>SkysongClaims has no Claim type <yellow><type></yellow>."
     unknown-pier: "<red>There is no pier <yellow><pier></yellow>."
     pier-imports-only: "<red>Only imports go to a pier, so a modifier on <yellow><target></yellow> must apply to imports."
@@ -1010,7 +1010,7 @@ claims:
   price-cleared-unlisted: "<green>Removed the price of <white><claim></white>. It was for sale, so it is off sale now."
   price-none: "<gray><claim> has no price."
   price-view: "<gold><claim></gold><gray>: <white><price></white> <dark_gray>(<expression>, set by <by>)"
-  price-share: "<gray>  + <name> <dark_gray>(<amount> on <target>)</dark_gray>: <white><share>"
+  price-share: "<gray>  <sign> <name> <dark_gray>(<amount> on <target>)</dark_gray>: <white><share>"
   price-total: "<gray>  A buyer pays <white><price></white> in total."
   price-view-broken: "<gold><claim></gold><gray>: <red>can't be worked out</red> <dark_gray>(<expression>, set by <by>)"
   listed: "<green><white><claim></white> is for sale for <white><price></white>."
@@ -1025,6 +1025,8 @@ claims:
   sign-price: "<gold><price>"
   # The same, when modifiers raise the price above the asking price.
   sign-price-raised: "<gold><price> <red>↑"
+  # The same, when modifiers (discounts) lower the price below the asking price.
+  sign-price-lowered: "<gold><price> <green>↓"
   # Buying (/se claim buy, and the Buy button in a Claim sign's menu).
   buy:
     not-for-sale: "<red><yellow><claim></yellow> isn't for sale."
@@ -1051,7 +1053,8 @@ claims:
       seller-server: "<gray>Sold by: <white>the server"
       seller-owners: "<gray>Sold by: <white><owners>"
       asking: "<gray>Price: <white><price>"
-      share: "<gray>+ <name>: <white><share>"
+      # <sign> is + or - (a discount), and <share> the amount without it.
+      share: "<gray><sign> <name>: <white><share>"
       total: "<gold>You pay: <white><price>"
       balance: "<gray>You have: <white><balance>"
       owner: "<gray>It will belong to: <white><character>"
@@ -1060,7 +1063,7 @@ claims:
     not-owner: "<red>Your character doesn't own <yellow><claim></yellow>."
     price-needed: "<red>Say what you ask for it: /se claim sell <claim> \\<price>"
     prompt: "<gold>What do you ask for this Claim? <gray>Type an amount in chat, or <white>cancel</white>."
-    listed: "<green><white><claim></white> is for sale for <white><price></white>. You and its other owners share that when it sells; modifiers may make the buyer pay more. Any owner can take it off sale with /se claim unsell <claim>."
+    listed: "<green><white><claim></white> is for sale for <white><price></white>. You and its other owners share that when it sells; modifiers may make the buyer pay more or less. Any owner can take it off sale with /se claim unsell <claim>."
     unlisted: "<green><white><claim></white> is no longer for sale."
     co-owner-listed: "<gold><lister></gold> <gray>put <white><claim></white> on sale for <white><price></white>. You share that when it sells. Don't want to sell? /se claim unsell <claim>"
     sold: "<green><white><claim></white> was sold to <white><buyer></white>. You received <white><price></white>."
@@ -1073,7 +1076,7 @@ claims:
       title: "Sell <name>?"
       price: "<gray>You ask: <white><price>"
       split: "<gray>Shared equally between its <white><count></white> owners"
-      modifiers: "<gray>Modifiers may make the buyer pay more; that part isn't yours."
+      modifiers: "<gray>Modifiers may make the buyer pay more or less; you still get your price."
   # A seller's share of a sale that couldn't be paid at once.
   payout:
     paid: "<green>You received <white><price></white> from the sale of <white><claim></white>."

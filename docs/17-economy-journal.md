@@ -46,7 +46,7 @@ price). Items carry a flow: `IN` (given to a player), `OUT` (taken from a player
 | `FARM_PLANTED` | none | the primer, out | node id |
 | `FARM_UNPLANTED` | none | the primer, in (taken out or given back) | node id |
 | `UPKEEP_PAID` | none | what the NPC ate, out | NPC UUID |
-| `CLAIM_BOUGHT` | buyer → each seller (resale) or buyer → server (server sale); buyer → server for modifier shares | none | `claim-sale:<id>` |
+| `CLAIM_BOUGHT` | buyer → each seller (resale) or buyer → server (server sale); buyer → server for modifier shares, or server → buyer when discounts make them negative | none | `claim-sale:<id>` |
 | `CLAIM_PAYOUT` | none (already counted in `CLAIM_BOUGHT`) | none | `claim-sale:<id>` |
 
 Shift pay and the vault cut are money the server creates: nothing is withdrawn for them.

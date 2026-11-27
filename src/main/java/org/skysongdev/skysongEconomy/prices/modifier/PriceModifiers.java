@@ -264,7 +264,8 @@ public final class PriceModifiers {
     }
 
     /**
-     * Claim modifiers only raise prices, and only on targets that can match a Claim; trade
+     * Claim modifiers lower prices only by a percentage (a flat discount could take a Claim below
+     * nothing), and only go on targets that can match a Claim; trade
      * modifiers can't be put on a Claim target, where they would never apply.
      */
     private static void validateClaims(ModifierDraft draft) {
@@ -282,7 +283,7 @@ public final class PriceModifiers {
         if (!claimTarget && draft.target().kind() != TargetKind.GLOBAL) {
             throw new PriceException("prices.modifiers.not-a-claim-target", Map.of("target", draft.target().key()));
         }
-        if (draft.amount().value().signum() < 0) {
+        if (draft.amount() instanceof ModifierAmount.Flat && draft.amount().value().signum() < 0) {
             throw new PriceException("prices.modifiers.claim-discount", Map.of("amount", draft.amount().signed()));
         }
     }

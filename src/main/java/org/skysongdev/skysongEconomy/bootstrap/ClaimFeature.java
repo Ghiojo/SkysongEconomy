@@ -14,6 +14,7 @@ import org.skysongdev.skysongEconomy.claims.ClaimPayouts;
 import org.skysongdev.skysongEconomy.claims.ClaimPrices;
 import org.skysongdev.skysongEconomy.claims.ClaimPricing;
 import org.skysongdev.skysongEconomy.claims.ClaimPurchases;
+import org.skysongdev.skysongEconomy.claims.ClaimQuote;
 import org.skysongdev.skysongEconomy.claims.ClaimSaleRepository;
 import org.skysongdev.skysongEconomy.claims.ClaimSales;
 import org.skysongdev.skysongEconomy.claims.SignPriceUpdater;
@@ -218,11 +219,21 @@ public final class ClaimFeature implements AutoCloseable {
         return screens;
     }
 
-    /** Sign line 4: {@code claims.sign-price}, or {@code claims.sign-price-raised} when modifiers add to it. */
+    /**
+     * Sign line 4: {@code claims.sign-price}, {@code claims.sign-price-raised} when modifiers add to
+     * it, or {@code claims.sign-price-lowered} when they take from it.
+     */
     private static SignPriceUpdater.SignText signText(Inputs inputs) {
-        return quote -> MiniMessage.miniMessage().serialize(inputs.messenger().render(
-                quote.isModified() ? "claims.sign-price-raised" : "claims.sign-price",
+        return quote -> MiniMessage.miniMessage().serialize(inputs.messenger().render(signKey(quote),
                 Placeholder.unparsed("price", inputs.wallet().format(quote.total()))));
+    }
+
+    private static String signKey(ClaimQuote quote) {
+        return switch (quote.change()) {
+            case NONE -> "claims.sign-price";
+            case RAISED -> "claims.sign-price-raised";
+            case LOWERED -> "claims.sign-price-lowered";
+        };
     }
 
     private static ClaimFeature off(Logger logger) {

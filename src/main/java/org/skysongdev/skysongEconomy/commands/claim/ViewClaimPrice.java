@@ -42,7 +42,8 @@ final class ViewClaimPrice extends ClaimSubCommand {
             support.messenger.send(sender, "claims.price-share", Placeholder.parsed("name", share.modifier().displayName()),
                     Placeholder.unparsed("amount", share.modifier().amount().signed()),
                     Placeholder.unparsed("target", share.modifier().target().key()),
-                    Placeholder.unparsed("share", support.wallet.format(share.amount())));
+                    Placeholder.unparsed("sign", share.sign()),
+                    Placeholder.unparsed("share", support.wallet.format(share.magnitude())));
         }
         if (quote.isModified()) {
             support.messenger.send(sender, "claims.price-total", support.price(quote.total()));

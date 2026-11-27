@@ -189,11 +189,9 @@ class PriceModifiersTest {
     }
 
     @Test
-    void claimModifiersOnlyRaiseClaimPrices() {
+    void claimModifierRules() {
         assertKey("prices.modifiers.flat-needs-claims", new ModifierDraft("fee", ModifierTarget.GLOBAL, AppliesTo.IMPORTS,
                 flat("10"), null, null, "Staff"));
-        assertKey("prices.modifiers.claim-discount", new ModifierDraft("festival", ModifierTarget.GLOBAL, AppliesTo.CLAIMS,
-                percent("-15"), null, null, "Staff"));
         assertKey("prices.modifiers.claim-discount", new ModifierDraft("damage", new ModifierTarget.Claim("rose_house"),
                 AppliesTo.CLAIMS, flat("-30"), null, null, "Staff"));
         assertKey("prices.modifiers.not-a-claim-target", new ModifierDraft("tax", ModifierTarget.parse("ledger:smugglers"),
@@ -209,6 +207,15 @@ class PriceModifiersTest {
         assertEquals(List.of(fee), modifiers.applying(PriceSubject.claim("rose_house", "house")));
         assertEquals(List.of(), modifiers.applying(PriceSubject.claim("big_manor", "manor")));
         assertEquals(List.of(), modifiers.applying(WINE_IMPORT));
+    }
+
+    @Test
+    void aClaimDiscountIsAPercentage() {
+        PriceModifier relief = modifiers.add(new ModifierDraft("council_relief", new ModifierTarget.ClaimType("house"),
+                AppliesTo.CLAIMS, percent("-10"), null, null, "SkysongPolitics"));
+
+        assertEquals(new BigDecimal("-10"), relief.amount().value());
+        assertEquals(List.of(relief), modifiers.applying(PriceSubject.claim("rose_house", "house")));
     }
 
     @Test
