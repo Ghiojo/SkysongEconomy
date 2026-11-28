@@ -1,5 +1,6 @@
 package org.skysongdev.skysongEconomy.business;
 
+import org.skysongdev.skysongEconomy.api.business.BusinessBlock;
 import org.skysongdev.skysongEconomy.api.business.BusinessInfo;
 import org.skysongdev.skysongEconomy.api.business.Businesses;
 import org.skysongdev.skysongEconomy.character.CharacterRef;
@@ -18,7 +19,12 @@ public final class BusinessDirectory implements Businesses {
     /** @return the public copy of a business, as it is now */
     public static BusinessInfo info(Business business) {
         return new BusinessInfo(business.id(), business.typeId(), business.displayName(), business.tier(),
-                business.owner(), business.workers().stream().map(Hire::character).toList());
+                business.owner(), business.workers().stream().map(Hire::character).toList(),
+                business.position().map(BusinessDirectory::block));
+    }
+
+    private static BusinessBlock block(BlockPosition position) {
+        return new BusinessBlock(position.world(), position.x(), position.y(), position.z());
     }
 
     @Override

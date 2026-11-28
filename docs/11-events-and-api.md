@@ -77,7 +77,7 @@ Get the plugin instance (`(SkysongEconomy) Bukkit.getPluginManager().getPlugin("
 | `getNpcFeature().businessNpcs()` | `Optional<BusinessNpcs>`: which NPCs each business has and the slots they fill; also empty when `businesses/npcs.yml` can't be read |
 
 Services other plugins should use instead of the getters above, from `Bukkit.getServicesManager().load(...)`:
-`api.piers.Piers`, `api.business.Businesses` (read-only `BusinessInfo` copies: `find`, `all`, `ownedBy`),
+`api.piers.Piers`, `api.business.Businesses` (read-only `BusinessInfo` copies: `find`, `all`, `ownedBy`; `BusinessInfo.block()` is the business block as a `BusinessBlock`, empty while it has none),
 `api.items.ItemCatalog` (read-only base values and good types, see below), `api.items.PriceFormulas` (price formulas, see below), `api.benches.BusinessBenches`
 (crafting benches tied to businesses, see below; registered while businesses are enabled) and
 `api.journal.EconomyJournal` (reads the [economy journal](17-economy-journal.md#reading-the-journal); not registered
