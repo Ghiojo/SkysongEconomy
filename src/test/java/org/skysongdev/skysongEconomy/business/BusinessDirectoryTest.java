@@ -1,6 +1,7 @@
 package org.skysongdev.skysongEconomy.business;
 
 import org.junit.jupiter.api.Test;
+import org.skysongdev.skysongEconomy.api.business.BusinessBlock;
 import org.skysongdev.skysongEconomy.api.business.BusinessInfo;
 import org.skysongdev.skysongEconomy.business.tier.BusinessTiers;
 import org.skysongdev.skysongEconomy.business.tier.TierSettings;
@@ -40,7 +41,8 @@ class BusinessDirectoryTest {
 
         BusinessInfo info = directory.find("SMITHY").orElseThrow();
 
-        assertEquals(new BusinessInfo("smithy", "crafting", "Rose Smithy", 1, Optional.of(owner), List.of(worker)), info);
+        assertEquals(new BusinessInfo("smithy", "crafting", "Rose Smithy", 1, Optional.of(owner), List.of(worker),
+                Optional.of(new BusinessBlock("world", 1, 64, 1))), info);
         assertFalse(info.serverOwned());
     }
 
@@ -75,5 +77,16 @@ class BusinessDirectoryTest {
 
         assertEquals("smithy", before.displayName());
         assertEquals("Renamed", directory.find("smithy").orElseThrow().displayName());
+    }
+
+    @Test
+    void followsTheBlockWhenItMovesAndIsEmptyWithoutOne() {
+        Business business = service.create("smithy", "crafting", owner, new BlockPosition("world", 1, 64, 1));
+
+        service.move(business, new BlockPosition("nether", -5, 70, 12));
+        assertEquals(Optional.of(new BusinessBlock("nether", -5, 70, 12)), directory.find("smithy").orElseThrow().block());
+
+        service.unplace(business);
+        assertEquals(Optional.empty(), directory.find("smithy").orElseThrow().block());
     }
 }
