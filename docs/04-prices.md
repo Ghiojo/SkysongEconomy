@@ -35,6 +35,9 @@ factor     = ("-" | "+") factor | number | "(" expression ")" | "{base}" | "{ite
 Expressions are parsed once (a typo is a `prices.invalid-expression` refusal naming the problem) and evaluated
 exactly with `BigDecimal`. Dividing by zero is refused (`prices.division-by-zero`).
 
+Other plugins parse and work out the same expressions through `api.items.PriceFormulas` (see
+[Events, API and integrations](11-events-and-api.md#price-formulas-apiitemspriceformulas)).
+
 ## Decimals: `prices.yml`
 
 ```yaml

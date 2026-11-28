@@ -78,7 +78,7 @@ Get the plugin instance (`(SkysongEconomy) Bukkit.getPluginManager().getPlugin("
 
 Services other plugins should use instead of the getters above, from `Bukkit.getServicesManager().load(...)`:
 `api.piers.Piers`, `api.business.Businesses` (read-only `BusinessInfo` copies: `find`, `all`, `ownedBy`),
-`api.items.ItemCatalog` (read-only base values and good types, see below), `api.benches.BusinessBenches`
+`api.items.ItemCatalog` (read-only base values and good types, see below), `api.items.PriceFormulas` (price formulas, see below), `api.benches.BusinessBenches`
 (crafting benches tied to businesses, see below; registered while businesses are enabled) and
 `api.journal.EconomyJournal` (reads the [economy journal](17-economy-journal.md#reading-the-journal); not registered
 while the journal is off).
@@ -107,6 +107,31 @@ main thread.
 ItemCatalog items = Bukkit.getServicesManager().load(ItemCatalog.class);
 Optional<BigDecimal> worth = items.baseValue("steel_sword");
 boolean weapon = items.hasGoodType("steel_sword", "weapon");
+```
+
+### Price formulas: `api.items.PriceFormulas`
+
+Lets another plugin price things in its own config with the same formulas ledgers use, instead of copying the parser.
+Registered for as long as the plugin is enabled. Implementation: `prices/FormulaService` (Bukkit-free, tested) over
+`PriceExpression`, `PriceDatabase` and `PriceSettings`.
+
+| Method | Returns |
+| --- | --- |
+| `parse(text)` | A `PriceFormula`; throws `InvalidPriceFormulaException` (`formula()`, `problem()`) when the text isn't valid. Item references are not checked here |
+| `PriceFormula.text()` | The formula as written |
+| `PriceFormula.items()` | The lower-case material ids its `{item:...}` references name |
+| `PriceFormula.usesBase()` | Whether it uses `{base}` |
+| `PriceFormula.value()` | Its value without `{base}`, truncated to `prices.yml` decimals and never below 0; empty when it uses `{base}`, names an item without a base value, or divides by zero |
+| `PriceFormula.value(base)` | The same, with `{base}` standing for the given value |
+
+A formula allows numbers, `+ - * /`, parentheses, a leading minus, `{base}` and `{item:<material_id>}`, exactly as in
+[price expressions](04-prices.md#price-expressions). What `{base}` means is up to the caller. Values are worked out on
+every call, so they follow `/se ledger` changes at once. Call it on the main thread.
+
+```java
+PriceFormulas formulas = Bukkit.getServicesManager().load(PriceFormulas.class);
+PriceFormula price = formulas.parse("{item:steel_ingot} * 1.2 + {base}");
+Optional<BigDecimal> now = price.value(new BigDecimal("3"));
 ```
 
 ### Crafting benches tied to businesses: `api.benches.BusinessBenches`
